@@ -1,5 +1,5 @@
 use quantus_math::{
-    correlation, moving_average, returns, volatility, Date, Error, ReturnKind, Series, Window,
+    beta, correlation, moving_average, returns, volatility, Date, Error, ReturnKind, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -669,4 +669,249 @@ fn correlation_zero_variance_zero_mean_ramps_and_errors() {
     .unwrap();
     let shifted_corr = correlation(&shifted_x, &shifted_y, Window::Expanding, None, false).unwrap();
     assert!((shifted_corr.values()[3] - (-1.0)).abs() < 1e-6);
+}
+
+#[test]
+fn beta_prices_returns_windows_masking_and_determinism() {
+    let daily = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+    let px = Series::try_new(
+        daily.clone(),
+        vec![100.0, 101.0, 103.02, 100.9596, 100.9596, 102.978792],
+    )
+    .unwrap();
+    let py = Series::try_new(
+        daily.clone(),
+        vec![100.0, 102.0, 104.0, 101.0, 100.95, 100.0],
+    )
+    .unwrap();
+
+    // Default expanding window on close prices + determinism across repeated runs
+    let run1 = beta(&px, &py, Window::Expanding, true).unwrap();
+    let run2 = beta(&px, &py, Window::Expanding, true).unwrap();
+    assert_eq!(run1.dates(), run2.dates());
+    for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert_eq!(run1.dates(), daily.as_slice());
+    assert!(run1.values()[0].is_nan() && run1.values()[1].is_nan() && run1.values()[2].is_nan());
+    assert!((run1.values()[3] - 0.718146).abs() < 1e-6);
+    assert!((run1.values()[4] - 0.718919).abs() < 1e-6);
+    assert!((run1.values()[5] - 0.572201).abs() < 1e-6);
+
+    // Precomputed simple returns match prices=true for observation window
+    let rx = returns(&px, 1, ReturnKind::Simple).unwrap();
+    let ry = returns(&py, 1, ReturnKind::Simple).unwrap();
+    let obs_prices = beta(&px, &py, Window::Observations { size: 2, ramp: 0 }, true).unwrap();
+    let obs_rets = beta(&rx, &ry, Window::Observations { size: 2, ramp: 0 }, false).unwrap();
+    assert_eq!(obs_prices.dates(), obs_rets.dates());
+    for (&a, &b) in obs_prices.values().iter().zip(obs_rets.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert!((obs_rets.values()[3] - 0.8255252918287954).abs() < 1e-12);
+    assert!((obs_rets.values()[4] - 0.7054398925453326).abs() < 1e-12);
+    assert!((obs_rets.values()[5] - (-2.24327163719368)).abs() < 1e-12);
+
+    // Calendar-day window with ramp=0 vs default ramp=size
+    let cal_0 = beta(&px, &py, Window::Days { size: 2, ramp: 0 }, true).unwrap();
+    assert_eq!(cal_0.dates(), daily.as_slice());
+    assert!(cal_0.values()[4].is_nan());
+    assert!((cal_0.values()[3] - 0.8255252918287954).abs() < 1e-12);
+    assert!((cal_0.values()[5] - (-2.24327163719368)).abs() < 1e-12);
+
+    let cal_r = beta(&px, &py, Window::Days { size: 2, ramp: 2 }, true).unwrap();
+    assert_eq!(cal_r.dates(), &daily[2..]);
+    assert!(cal_r.values()[0].is_nan());
+    assert!((cal_r.values()[1] - 0.8255252918287954).abs() < 1e-12);
+    assert!(cal_r.values()[2].is_nan());
+    assert!((cal_r.values()[3] - (-2.24327163719368)).abs() < 1e-12);
+
+    // Offset dates: union-index masking leaves 2020-01-04 (3rd left date, 4th union date) = -0.25,
+    // and missing benchmark does not pool denominator sample with pair-filtered covariance.
+    let asset = Series::try_new(
+        vec![1, 2, 4, 5, 7, 10, 11, 13]
+            .into_iter()
+            .map(|d| date(2020, 1, d))
+            .collect(),
+        vec![1.0, 4.0, 2.0, 9.0, 3.0, 5.0, 6.0, 2.0],
+    )
+    .unwrap();
+    let bench = Series::try_new(
+        vec![1, 3, 4, 5, 7, 8, 10, 11, 13]
+            .into_iter()
+            .map(|d| date(2020, 1, d))
+            .collect(),
+        vec![3.0, 5.0, 1.0, 9.0, 2.0, 4.0, 8.0, 3.0, 7.0],
+    )
+    .unwrap();
+    let obs_off = beta(
+        &asset,
+        &bench,
+        Window::Observations { size: 4, ramp: 0 },
+        false,
+    )
+    .unwrap();
+    assert_eq!(obs_off.dates(), asset.dates());
+    assert!(obs_off.values()[0].is_nan() && obs_off.values()[1].is_nan());
+    assert!((obs_off.values()[2] - (-0.25)).abs() < 1e-12);
+    assert!((obs_off.values()[3] - 2.4).abs() < 1e-12);
+
+    let missing_bench = Series::try_new(
+        bench.dates().to_vec(),
+        vec![3.0, 5.0, 1.0, 9.0, f64::NAN, 4.0, 8.0, 3.0, 7.0],
+    )
+    .unwrap();
+    let obs_miss = beta(
+        &asset,
+        &missing_bench,
+        Window::Observations { size: 4, ramp: 2 },
+        false,
+    )
+    .unwrap();
+    assert_eq!(obs_miss.dates(), &asset.dates()[2..]);
+    assert!((obs_miss.values()[0] - (-0.25)).abs() < 1e-12);
+    assert!((obs_miss.values()[2] - 1.75).abs() < 1e-12);
+
+    // Calendar window propagates NaN through the (t - size, t] window
+    let cal_miss = beta(
+        &asset,
+        &missing_bench,
+        Window::Days { size: 5, ramp: 0 },
+        false,
+    )
+    .unwrap();
+    assert!(cal_miss.values()[..7].iter().all(|v| v.is_nan()));
+    assert!((cal_miss.values()[7] - (-0.42857142857142855)).abs() < 1e-12);
+
+    // Calendar window across leap day (2024-02-29)
+    let leap_dates = vec![
+        date(2024, 2, 27),
+        date(2024, 2, 28),
+        date(2024, 2, 29),
+        date(2024, 3, 1),
+        date(2024, 3, 2),
+    ];
+    let lx = Series::try_new(leap_dates.clone(), vec![1.0, 3.0, 2.0, 5.0, 4.0]).unwrap();
+    let lb = Series::try_new(leap_dates.clone(), vec![2.0, 4.0, 1.0, 6.0, 3.0]).unwrap();
+    let leap_cal = beta(&lx, &lb, Window::Days { size: 3, ramp: 2 }, false).unwrap();
+    assert_eq!(leap_cal.dates(), &leap_dates[2..]);
+    assert!(leap_cal.values()[0].is_nan());
+    assert!(leap_cal.values()[1].is_finite() && leap_cal.values()[2].is_finite());
+}
+
+#[test]
+fn beta_constant_disjoint_empty_oversize_and_errors() {
+    let asset = Series::try_new(
+        vec![1, 2, 4, 5, 7, 10, 11, 13]
+            .into_iter()
+            .map(|d| date(2020, 1, d))
+            .collect(),
+        vec![1.0, 4.0, 2.0, 9.0, 3.0, 5.0, 6.0, 2.0],
+    )
+    .unwrap();
+    let bench = Series::try_new(
+        vec![1, 3, 4, 5, 7, 8, 10, 11, 13]
+            .into_iter()
+            .map(|d| date(2020, 1, d))
+            .collect(),
+        vec![3.0, 5.0, 1.0, 9.0, 2.0, 4.0, 8.0, 3.0, 7.0],
+    )
+    .unwrap();
+
+    // Constant benchmark (0.1, 0.01, 0.0) always produces NaN across all window types
+    for c in [0.1, 0.01, 0.0] {
+        let constant =
+            Series::try_new(asset.dates().to_vec(), vec![c; asset.dates().len()]).unwrap();
+        for w in [
+            Window::Expanding,
+            Window::Observations { size: 4, ramp: 0 },
+            Window::Days { size: 6, ramp: 0 },
+        ] {
+            let res = beta(&asset, &constant, w, false).unwrap();
+            assert_eq!(res.dates(), asset.dates());
+            assert!(res.values().iter().all(|v| v.is_nan()));
+        }
+    }
+
+    // Disjoint dates or empty benchmark produce all NaN indexed by left dates
+    let disjoint = Series::try_new(
+        vec![14, 15, 16, 17]
+            .into_iter()
+            .map(|d| date(2020, 1, d))
+            .collect(),
+        vec![2.0, 3.0, 1.0, 4.0],
+    )
+    .unwrap();
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for b in [&disjoint, &empty] {
+        for w in [
+            Window::Expanding,
+            Window::Observations { size: 4, ramp: 0 },
+            Window::Days { size: 6, ramp: 0 },
+        ] {
+            let res = beta(&asset, b, w, false).unwrap();
+            assert_eq!(res.dates(), asset.dates());
+            assert!(res.values().iter().all(|v| v.is_nan()));
+        }
+    }
+
+    // Empty left series returns empty before window validation
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 0, ramp: 0 },
+        Window::Days { size: 0, ramp: 0 },
+    ] {
+        assert!(beta(&empty, &bench, w, true).unwrap().values().is_empty());
+        assert!(beta(&empty, &empty, w, false).unwrap().values().is_empty());
+    }
+
+    // Oversize window with valid ramp -> empty; invalid ramp -> Error::Ramp first
+    assert!(beta(
+        &asset,
+        &bench,
+        Window::Observations { size: 12, ramp: 0 },
+        false
+    )
+    .unwrap()
+    .values()
+    .is_empty());
+    assert_eq!(
+        beta(
+            &asset,
+            &bench,
+            Window::Observations { size: 12, ramp: 12 },
+            false
+        ),
+        Err(Error::Ramp)
+    );
+
+    // Invalid window sizes and ramps
+    assert_eq!(
+        beta(
+            &asset,
+            &bench,
+            Window::Observations { size: 0, ramp: 0 },
+            false
+        ),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        beta(&asset, &bench, Window::Days { size: 0, ramp: 0 }, false),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        beta(
+            &asset,
+            &bench,
+            Window::Observations { size: 4, ramp: 9 },
+            false
+        ),
+        Err(Error::Ramp)
+    );
 }

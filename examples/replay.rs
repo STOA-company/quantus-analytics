@@ -1,5 +1,5 @@
 use quantus_math::{
-    correlation, moving_average, returns, volatility, Date, ReturnKind, Series, Window,
+    beta, correlation, moving_average, returns, volatility, Date, ReturnKind, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -65,6 +65,18 @@ fn main() {
         let x = parse_rows(remaining[..len_x].iter().copied());
         let y = parse_rows(remaining[len_x..].iter().copied());
         correlation(&x, &y, window, returns_kind, assume_zero_mean)
+    } else if args[0] == "beta" {
+        let window = parse_window(args[1], args[2], args[3]);
+        let prices = match args[4] {
+            "false" => false,
+            "true" => true,
+            _ => panic!("unknown prices flag"),
+        };
+        let len_x: usize = args[5].parse().unwrap();
+        let remaining: Vec<_> = lines.collect();
+        let x = parse_rows(remaining[..len_x].iter().copied());
+        let benchmark = parse_rows(remaining[len_x..].iter().copied());
+        beta(&x, &benchmark, window, prices)
     } else {
         let series = parse_rows(lines);
         match args[0] {
