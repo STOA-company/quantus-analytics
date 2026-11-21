@@ -2,7 +2,7 @@
 
 Unofficial Rust port of goldmansachs/gs-quant; not affiliated with, endorsed or sponsored by Goldman Sachs.
 
-Quantus Analytics is a unified repository for financial calculations. Its first package, `quantus-math`, provides offline, dependency-free moving averages, returns, realized volatility, and correlation as a slice of [gs-quant](https://github.com/goldmansachs/gs-quant), based on upstream commit `70220e300524d54bd273be0f4c485d53b3780482`. Prices and absolute returns use the caller's price units; simple returns, logarithmic returns, and correlation are dimensionless ratios (not percent); volatility is returned in percent (e.g. `20.0` for 20%). No network, market data, or internal engine is involved.
+Quantus Analytics is a unified repository for financial calculations. Its first package, `quantus-math`, provides offline, dependency-free moving averages, returns, realized volatility, correlation, and beta as a slice of [gs-quant](https://github.com/goldmansachs/gs-quant), based on upstream commit `70220e300524d54bd273be0f4c485d53b3780482`. Prices and absolute returns use the caller's price units; simple returns, logarithmic returns, correlation, and beta are dimensionless ratios (not percent); volatility is returned in percent (e.g. `20.0` for 20%). No network, market data, or internal engine is involved.
 
 | Feature | Supported subset |
 |---|---|
@@ -11,10 +11,11 @@ Quantus Analytics is a unified repository for financial calculations. Its first 
 | Returns | Positive integer observation lag, SIMPLE, LOGARITHMIC and ABSOLUTE. NaN propagates. Logarithmic returns reject nonpositive prices. Division by zero follows floating-point arithmetic. |
 | Volatility | Reuses `Series`, `Window` (`Expanding`, `Observations`, `Days`), and `Option<ReturnKind>` (`Simple`, `Logarithmic`, `Absolute`, or `None` for precomputed returns). Standard sample volatility (`assume_zero_mean = false`, `n - 1` denominator, `NaN` for `< 2` non-NaN values) and zero-mean RMS (`assume_zero_mean = true`, `n` denominator, `NaN` for `0` non-NaN values). Explicit `Option<u32>` annualization factor (including `0`, which scales finite values to `0.0` and keeps `NaN`), or `None` for upstream automatic classification (`< 2.1d → 252`, `[6, 8) → 52`, `[14, 17) → 26`, `[25, 35) → 12`, `[85, 97) → 4`, `[360, 386) → 1`). Output is annualized in percent (`* sqrt(factor) * 100`). |
 | Correlation | Reuses `Series`, `Window` (`Expanding`, `Observations`, `Days`), and `Option<(ReturnKind, ReturnKind)>` (`Some((kx, ky))` computes lag-1 returns on `x` and `y` independently before date intersection; `None` treats both inputs as precomputed returns). Aligns common dates and drops any pair with a `NaN` before rolling (`Observations` counts aligned non-NaN pairs; `Days` uses `(date - size, date]`). Reindexes results onto `x`'s dates (unmatched left dates become `NaN`) and applies the outer ramp on `x`. Returns a dimensionless ratio (not percent). Sample Pearson (`assume_zero_mean = false`) yields `NaN` when a window has `< 2` pairs or zero variance. Zero-mean mode (`assume_zero_mean = true`) computes normalized inner products via upstream's `mean` + zero-mean `volatility` pipeline on the aligned pairs: both the inner window/ramp (on aligned pairs) and outer ramp (on `x`) apply, so dates masked by the inner ramp remain `NaN` even if they survive the outer ramp; empty, singleton, irregular-spacing, or oversize-window aligned pairs (including `Window::Expanding` when aligned count `< x.len()`) return `Err(Error::AnnualizationFactor)`, and inner observation ramp `> aligned.len()` returns `Err(Error::Ramp)`. |
-| Numerical precision & non-finite inputs | Parity tolerance `1e-12 + 1e-10 * |expected|` applies to well-conditioned finite inputs. Inputs with `±Inf` are excluded from compatibility vectors: Rust follows IEEE-754 arithmetic (`NaN` for sample volatility and Pearson correlation, `+Inf` for RMS, `NaN` for zero-mean `Inf / Inf`), whereas upstream pandas `rolling()` and numpy `rolling_std()` diverge on `±Inf`. For constant non-power-of-two float series (e.g. `0.01`, `0.1`), Rust detects finite constant windows before centering and returns `NaN` (zero variance), whereas upstream pandas 2.3.3 observation-window `rolling().corr()` can emit `±Inf` from covariance rounding residue divided by zero standard deviation (e.g. on `0.01`, or `0.1` vs varying), and upstream calendar-day `Series.corr` (`np.corrcoef`) can emit rounding-residue `1.0` (constant/constant) or `0.0` (constant/varying) when `sum(x) / n != x` (e.g. three `0.1` values). For inputs with very large constant offsets relative to spread (e.g. `1e9 + 0.1`, where `f64` input ULP is `~1.2e-7`), Rust uses two-pass centered sums (`sum((x - mean)^2)` / `sum((x - mean_x)(y - mean_y))`), avoiding catastrophic cancellation while upstream pandas observation-window and numpy day-window paths diverge by `~6e-7` relative error (outside the `1e-10` parity bound). |
-| Not supported | Date-based return lag, months/weeks (`1m`, `3m`, `1w`), mixed-unit ramps, duplicate or unsorted indices, time zones, pandas nullable values distinct from NaN, volatility/variance/correlation swap wrappers (`vol_swap_volatility`, `corr_swap_correlation`), and other gs-quant functions. This is not a claim of full upstream compatibility. |
+| Beta | Reuses `Series`, `Window` (`Expanding`, `Observations`, `Days`), `ReturnKind::Simple` (internally when `prices = true`), `Error`, and outer ramp. When `prices = true`, computes lag-1 simple returns independently on `x` and `benchmark`; when `prices = false`, treats both series as precomputed returns. For `Window::Expanding` (size = `x.dates().len()`) and `Window::Observations`, computes rolling sample covariance (`ddof = 1`, skipping `NaN` pairs) over the outer-joined date union divided by `benchmark`'s own rolling sample variance (`ddof = 1`, skipping `NaN`s) aligned by date—without pooling the two sample sets. For `Window::Days`, computes sample covariance divided by benchmark variance over `(date - size, date]` on the date intersection, propagating any `NaN` inside the window. Masks the first 3 positions of the intermediate result (`union` for observations/expanding, `intersection` for days) to `NaN`, reindexes onto `x`'s dates (`NaN` for unmatched dates), and applies the outer ramp. An exactly constant finite benchmark window yields `NaN` (zero denominator). |
+| Numerical precision & non-finite inputs | Parity tolerance `1e-12 + 1e-10 * |expected|` applies to well-conditioned finite inputs. Inputs with `±Inf` are excluded from compatibility vectors: Rust follows IEEE-754 arithmetic (`NaN` for sample volatility, Pearson correlation, and beta, `+Inf` for RMS, `NaN` for zero-mean `Inf / Inf`), whereas upstream pandas `rolling()` and numpy `rolling_std()` diverge on `±Inf`. For constant non-power-of-two float series (e.g. `0.01`, `0.1`), Rust detects finite constant windows before centering and returns `NaN` (zero variance / zero denominator), whereas upstream pandas 2.3.3 observation-window `rolling().corr()` can emit `±Inf` from covariance rounding residue divided by zero standard deviation (e.g. on `0.01`, or `0.1` vs varying), upstream calendar-day `Series.corr` (`np.corrcoef`) can emit rounding-residue `1.0` (constant/constant) or `0.0` (constant/varying) when `sum(x) / n != x` (e.g. three `0.1` values), and upstream calendar-day `beta` (`np.cov` / `np.var`) emits `±21.333333333333332` (`±64/3`) on constant `0.1` over a 6-day window (`constant-calendar` vector) due to floating-point rounding residue in the denominator variance. For inputs with very large constant offsets relative to spread (e.g. `1e9 + 0.1`, where `f64` input ULP is `~1.2e-7`), Rust uses two-pass centered sums (`sum((x - mean)^2)` / `sum((x - mean_x)(y - mean_y))`), avoiding catastrophic cancellation while upstream pandas observation-window and numpy day-window paths diverge by `~6e-7` relative error (outside the `1e-10` parity bound). |
+| Not supported | Date-based return lag, months/weeks (`1m`, `3m`, `1w`), mixed-unit ramps, duplicate or unsorted indices, `DatetimeIndex` / time zones, pandas nullable values distinct from NaN, non-simple return kinds for `beta`, volatility/variance/correlation swap wrappers (`vol_swap_volatility`, `corr_swap_correlation`), service-level portfolio beta (`measures_portfolios.py`), and other gs-quant functions. This is not a claim of full upstream compatibility. |
 
-Observation window size must be positive and its ramp at most the number of rows; for `moving_average` and Pearson `correlation`, size larger than `x` returns an empty series. For `volatility`, size larger than the series returns empty when `annualization_factor` is `Some(...)`, and `Err(Error::AnnualizationFactor)` when `None`. For zero-mean `correlation`, size larger than the aligned non-NaN pair count (including `Window::Expanding` when `aligned.len() < x.len()`) returns `Err(Error::AnnualizationFactor)` unless an inner observation ramp `> aligned.len()` triggers `Err(Error::Ramp)` first. Calendar-day size must be positive. Empty `moving_average`, `volatility`, and left-input `correlation` return empty before window or annualization validation; `returns` rejects lag zero even on empty input. A larger-than-series lag gives all NaNs. Singleton or unclassifiable spacing under automatic annualization returns `Err(Error::AnnualizationFactor)`. Use `Window::Observations { size: n, ramp: n }` for the upstream integer-window default ramp and `Window::Days { size: n, ramp: n }` for its day-string default. Public errors are `Error` variants.
+Observation window size must be positive and its ramp at most the number of rows; for `moving_average`, Pearson `correlation`, and `beta`, size larger than `x` returns an empty series (after rejecting `ramp > x.len()` with `Err(Error::Ramp)`). For `volatility`, size larger than the series returns empty when `annualization_factor` is `Some(...)`, and `Err(Error::AnnualizationFactor)` when `None`. For zero-mean `correlation`, size larger than the aligned non-NaN pair count (including `Window::Expanding` when `aligned.len() < x.len()`) returns `Err(Error::AnnualizationFactor)` unless an inner observation ramp `> aligned.len()` triggers `Err(Error::Ramp)` first. Calendar-day size must be positive. Empty `moving_average`, `volatility`, and left-input `correlation` and `beta` return empty before window or annualization validation; `returns` rejects lag zero even on empty input. A larger-than-series lag gives all NaNs. Singleton or unclassifiable spacing under automatic annualization returns `Err(Error::AnnualizationFactor)`. Use `Window::Observations { size: n, ramp: n }` for the upstream integer-window default ramp and `Window::Days { size: n, ramp: n }` for its day-string default. Public errors are `Error` variants.
 
 Run the independent example twice without network:
 
@@ -166,12 +167,97 @@ fn main() {
 }
 ```
 
-Parity: `python3 parity/check.py --replay`, `python3 parity/check-volatility.py --replay`, and `python3 parity/check-correlation.py --replay` build the offline replay binary and check frozen unrounded Python outputs. [The assertion map](parity/MAP.md) records the covered cases and exclusions. To regenerate vectors, use the pinned Python environment and an independently verified checkout of the upstream SHA:
+Standalone offline `beta` example for an external Cargo project:
+
+```rust
+use quantus_math::{beta, returns, Date, Error, ReturnKind, Series, Window};
+
+fn main() {
+    let d = |y, m, day| Date::new(y, m, day).unwrap();
+    let daily = vec![
+        d(2019, 1, 1),
+        d(2019, 1, 2),
+        d(2019, 1, 3),
+        d(2019, 1, 4),
+        d(2019, 1, 7),
+        d(2019, 1, 8),
+    ];
+    let stock = Series::try_new(
+        daily.clone(),
+        vec![100.0, 101.0, 103.02, 100.9596, 100.9596, 102.978792],
+    )
+    .unwrap();
+    let market = Series::try_new(
+        daily.clone(),
+        vec![100.0, 102.0, 104.0, 101.0, 100.95, 100.0],
+    )
+    .unwrap();
+
+    // 1. Default expanding window on two close-price series (deterministic on re-run)
+    let def1 = beta(&stock, &market, Window::Expanding, true).unwrap();
+    let def2 = beta(&stock, &market, Window::Expanding, true).unwrap();
+    assert_eq!(def1.dates(), def2.dates());
+    assert!(def1
+        .values()
+        .iter()
+        .zip(def2.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!(def1.values()[..3].iter().all(|v| v.is_nan()));
+    assert!((def1.values()[5] - 0.572201).abs() < 1e-6);
+
+    // 2. Precomputed simple returns: observation window vs calendar-day window
+    let r_stock = returns(&stock, 1, ReturnKind::Simple).unwrap();
+    let r_market = returns(&market, 1, ReturnKind::Simple).unwrap();
+    let obs = beta(&r_stock, &r_market, Window::Observations { size: 2, ramp: 0 }, false).unwrap();
+    let cal = beta(&r_stock, &r_market, Window::Days { size: 2, ramp: 2 }, false).unwrap();
+    assert!((obs.values()[3] - 0.8255252918287954).abs() < 1e-12);
+    assert_eq!(cal.dates(), &daily[2..]);
+    assert!(cal.values()[0].is_nan() && cal.values()[2].is_nan());
+    assert!((cal.values()[3] - (-2.24327163719368)).abs() < 1e-12);
+
+    // 3. Empty -> empty, constant benchmark or disjoint dates -> NaN, invalid window -> Error
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    assert!(beta(&empty, &market, Window::Expanding, true)
+        .unwrap()
+        .values()
+        .is_empty());
+    let flat = Series::try_new(daily.clone(), vec![0.1; 6]).unwrap();
+    assert!(beta(&r_stock, &flat, Window::Days { size: 3, ramp: 0 }, false)
+        .unwrap()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+    let unmatched = Series::try_new(vec![d(2019, 2, 1), d(2019, 2, 2)], vec![0.01, 0.02]).unwrap();
+    assert!(beta(&r_stock, &unmatched, Window::Observations { size: 2, ramp: 0 }, false)
+        .unwrap()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+    assert_eq!(
+        beta(&stock, &market, Window::Observations { size: 0, ramp: 0 }, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        beta(&stock, &market, Window::Observations { size: 12, ramp: 12 }, true),
+        Err(Error::Ramp)
+    );
+
+    println!(
+        "expanding={} obs={} cal={}",
+        def1.values()[5],
+        obs.values()[3],
+        cal.values()[3]
+    );
+}
+```
+
+Parity: `python3 parity/check.py --replay`, `python3 parity/check-volatility.py --replay`, `python3 parity/check-correlation.py --replay`, and `python3 parity/check-beta.py --replay` build the offline replay binary and check frozen unrounded Python outputs. [The assertion map](parity/MAP.md) records the covered cases and exclusions. To regenerate vectors, use the pinned Python environment and an independently verified checkout of the upstream SHA:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate.py /path/to/gs-quant
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-volatility.py /path/to/gs-quant
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-correlation.py /path/to/gs-quant
+PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-beta.py /path/to/gs-quant
 ```
 
 Generation imports the upstream Python implementation; replay does not. Compare a regenerated file and its hash before accepting any change. Upstream LICENSE, NOTICE and NOTICE.txt are preserved; source attribution is in `src/lib.rs`.

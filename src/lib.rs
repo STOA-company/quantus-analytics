@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, returns, realized volatility, and correlation.
+//! Offline date-indexed prices, moving averages, returns, realized volatility, correlation, and beta.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -468,6 +468,253 @@ pub fn correlation(
         }
         let value = if k < corr_dates.len() && corr_dates[k] == date {
             corr_values[k]
+        } else {
+            f64::NAN
+        };
+        let include = match window {
+            Window::Expanding => true,
+            Window::Observations { ramp, .. } => idx >= ramp,
+            Window::Days { ramp, .. } => date.ordinal() - x.dates[0].ordinal() >= i64::from(ramp),
+        };
+        if include {
+            out_dates.push(date);
+            out_values.push(value);
+        }
+    }
+    Series::try_new(out_dates, out_values)
+}
+
+/// Rolling or expanding beta of `x` against `benchmark`.
+///
+/// When `prices` is `true`, computes lag-1 simple returns on `x` and `benchmark` independently
+/// before windowing; when `false`, treats both inputs as precomputed returns.
+///
+/// For `Window::Expanding` and `Window::Observations`, the numerator is rolling sample covariance
+/// (`n - 1` denominator, skipping NaNs) over the outer-joined date union (using window size
+/// `x.dates().len()` for `Window::Expanding`), and the denominator is rolling sample variance
+/// (`n - 1` denominator, skipping NaNs) computed on `benchmark`'s own dates, divided by date on
+/// the union index. For `Window::Days`, both covariance and variance are computed over
+/// `(date - size, date]` on the date intersection of `x` and `benchmark`, propagating any `NaN`
+/// inside a window.
+///
+/// An exactly constant finite benchmark window yields `NaN` (zero denominator). The first three
+/// positions of the intermediate result are masked to `NaN` before reindexing onto `x`'s dates
+/// (`NaN` for unmatched dates) and applying the outer ramp. Empty `x` returns empty before window
+/// validation.
+pub fn beta(x: &Series, benchmark: &Series, window: Window, prices: bool) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    match window {
+        Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+            return Err(Error::Window)
+        }
+        Window::Observations { ramp, .. } if ramp > x.dates.len() => return Err(Error::Ramp),
+        Window::Observations { size, .. } if size > x.dates.len() => {
+            return Series::try_new(vec![], vec![])
+        }
+        _ => {}
+    }
+
+    let computed_x;
+    let computed_b;
+    let (ret_x, ret_b) = if prices {
+        computed_x = returns(x, 1, ReturnKind::Simple)?;
+        computed_b = returns(benchmark, 1, ReturnKind::Simple)?;
+        (&computed_x, &computed_b)
+    } else {
+        (x, benchmark)
+    };
+
+    let (res_dates, mut res_values) = match window {
+        Window::Days { size, .. } => {
+            let mut inter_dates = Vec::new();
+            let mut inter_x = Vec::new();
+            let mut inter_b = Vec::new();
+            let mut i = 0;
+            let mut j = 0;
+            while i < ret_x.dates.len() && j < ret_b.dates.len() {
+                match ret_x.dates[i].cmp(&ret_b.dates[j]) {
+                    std::cmp::Ordering::Less => i += 1,
+                    std::cmp::Ordering::Greater => j += 1,
+                    std::cmp::Ordering::Equal => {
+                        inter_dates.push(ret_x.dates[i]);
+                        inter_x.push(ret_x.values[i]);
+                        inter_b.push(ret_b.values[j]);
+                        i += 1;
+                        j += 1;
+                    }
+                }
+            }
+
+            let mut values = Vec::with_capacity(inter_dates.len());
+            let mut start = 0;
+            for idx in 0..inter_dates.len() {
+                while start < idx
+                    && inter_dates[idx].ordinal() - inter_dates[start].ordinal() >= i64::from(size)
+                {
+                    start += 1;
+                }
+                let wx = &inter_x[start..=idx];
+                let wb = &inter_b[start..=idx];
+                let n = idx + 1 - start;
+                let has_nan = wx.iter().any(|v| v.is_nan()) || wb.iter().any(|v| v.is_nan());
+                let const_b = wb[0].is_finite() && wb[1..].iter().all(|&v| v == wb[0]);
+                if n < 2 || has_nan || const_b {
+                    values.push(f64::NAN);
+                } else {
+                    let mean_x = wx.iter().sum::<f64>() / n as f64;
+                    let mean_b = wb.iter().sum::<f64>() / n as f64;
+                    let mut sxb = 0.0;
+                    let mut sbb = 0.0;
+                    for (&vx, &vb) in wx.iter().zip(wb) {
+                        let dx = vx - mean_x;
+                        let db = vb - mean_b;
+                        sxb += dx * db;
+                        sbb += db * db;
+                    }
+                    values.push(if sbb == 0.0 { f64::NAN } else { sxb / sbb });
+                }
+            }
+            (inter_dates, values)
+        }
+        Window::Expanding | Window::Observations { .. } => {
+            let win_size = match window {
+                Window::Expanding => x.dates.len(),
+                Window::Observations { size, .. } => size,
+                Window::Days { .. } => unreachable!(),
+            };
+
+            let mut union_dates = Vec::with_capacity(ret_x.dates.len() + ret_b.dates.len());
+            let mut union_x = Vec::with_capacity(ret_x.dates.len() + ret_b.dates.len());
+            let mut union_b = Vec::with_capacity(ret_x.dates.len() + ret_b.dates.len());
+            let mut i = 0;
+            let mut j = 0;
+            while i < ret_x.dates.len() || j < ret_b.dates.len() {
+                let ord = if i < ret_x.dates.len() && j < ret_b.dates.len() {
+                    ret_x.dates[i].cmp(&ret_b.dates[j])
+                } else if i < ret_x.dates.len() {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Greater
+                };
+                match ord {
+                    std::cmp::Ordering::Less => {
+                        union_dates.push(ret_x.dates[i]);
+                        union_x.push(ret_x.values[i]);
+                        union_b.push(f64::NAN);
+                        i += 1;
+                    }
+                    std::cmp::Ordering::Greater => {
+                        union_dates.push(ret_b.dates[j]);
+                        union_x.push(f64::NAN);
+                        union_b.push(ret_b.values[j]);
+                        j += 1;
+                    }
+                    std::cmp::Ordering::Equal => {
+                        union_dates.push(ret_x.dates[i]);
+                        union_x.push(ret_x.values[i]);
+                        union_b.push(ret_b.values[j]);
+                        i += 1;
+                        j += 1;
+                    }
+                }
+            }
+
+            let mut var_b = Vec::with_capacity(ret_b.dates.len());
+            for j in 0..ret_b.dates.len() {
+                let start = (j + 1).saturating_sub(win_size);
+                let mut count = 0usize;
+                let mut sum = 0.0;
+                let mut first = f64::NAN;
+                let mut all_equal = true;
+                for &v in &ret_b.values[start..=j] {
+                    if !v.is_nan() {
+                        if count == 0 {
+                            first = v;
+                        } else if v != first {
+                            all_equal = false;
+                        }
+                        sum += v;
+                        count += 1;
+                    }
+                }
+                let var = if count < 2 {
+                    f64::NAN
+                } else if first.is_finite() && all_equal {
+                    0.0
+                } else {
+                    let mean = sum / count as f64;
+                    let mut sbb = 0.0;
+                    for &v in &ret_b.values[start..=j] {
+                        if !v.is_nan() {
+                            let db = v - mean;
+                            sbb += db * db;
+                        }
+                    }
+                    sbb / (count - 1) as f64
+                };
+                var_b.push(var);
+            }
+
+            let mut values = Vec::with_capacity(union_dates.len());
+            let mut b_idx = 0;
+            for idx in 0..union_dates.len() {
+                while b_idx < ret_b.dates.len() && ret_b.dates[b_idx] < union_dates[idx] {
+                    b_idx += 1;
+                }
+                let denom = if b_idx < ret_b.dates.len() && ret_b.dates[b_idx] == union_dates[idx] {
+                    var_b[b_idx]
+                } else {
+                    f64::NAN
+                };
+                if denom == 0.0 || denom.is_nan() {
+                    values.push(f64::NAN);
+                    continue;
+                }
+                let start = (idx + 1).saturating_sub(win_size);
+                let mut count = 0usize;
+                let mut sum_x = 0.0;
+                let mut sum_b = 0.0;
+                for (&vx, &vb) in union_x[start..=idx].iter().zip(&union_b[start..=idx]) {
+                    if !vx.is_nan() && !vb.is_nan() {
+                        sum_x += vx;
+                        sum_b += vb;
+                        count += 1;
+                    }
+                }
+                if count < 2 {
+                    values.push(f64::NAN);
+                } else {
+                    let mean_x = sum_x / count as f64;
+                    let mean_b = sum_b / count as f64;
+                    let mut sxb = 0.0;
+                    for (&vx, &vb) in union_x[start..=idx].iter().zip(&union_b[start..=idx]) {
+                        if !vx.is_nan() && !vb.is_nan() {
+                            sxb += (vx - mean_x) * (vb - mean_b);
+                        }
+                    }
+                    let cov = sxb / (count - 1) as f64;
+                    values.push(cov / denom);
+                }
+            }
+            (union_dates, values)
+        }
+    };
+
+    for v in res_values.iter_mut().take(3) {
+        *v = f64::NAN;
+    }
+
+    let mut out_dates = Vec::new();
+    let mut out_values = Vec::new();
+    let mut k = 0;
+    for (idx, &date) in x.dates.iter().enumerate() {
+        while k < res_dates.len() && res_dates[k] < date {
+            k += 1;
+        }
+        let value = if k < res_dates.len() && res_dates[k] == date {
+            res_values[k]
         } else {
             f64::NAN
         };
