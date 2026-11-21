@@ -1,5 +1,6 @@
 use quantus_math::{
-    beta, correlation, moving_average, returns, volatility, Date, ReturnKind, Series, Window,
+    beta, correlation, max_drawdown, moving_average, returns, volatility, Date, ReturnKind, Series,
+    Window,
 };
 use std::io::{self, Read};
 
@@ -123,6 +124,7 @@ fn main() {
                     assume_zero_mean,
                 )
             }
+            "max_drawdown" => max_drawdown(&series, parse_window(args[1], args[2], args[3])),
             _ => panic!("unknown operation"),
         }
     };

@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, returns, realized volatility, correlation, and beta.
+//! Offline date-indexed prices, moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -728,5 +728,124 @@ pub fn beta(x: &Series, benchmark: &Series, window: Window, prices: bool) -> Res
             out_values.push(value);
         }
     }
+    Series::try_new(out_dates, out_values)
+}
+
+/// Rolling or expanding maximum peak-to-trough drawdown as a ratio.
+///
+/// Computes the rolling maximum price over the window, forms the drawdown ratio
+/// `price / rolling_max - 1.0`, and then takes the rolling minimum of those ratios over the same
+/// window before applying the ramp. For example, a 20% drawdown is returned as `-0.2`.
+///
+/// For `Window::Expanding` (size equal to `x.dates().len()`, ramp `0`) and `Window::Observations`,
+/// both rolling stages skip `NaN` and `±Inf` (matching upstream pandas `rolling().max()` and
+/// `rolling().min()`). For `Window::Days`, both stages use `(date - size, date]` and skip `NaN`
+/// while retaining `±Inf` (matching upstream pandas `Series.max()` and `Series.min()`). Windows
+/// with no eligible values and `0.0 / 0.0` ratios yield `NaN`.
+///
+/// Empty input returns empty for `Window::Expanding`, `Window::Observations`, and
+/// `Window::Days { ramp: 0, .. }`, and returns `Err(Error::Ramp)` for `Window::Days` with
+/// `ramp > 0` (mapping upstream's `IndexError` on an empty date index with a positive calendar
+/// ramp).
+pub fn max_drawdown(x: &Series, window: Window) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        if matches!(window, Window::Days { ramp, .. } if ramp > 0) {
+            return Err(Error::Ramp);
+        }
+        return Series::try_new(vec![], vec![]);
+    }
+    match window {
+        Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+            return Err(Error::Window)
+        }
+        Window::Observations { ramp, .. } if ramp > x.dates.len() => return Err(Error::Ramp),
+        Window::Observations { size, .. } if size > x.dates.len() => {
+            return Series::try_new(vec![], vec![])
+        }
+        _ => {}
+    }
+
+    let n = x.dates.len();
+    let mut scores = Vec::with_capacity(n);
+    let mut out_dates = Vec::new();
+    let mut out_values = Vec::new();
+
+    match window {
+        Window::Days { size, ramp } => {
+            let mut starts = Vec::with_capacity(n);
+            let mut start = 0;
+            for i in 0..n {
+                while start < i
+                    && x.dates[i].ordinal() - x.dates[start].ordinal() >= i64::from(size)
+                {
+                    start += 1;
+                }
+                starts.push(start);
+                let mut peak: Option<f64> = None;
+                for &v in &x.values[start..=i] {
+                    if !v.is_nan() {
+                        peak = Some(match peak {
+                            Some(cur) if cur > v => cur,
+                            _ => v,
+                        });
+                    }
+                }
+                let denom = peak.unwrap_or(f64::NAN);
+                scores.push(x.values[i] / denom - 1.0);
+            }
+            for i in 0..n {
+                if x.dates[i].ordinal() - x.dates[0].ordinal() < i64::from(ramp) {
+                    continue;
+                }
+                let mut trough: Option<f64> = None;
+                for &v in &scores[starts[i]..=i] {
+                    if !v.is_nan() {
+                        trough = Some(match trough {
+                            Some(cur) => cur.min(v),
+                            None => v,
+                        });
+                    }
+                }
+                out_dates.push(x.dates[i]);
+                out_values.push(trough.unwrap_or(f64::NAN));
+            }
+        }
+        Window::Expanding | Window::Observations { .. } => {
+            let (win_size, ramp) = match window {
+                Window::Expanding => (n, 0),
+                Window::Observations { size, ramp } => (size, ramp),
+                Window::Days { .. } => unreachable!(),
+            };
+            for i in 0..n {
+                let start = (i + 1).saturating_sub(win_size);
+                let mut peak: Option<f64> = None;
+                for &v in &x.values[start..=i] {
+                    if v.is_finite() {
+                        peak = Some(match peak {
+                            Some(cur) => cur.max(v),
+                            None => v,
+                        });
+                    }
+                }
+                let denom = peak.unwrap_or(f64::NAN);
+                scores.push(x.values[i] / denom - 1.0);
+            }
+            for i in ramp..n {
+                let start = (i + 1).saturating_sub(win_size);
+                let mut trough: Option<f64> = None;
+                for &v in &scores[start..=i] {
+                    if v.is_finite() {
+                        trough = Some(match trough {
+                            Some(cur) => cur.min(v),
+                            None => v,
+                        });
+                    }
+                }
+                out_dates.push(x.dates[i]);
+                out_values.push(trough.unwrap_or(f64::NAN));
+            }
+        }
+    }
+
     Series::try_new(out_dates, out_values)
 }

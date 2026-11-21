@@ -1,0 +1,2413 @@
+{
+  "schema": "gsquant-drawdown-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/econometrics.py:max_drawdown",
+    "gs_quant/timeseries/helper.py:normalize_window",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "test-max-drawdown-default",
+      "source_ref": "test_econometrics.py::test_max_drawdown",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          -0.19999999999999996,
+          -0.8
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-max-drawdown-obs-2",
+      "source_ref": "test_econometrics.py::test_max_drawdown",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          -0.19999999999999996,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-max-drawdown-2d",
+      "source_ref": "test_econometrics.py::test_max_drawdown",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          0.0,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-default",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          -0.19999999999999996,
+          -0.8
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-observations",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          -0.19999999999999996,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-days",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          0.0,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "calendar-default-ramp",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          -0.19999999999999996,
+          0.0,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "observation-ramp",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          -0.19999999999999996,
+          -0.19999999999999996,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "calendar-gaps",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.19999999999999996,
+          0.0,
+          -0.75
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "zero-observations",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          -1.0,
+          -1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "zero-calendar",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "negative-observations",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          -5.0,
+          -2.0,
+          -9.0,
+          -1.0,
+          -5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "negative-calendar",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          -5.0,
+          -2.0,
+          -9.0,
+          -1.0,
+          -5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "missing-observations",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          5.0,
+          {
+            "special": "NaN"
+          },
+          2.0,
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          -0.6,
+          -0.6,
+          -0.6
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "missing-calendar",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          5.0,
+          {
+            "special": "NaN"
+          },
+          2.0,
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-observations",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        10,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-ramp",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        10,
+        10
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "empty-default",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-calendar",
+      "source_ref": "boundaries-1.json",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "rust_representation": "empty_f64_series",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "object"
+      }
+    },
+    {
+      "id": "neg-after-zero-default",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          -1.0,
+          -2.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-after-zero-observations",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          -1.0,
+          -2.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-after-zero-days",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          -1.0,
+          -2.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-after-zero-days-ramp",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          -1.0,
+          -2.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "-Inf"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "explicit-inf-default",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          1.0,
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          -0.5,
+          -1.5
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "explicit-inf-observations",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          1.0,
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "explicit-inf-days",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          1.0,
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          -1.0,
+          -2.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "explicit-inf-days-ramp",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          1.0,
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -1.0,
+          -2.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-missing-default",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-missing-observations",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-missing-days",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-missing-days-ramp",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-extended-default",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-extended-observations",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-extended-days",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "rust_representation": "empty_f64_series",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "object"
+      }
+    },
+    {
+      "id": "empty-extended-days-ramp",
+      "source_ref": "extended-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "one-point-positive-default",
+      "source_ref": "one-point-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "one-point-positive-oversize",
+      "source_ref": "one-point-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "one-point-positive-days",
+      "source_ref": "one-point-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "one-point-zero-default",
+      "source_ref": "one-point-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "one-point-negative-default",
+      "source_ref": "one-point-boundaries.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          -5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "invalid-window-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          1.0,
+          5.0,
+          5.0,
+          4.0,
+          4.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "signed-zero-pos-neg-observations-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-pos-neg-days-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-pos-neg-days-3",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-pos-observations-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-pos-days-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-pos-days-3",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-neg-observations-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-neg-days-2",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-neg-days-3",
+      "source_ref": "signed-zero-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -1.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-pos-neg-nan-days-4",
+      "source_ref": "signed-zero-peak-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          {
+            "special": "NaN"
+          },
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-pos-nan-days-4",
+      "source_ref": "signed-zero-peak-python.txt",
+      "operation": "max_drawdown",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          {
+            "special": "NaN"
+          },
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    }
+  ]
+}

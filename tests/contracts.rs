@@ -1,5 +1,6 @@
 use quantus_math::{
-    beta, correlation, moving_average, returns, volatility, Date, Error, ReturnKind, Series, Window,
+    beta, correlation, max_drawdown, moving_average, returns, volatility, Date, Error, ReturnKind,
+    Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -914,4 +915,353 @@ fn beta_constant_disjoint_empty_oversize_and_errors() {
         ),
         Err(Error::Ramp)
     );
+}
+
+#[test]
+fn max_drawdown_windows_gaps_ramps_and_determinism() {
+    let daily = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+    let prices = Series::try_new(daily.clone(), vec![1.0, 5.0, 5.0, 4.0, 4.0, 1.0]).unwrap();
+
+    // Default expanding window + bit-exact determinism on immediate re-run
+    let run1 = max_drawdown(&prices, Window::Expanding).unwrap();
+    let run2 = max_drawdown(&prices, Window::Expanding).unwrap();
+    assert_eq!(run1.dates(), run2.dates());
+    for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert_eq!(run1.dates(), daily.as_slice());
+    let expected_default = [0.0, 0.0, 0.0, -0.2, -0.2, -0.8];
+    for (&a, &e) in run1.values().iter().zip(&expected_default) {
+        assert!((a - e).abs() < 1e-12);
+    }
+
+    // Trading gap comparison: 2-observation window vs 2-calendar-day window diverge on 2019-01-07
+    let obs = max_drawdown(&prices, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    let cal = max_drawdown(&prices, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(obs.dates(), daily.as_slice());
+    assert_eq!(cal.dates(), daily.as_slice());
+    assert!((obs.values()[4] - (-0.2)).abs() < 1e-12);
+    assert_eq!(cal.values()[4], 0.0);
+    assert!((obs.values()[5] - (-0.75)).abs() < 1e-12);
+    assert!((cal.values()[5] - (-0.75)).abs() < 1e-12);
+
+    // Observation ramp and calendar default ramp
+    let obs_ramp = max_drawdown(&prices, Window::Observations { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(obs_ramp.dates(), &daily[2..]);
+    assert!((obs_ramp.values()[2] - (-0.2)).abs() < 1e-12);
+    assert!((obs_ramp.values()[3] - (-0.75)).abs() < 1e-12);
+
+    let cal_ramp = max_drawdown(&prices, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(cal_ramp.dates(), &daily[2..]);
+    assert_eq!(cal_ramp.values()[2], 0.0);
+    assert!((cal_ramp.values()[3] - (-0.75)).abs() < 1e-12);
+
+    // Missing values: NaN skipped in both stages, all-NaN window yields NaN
+    let missing = Series::try_new(
+        vec![
+            date(2019, 1, 1),
+            date(2019, 1, 2),
+            date(2019, 1, 4),
+            date(2019, 1, 7),
+            date(2019, 1, 8),
+        ],
+        vec![5.0, f64::NAN, 2.0, f64::NAN, 1.0],
+    )
+    .unwrap();
+    let miss_obs = max_drawdown(&missing, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    for (&a, &e) in miss_obs.values().iter().zip(&[0.0, 0.0, -0.6, -0.6, -0.6]) {
+        assert!((a - e).abs() < 1e-12);
+    }
+    let miss_cal = max_drawdown(&missing, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(miss_cal.values()[0], 0.0);
+    assert_eq!(miss_cal.values()[1], 0.0);
+    assert_eq!(miss_cal.values()[2], 0.0);
+    assert!(miss_cal.values()[3].is_nan());
+    assert_eq!(miss_cal.values()[4], 0.0);
+
+    // Zero prices (0/0 -> NaN) and negative prices
+    let zeros = Series::try_new(missing.dates().to_vec(), vec![0.0, 0.0, 2.0, 0.0, 1.0]).unwrap();
+    let z_obs = max_drawdown(&zeros, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(z_obs.values()[0].is_nan() && z_obs.values()[1].is_nan());
+    assert_eq!(z_obs.values()[2], 0.0);
+    assert_eq!(z_obs.values()[3], -1.0);
+    assert_eq!(z_obs.values()[4], -1.0);
+
+    let z_cal = max_drawdown(&zeros, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert!(z_cal.values()[0].is_nan() && z_cal.values()[1].is_nan() && z_cal.values()[3].is_nan());
+    assert_eq!(z_cal.values()[2], 0.0);
+    assert_eq!(z_cal.values()[4], 0.0);
+
+    let neg =
+        Series::try_new(missing.dates().to_vec(), vec![-5.0, -2.0, -9.0, -1.0, -5.0]).unwrap();
+    for w in [
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        assert_eq!(max_drawdown(&neg, w).unwrap().values(), &[0.0; 5]);
+    }
+
+    // Calendar window across leap day (2024-02-29)
+    let leap = Series::try_new(
+        vec![
+            date(2024, 2, 28),
+            date(2024, 2, 29),
+            date(2024, 3, 1),
+            date(2024, 3, 3),
+        ],
+        vec![10.0, 8.0, 6.0, 5.0],
+    )
+    .unwrap();
+    let leap_cal = max_drawdown(&leap, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(leap_cal.dates(), &[date(2024, 3, 1), date(2024, 3, 3)]);
+    assert!((leap_cal.values()[0] - (-0.25)).abs() < 1e-12);
+    assert_eq!(leap_cal.values()[1], 0.0);
+}
+
+#[test]
+fn max_drawdown_non_finite_empty_oversize_and_errors() {
+    let d4 = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+    ];
+
+    // Negative price following zero: finite prices produce -Inf in ratio; obs/expanding skip ±Inf,
+    // calendar retains ±Inf
+    let neg_zero = Series::try_new(d4.clone(), vec![0.0, -1.0, -2.0, 0.0]).unwrap();
+    let nz_def = max_drawdown(&neg_zero, Window::Expanding).unwrap();
+    assert!(nz_def.values().iter().all(|v| v.is_nan()));
+    let nz_obs = max_drawdown(&neg_zero, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert!(nz_obs.values()[0].is_nan() && nz_obs.values()[1].is_nan());
+    assert_eq!(&nz_obs.values()[2..], &[1.0, 1.0]);
+    let nz_cal = max_drawdown(&neg_zero, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert!(nz_cal.values()[0].is_nan());
+    assert!(nz_cal.values()[1].is_infinite() && nz_cal.values()[1].is_sign_negative());
+    assert!(nz_cal.values()[2].is_infinite() && nz_cal.values()[2].is_sign_negative());
+    assert_eq!(nz_cal.values()[3], 1.0);
+    let nz_cal_r = max_drawdown(&neg_zero, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(nz_cal_r.dates(), &d4[2..]);
+    assert!(nz_cal_r.values()[0].is_infinite() && nz_cal_r.values()[0].is_sign_negative());
+    assert_eq!(nz_cal_r.values()[1], 1.0);
+
+    // Explicit +Inf: obs/expanding skip ±Inf in both stages; calendar keeps +Inf
+    let inf_s = Series::try_new(d4.clone(), vec![2.0, f64::INFINITY, 1.0, -1.0]).unwrap();
+    assert_eq!(
+        max_drawdown(&inf_s, Window::Expanding).unwrap().values(),
+        &[0.0, 0.0, -0.5, -1.5]
+    );
+    assert_eq!(
+        max_drawdown(&inf_s, Window::Observations { size: 2, ramp: 0 })
+            .unwrap()
+            .values(),
+        &[0.0, 0.0, 0.0, -2.0]
+    );
+    assert_eq!(
+        max_drawdown(&inf_s, Window::Days { size: 2, ramp: 0 })
+            .unwrap()
+            .values(),
+        &[0.0, 0.0, -1.0, -2.0]
+    );
+    let inf_r = max_drawdown(&inf_s, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(inf_r.dates(), &d4[2..]);
+    assert_eq!(inf_r.values(), &[-1.0, -2.0]);
+
+    // All NaN
+    let all_nan = Series::try_new(d4.clone(), vec![f64::NAN; 4]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+    ] {
+        let out = max_drawdown(&all_nan, w).unwrap();
+        assert_eq!(out.dates(), d4.as_slice());
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+    let all_nan_r = max_drawdown(&all_nan, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(all_nan_r.dates(), &d4[2..]);
+    assert!(all_nan_r.values().iter().all(|v| v.is_nan()));
+
+    // Singleton inputs
+    let one_pos = Series::try_new(vec![date(2019, 1, 1)], vec![5.0]).unwrap();
+    assert_eq!(
+        max_drawdown(&one_pos, Window::Expanding).unwrap().values(),
+        &[0.0]
+    );
+    assert!(
+        max_drawdown(&one_pos, Window::Observations { size: 2, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        max_drawdown(&one_pos, Window::Days { size: 2, ramp: 0 })
+            .unwrap()
+            .values(),
+        &[0.0]
+    );
+    assert!(max_drawdown(&one_pos, Window::Days { size: 2, ramp: 2 })
+        .unwrap()
+        .values()
+        .is_empty());
+    let one_zero = Series::try_new(vec![date(2019, 1, 1)], vec![0.0]).unwrap();
+    assert!(max_drawdown(&one_zero, Window::Expanding).unwrap().values()[0].is_nan());
+    let one_neg = Series::try_new(vec![date(2019, 1, 1)], vec![-5.0]).unwrap();
+    assert_eq!(
+        max_drawdown(&one_neg, Window::Expanding).unwrap().values(),
+        &[0.0]
+    );
+
+    // Empty inputs: positive calendar ramp maps upstream IndexError -> Error::Ramp; others empty
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Observations { size: 0, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+        Window::Days { size: 0, ramp: 0 },
+    ] {
+        assert!(max_drawdown(&empty, w).unwrap().values().is_empty());
+    }
+    assert_eq!(
+        max_drawdown(&empty, Window::Days { size: 2, ramp: 2 }),
+        Err(Error::Ramp)
+    );
+
+    // Oversize windows, ramp order, and zero-size window errors
+    let sample = Series::try_new(d4, vec![1.0, 5.0, 4.0, 2.0]).unwrap();
+    assert!(
+        max_drawdown(&sample, Window::Observations { size: 10, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert!(
+        max_drawdown(&sample, Window::Observations { size: 4, ramp: 4 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        max_drawdown(&sample, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        max_drawdown(&sample, Window::Observations { size: 2, ramp: 5 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        max_drawdown(&sample, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        max_drawdown(&sample, Window::Days { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+}
+
+#[test]
+fn max_drawdown_signed_zero_calendar_ties() {
+    let dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 1),
+    ];
+
+    // [0.0, -0.0, -1.0, -2.0]: calendar peak keeps the last tied zero (-0.0) -> +Inf
+    let pos_neg = Series::try_new(dates.clone(), vec![0.0, -0.0, -1.0, -2.0]).unwrap();
+    let pn_3d_a = max_drawdown(&pos_neg, Window::Days { size: 3, ramp: 0 }).unwrap();
+    let pn_3d_b = max_drawdown(&pos_neg, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(pn_3d_a.dates(), dates.as_slice());
+    assert_eq!(pn_3d_a.dates(), pn_3d_b.dates());
+    for (&a, &b) in pn_3d_a.values().iter().zip(pn_3d_b.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert!(pn_3d_a.values()[0].is_nan() && pn_3d_a.values()[1].is_nan());
+    assert_eq!(pn_3d_a.values()[2], f64::INFINITY);
+    assert_eq!(pn_3d_a.values()[3], f64::INFINITY);
+
+    let pn_2d = max_drawdown(&pos_neg, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert!(pn_2d.values()[0].is_nan() && pn_2d.values()[1].is_nan());
+    assert_eq!(pn_2d.values()[2], f64::INFINITY);
+    assert_eq!(pn_2d.values()[3], 1.0);
+
+    let pn_obs2 = max_drawdown(&pos_neg, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert!(
+        pn_obs2.values()[0].is_nan()
+            && pn_obs2.values()[1].is_nan()
+            && pn_obs2.values()[2].is_nan()
+    );
+    assert_eq!(pn_obs2.values()[3], 1.0);
+
+    let pn_3d_ramp = max_drawdown(&pos_neg, Window::Days { size: 3, ramp: 3 }).unwrap();
+    assert_eq!(pn_3d_ramp.dates(), &[date(2020, 3, 1)]);
+    assert_eq!(pn_3d_ramp.values(), &[f64::INFINITY]);
+
+    // [-0.0, 0.0, -1.0, -2.0]: calendar peak keeps the last tied zero (+0.0) -> -Inf
+    let neg_pos = Series::try_new(dates.clone(), vec![-0.0, 0.0, -1.0, -2.0]).unwrap();
+    let np_3d_a = max_drawdown(&neg_pos, Window::Days { size: 3, ramp: 0 }).unwrap();
+    let np_3d_b = max_drawdown(&neg_pos, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(np_3d_a.dates(), dates.as_slice());
+    assert_eq!(np_3d_a.dates(), np_3d_b.dates());
+    for (&a, &b) in np_3d_a.values().iter().zip(np_3d_b.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert!(np_3d_a.values()[0].is_nan() && np_3d_a.values()[1].is_nan());
+    assert_eq!(np_3d_a.values()[2], f64::NEG_INFINITY);
+    assert_eq!(np_3d_a.values()[3], f64::NEG_INFINITY);
+
+    let np_2d = max_drawdown(&neg_pos, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert!(np_2d.values()[0].is_nan() && np_2d.values()[1].is_nan());
+    assert_eq!(np_2d.values()[2], f64::NEG_INFINITY);
+    assert_eq!(np_2d.values()[3], f64::NEG_INFINITY);
+
+    let np_obs2 = max_drawdown(&neg_pos, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert!(
+        np_obs2.values()[0].is_nan()
+            && np_obs2.values()[1].is_nan()
+            && np_obs2.values()[2].is_nan()
+    );
+    assert_eq!(np_obs2.values()[3], 1.0);
+
+    let np_3d_ramp = max_drawdown(&neg_pos, Window::Days { size: 3, ramp: 3 }).unwrap();
+    assert_eq!(np_3d_ramp.dates(), &[date(2020, 3, 1)]);
+    assert_eq!(np_3d_ramp.values(), &[f64::NEG_INFINITY]);
+
+    // [-0.0, -0.0, -1.0, -2.0]: both zeros negative -> +Inf in 3d and 2d, skipped in obs 2
+    let neg_neg = Series::try_new(dates.clone(), vec![-0.0, -0.0, -1.0, -2.0]).unwrap();
+    let nn_3d = max_drawdown(&neg_neg, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert!(nn_3d.values()[0].is_nan() && nn_3d.values()[1].is_nan());
+    assert_eq!(nn_3d.values()[2], f64::INFINITY);
+    assert_eq!(nn_3d.values()[3], f64::INFINITY);
+    let nn_obs2 = max_drawdown(&neg_neg, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert!(
+        nn_obs2.values()[0].is_nan()
+            && nn_obs2.values()[1].is_nan()
+            && nn_obs2.values()[2].is_nan()
+    );
+    assert_eq!(nn_obs2.values()[3], 1.0);
+
+    // NaN interleaved between tied signed zeros and negative price
+    let nan_pos_neg = Series::try_new(dates.clone(), vec![0.0, -0.0, f64::NAN, -1.0]).unwrap();
+    let npn_4d = max_drawdown(&nan_pos_neg, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert!(
+        npn_4d.values()[0].is_nan() && npn_4d.values()[1].is_nan() && npn_4d.values()[2].is_nan()
+    );
+    assert_eq!(npn_4d.values()[3], f64::INFINITY);
+
+    let nan_neg_pos = Series::try_new(dates, vec![-0.0, 0.0, f64::NAN, -1.0]).unwrap();
+    let nnp_4d = max_drawdown(&nan_neg_pos, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert!(
+        nnp_4d.values()[0].is_nan() && nnp_4d.values()[1].is_nan() && nnp_4d.values()[2].is_nan()
+    );
+    assert_eq!(nnp_4d.values()[3], f64::NEG_INFINITY);
 }
