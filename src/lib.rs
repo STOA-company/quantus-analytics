@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, moving averages, exponential moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -60,6 +60,7 @@ pub enum Error {
     Lag,
     NonPositivePrice,
     AnnualizationFactor,
+    Beta,
 }
 
 /// Strictly increasing calendar dates and floating point values. NaN represents missing data.
@@ -848,4 +849,60 @@ pub fn max_drawdown(x: &Series, window: Window) -> Result<Series, Error> {
     }
 
     Series::try_new(out_dates, out_values)
+}
+
+/// Exponentially weighted moving average over observation order.
+///
+/// When `beta` is `None`, uses the upstream default `0.75`. Valid `beta` values satisfy
+/// `0.0 <= beta < 1.0` (`-0.0` is accepted as `0.0`); negative values, values `>= 1.0`, `±Inf`,
+/// and `NaN` return `Err(Error::Beta)` even on empty input. Upstream `gs-quant` documents
+/// `0 <= beta < 1`, whereas pandas `get_center_of_mass` checks `alpha <= 0 or alpha > 1` and
+/// allows `NaN` to slip past; Rust strictly enforces the documented `[0, 1)` domain.
+///
+/// Decay follows row order rather than calendar-day spacing, matching upstream
+/// `x.ewm(alpha=1 - beta, adjust=False).mean()`. Leading `NaN` and `±Inf` values emit `NaN`
+/// until the first finite observation. Subsequent `NaN` and `±Inf` values are treated as missing:
+/// the previous average is carried forward while each missing row decays the prior weight when
+/// the next finite observation arrives. When a finite observation equals the current average
+/// (`weighted_avg == cur`, including `-0.0 == +0.0`), the average and its sign are preserved.
+pub fn exponential_moving_average(x: &Series, beta: Option<f64>) -> Result<Series, Error> {
+    let beta = beta.unwrap_or(0.75);
+    if !(0.0..1.0).contains(&beta) {
+        return Err(Error::Beta);
+    }
+    let alpha_in = 1.0 - beta;
+    let com = (1.0 - alpha_in) / alpha_in;
+    let alpha = 1.0 / (1.0 + com);
+    let old_wt_factor = 1.0 - alpha;
+    let new_wt = alpha;
+
+    let n = x.dates.len();
+    let mut values = Vec::with_capacity(n);
+    if n == 0 {
+        return Series::try_new(vec![], values);
+    }
+
+    let mut weighted_avg = x.values[0];
+    let mut has_obs = weighted_avg.is_finite();
+    values.push(if has_obs { weighted_avg } else { f64::NAN });
+    let mut old_wt = 1.0;
+
+    for &cur in &x.values[1..] {
+        let is_obs = cur.is_finite();
+        if has_obs {
+            old_wt *= old_wt_factor;
+            if is_obs {
+                if weighted_avg != cur {
+                    weighted_avg = ((old_wt * weighted_avg) + (new_wt * cur)) / (old_wt + new_wt);
+                }
+                old_wt = 1.0;
+            }
+        } else if is_obs {
+            weighted_avg = cur;
+            has_obs = true;
+        }
+        values.push(if has_obs { weighted_avg } else { f64::NAN });
+    }
+
+    Series::try_new(x.dates.clone(), values)
 }

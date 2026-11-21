@@ -1,6 +1,6 @@
 use quantus_math::{
-    beta, correlation, max_drawdown, moving_average, returns, volatility, Date, ReturnKind, Series,
-    Window,
+    beta, correlation, exponential_moving_average, max_drawdown, moving_average, returns,
+    volatility, Date, ReturnKind, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -125,6 +125,13 @@ fn main() {
                 )
             }
             "max_drawdown" => max_drawdown(&series, parse_window(args[1], args[2], args[3])),
+            "exponential_moving_average" => {
+                let beta = match args[1] {
+                    "default" => None,
+                    v => Some(v.parse().unwrap()),
+                };
+                exponential_moving_average(&series, beta)
+            }
             _ => panic!("unknown operation"),
         }
     };
