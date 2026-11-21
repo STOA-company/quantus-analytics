@@ -1,0 +1,779 @@
+{
+  "schema": "gsquant-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:moving_average",
+    "gs_quant/timeseries/econometrics.py:returns"
+  ],
+  "cases": [
+    {
+      "id": "ma_default",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "expanding",
+      "args": [],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.6666666666666665,
+          2.25,
+          2.4,
+          3.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ma_1",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "observations",
+      "args": [
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ma_2",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "observations",
+      "args": [
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.5,
+          2.0,
+          2.0,
+          4.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ma_2d",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "days",
+      "args": [
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.5,
+          2.0,
+          2.0,
+          4.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ma_empty",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "days",
+      "args": [
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_empty",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "simple"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_default",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.010000000000000009,
+          0.020000000000000018,
+          -0.020000000000000018,
+          0.0,
+          0.020000000000000018
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_simple_1",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.010000000000000009,
+          0.020000000000000018,
+          -0.020000000000000018,
+          0.0,
+          0.020000000000000018
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_simple_2",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        2,
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.030200000000000005,
+          -0.00040000000000006697,
+          -0.020000000000000018,
+          0.020000000000000018
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_logarithmic_1",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.009950330853167877,
+          0.019802627296179764,
+          -0.020202707317519497,
+          0.0,
+          0.019802627296179764
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_logarithmic_2",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        2,
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.02975295814934764,
+          -0.00040008002133973264,
+          -0.020202707317519497,
+          0.019802627296179764
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_absolute_1",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.0,
+          2.019999999999996,
+          -2.0604000000000013,
+          0.0,
+          2.019192000000004
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_absolute_2",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        2,
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          3.019999999999996,
+          -0.04040000000000532,
+          -2.0604000000000013,
+          2.019192000000004
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ma_nan",
+      "node_id": "gs_quant/test/timeseries/test_technicals.py::test_moving_average",
+      "operation": "observations",
+      "args": [
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          3.0,
+          {
+            "special": "NaN"
+          },
+          1.0,
+          2.0,
+          4.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns_nan",
+      "node_id": "gs_quant/test/timeseries/test_econometrics.py::test_returns",
+      "operation": "returns",
+      "args": [
+        1,
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          {
+            "special": "NaN"
+          },
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -0.020000000000000018,
+          0.0,
+          0.020000000000000018
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    }
+  ]
+}

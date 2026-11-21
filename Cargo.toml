@@ -1,0 +1,12 @@
+[workspace]
+members = ["."]
+resolver = "2"
+
+[package]
+name = "quantus-math"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Offline financial calculations: moving averages and returns"
+repository = "https://github.com/STOA-company/quantus-analytics"
+include = ["Cargo.toml", "Cargo.lock", "README.md", "LICENSE", "NOTICE", "NOTICE.txt", "src/**", "examples/**", "tests/**", "parity/**"]
