@@ -1,5 +1,5 @@
-//! Offline date-indexed prices, moving averages, and returns.
-//! Adapted from gs_quant/timeseries/{technicals,econometrics,helper}.py at
+//! Offline date-indexed prices, moving averages, returns, and realized volatility.
+//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
 //! Licensed under Apache-2.0; see LICENSE and both NOTICE files.
@@ -59,6 +59,7 @@ pub enum Error {
     Ramp,
     Lag,
     NonPositivePrice,
+    AnnualizationFactor,
 }
 
 /// Strictly increasing calendar dates and floating point values. NaN represents missing data.
@@ -182,4 +183,134 @@ pub fn returns(x: &Series, lag: usize, kind: ReturnKind) -> Result<Series, Error
         })
         .collect();
     Series::try_new(x.dates.clone(), values)
+}
+
+fn auto_annualization_factor(dates: &[Date]) -> Result<f64, Error> {
+    if dates.len() < 2 {
+        return Err(Error::AnnualizationFactor);
+    }
+    let avg_days =
+        (dates[dates.len() - 1].ordinal() - dates[0].ordinal()) as f64 / (dates.len() - 1) as f64;
+    if avg_days < 2.1 {
+        Ok(252.0)
+    } else if (6.0..8.0).contains(&avg_days) {
+        Ok(52.0)
+    } else if (14.0..17.0).contains(&avg_days) {
+        Ok(26.0)
+    } else if (25.0..35.0).contains(&avg_days) {
+        Ok(12.0)
+    } else if (85.0..97.0).contains(&avg_days) {
+        Ok(4.0)
+    } else if (360.0..386.0).contains(&avg_days) {
+        Ok(1.0)
+    } else {
+        Err(Error::AnnualizationFactor)
+    }
+}
+
+/// Annualized realized volatility in percent over a rolling or expanding window.
+///
+/// When `returns_kind` is `Some(kind)`, computes 1-observation returns from `x`; when `None`,
+/// treats `x` as a returns series. When `assume_zero_mean` is `false`, uses unbiased sample
+/// standard deviation (`n - 1` denominator); when `true`, uses zero-mean RMS (`n` denominator).
+/// When `annualization_factor` is `None`, classifies the factor from average calendar-day spacing
+/// (`252`, `52`, `26`, `12`, `4`, or `1`). Empty input returns empty before window validation.
+pub fn volatility(
+    x: &Series,
+    window: Window,
+    returns_kind: Option<ReturnKind>,
+    annualization_factor: Option<u32>,
+    assume_zero_mean: bool,
+) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    match window {
+        Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+            return Err(Error::Window)
+        }
+        Window::Observations { ramp, .. } if ramp > x.dates.len() => return Err(Error::Ramp),
+        _ => {}
+    }
+    let computed;
+    let ret = match returns_kind {
+        Some(kind) => {
+            computed = returns(x, 1, kind)?;
+            &computed
+        }
+        None => x,
+    };
+    if matches!(window, Window::Observations { size, .. } if size > ret.dates.len()) {
+        return if annualization_factor.is_some() {
+            Series::try_new(vec![], vec![])
+        } else {
+            Err(Error::AnnualizationFactor)
+        };
+    }
+    let factor = match annualization_factor {
+        Some(factor) => f64::from(factor),
+        None => auto_annualization_factor(&ret.dates)?,
+    };
+    let factor_sqrt = factor.sqrt();
+    let mut dates = Vec::new();
+    let mut values = Vec::new();
+    for i in 0..ret.dates.len() {
+        let include = match window {
+            Window::Expanding => true,
+            Window::Observations { ramp, .. } => i >= ramp,
+            Window::Days { ramp, .. } => {
+                ret.dates[i].ordinal() - ret.dates[0].ordinal() >= i64::from(ramp)
+            }
+        };
+        if !include {
+            continue;
+        }
+        let start = match window {
+            Window::Expanding => 0,
+            Window::Observations { size, .. } => (i + 1).saturating_sub(size),
+            Window::Days { size, .. } => (0..=i)
+                .find(|&j| ret.dates[i].ordinal() - ret.dates[j].ordinal() < i64::from(size))
+                .unwrap_or(i),
+        };
+        let vol = if assume_zero_mean {
+            let mut sum_sq = 0.0;
+            let mut count = 0usize;
+            for &v in &ret.values[start..=i] {
+                if !v.is_nan() {
+                    sum_sq += v * v;
+                    count += 1;
+                }
+            }
+            if count == 0 {
+                f64::NAN
+            } else {
+                (sum_sq / count as f64).sqrt()
+            }
+        } else {
+            let mut sum = 0.0;
+            let mut count = 0usize;
+            for &v in &ret.values[start..=i] {
+                if !v.is_nan() {
+                    sum += v;
+                    count += 1;
+                }
+            }
+            if count < 2 {
+                f64::NAN
+            } else {
+                let mean = sum / count as f64;
+                let mut sum_sq = 0.0;
+                for &v in &ret.values[start..=i] {
+                    if !v.is_nan() {
+                        let d = v - mean;
+                        sum_sq += d * d;
+                    }
+                }
+                (sum_sq / (count - 1) as f64).sqrt()
+            }
+        };
+        dates.push(ret.dates[i]);
+        values.push(vol * factor_sqrt * 100.0);
+    }
+    Series::try_new(dates, values)
 }

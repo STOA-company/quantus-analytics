@@ -1,4 +1,4 @@
-use quantus_math::{moving_average, returns, Date, ReturnKind, Series, Window};
+use quantus_math::{moving_average, returns, volatility, Date, ReturnKind, Series, Window};
 use std::io::{self, Read};
 fn main() {
     let mut input = String::new();
@@ -45,6 +45,43 @@ fn main() {
                 _ => panic!("unknown kind"),
             },
         ),
+        "volatility" => {
+            let window = match args[1] {
+                "expanding" => Window::Expanding,
+                "observations" => Window::Observations {
+                    size: args[2].parse().unwrap(),
+                    ramp: args[3].parse().unwrap(),
+                },
+                "days" => Window::Days {
+                    size: args[2].parse().unwrap(),
+                    ramp: args[3].parse().unwrap(),
+                },
+                _ => panic!("unknown window"),
+            };
+            let returns_kind = match args[4] {
+                "none" => None,
+                "simple" => Some(ReturnKind::Simple),
+                "logarithmic" => Some(ReturnKind::Logarithmic),
+                "absolute" => Some(ReturnKind::Absolute),
+                _ => panic!("unknown kind"),
+            };
+            let annualization_factor = match args[5] {
+                "auto" => None,
+                v => Some(v.parse().unwrap()),
+            };
+            let assume_zero_mean = match args[6] {
+                "false" => false,
+                "true" => true,
+                _ => panic!("unknown zero-mean flag"),
+            };
+            volatility(
+                &series,
+                window,
+                returns_kind,
+                annualization_factor,
+                assume_zero_mean,
+            )
+        }
         _ => panic!("unknown operation"),
     };
     match result {

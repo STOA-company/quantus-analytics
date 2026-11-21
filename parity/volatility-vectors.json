@@ -1,0 +1,1407 @@
+{
+  "schema": "gsquant-volatility-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/econometrics.py:volatility",
+    "gs_quant/timeseries/econometrics.py:_get_annualization_factor",
+    "gs_quant/timeseries/statistics.py:std",
+    "gs_quant/timeseries/statistics.py:mean",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "volatility-prices-default",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "simple",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          11.224972160321835,
+          33.04542328371664,
+          27.11088342345194,
+          26.563132345414413
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "volatility-prices-3d-ramp",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "days",
+        3,
+        3,
+        "simple",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          33.045423283716644,
+          31.749015732775117,
+          31.749015732775117
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "volatility-log-prices-3-observations",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        3,
+        0,
+        "logarithmic",
+        "auto",
+        "true"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          15.795660540177215,
+          24.876755138438465,
+          27.48479784346361,
+          25.927716479909257,
+          25.927716479909257
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "volatility-returns-3-observations",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          22.44994432064365,
+          22.44994432064365,
+          11.224972160321832,
+          11.224972160321812,
+          24.24871130596428
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "volatility-returns-zero-mean",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "auto",
+        "true"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          15.874507866387544,
+          35.4964786985977,
+          35.4964786985977,
+          40.47221268969612,
+          25.099800796022265,
+          42.00000000000001
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "volatility-returns-3d",
+      "source_ref": "upstream-indicators.json",
+      "operation": "volatility",
+      "args": [
+        "days",
+        3,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          22.44994432064365,
+          {
+            "special": "NaN"
+          },
+          11.224972160321823,
+          {
+            "special": "NaN"
+          },
+          33.67491648096548
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-default",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "simple",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-zero-window",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-auto",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26"
+        ],
+        "values": [
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: nan"
+      }
+    },
+    {
+      "id": "singleton-explicit-252-sample",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        252,
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26"
+        ],
+        "values": [
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-explicit-252-zero-mean",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        252,
+        "true"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26"
+        ],
+        "values": [
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26"
+        ],
+        "values": [
+          15.874507866387544
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-explicit",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        5,
+        0,
+        "none",
+        252,
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-auto",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        5,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "ramp-equals-length",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        4,
+        4,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ramp-exceeds-length",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "observations",
+        4,
+        5,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "zero-factor",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "days",
+        3,
+        0,
+        "none",
+        0,
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "explicit-annualization-255",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        255,
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          22.583179581272432,
+          22.583179581272432,
+          31.93743884534263
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "day-boundary-sample",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "days",
+        3,
+        1,
+        "none",
+        252,
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          22.44994432064365,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "day-boundary-rms",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "days",
+        3,
+        1,
+        "none",
+        252,
+        "true"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.05
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-27",
+          "2024-02-29",
+          "2024-03-01"
+        ],
+        "values": [
+          35.4964786985977,
+          47.62352359916263,
+          79.37253933193773
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-1-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-28"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-28"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          22.44994432064365,
+          15.874507866387544
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-2-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-03-01"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-03-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          22.44994432064365,
+          15.874507866387544
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-3-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-29",
+          "2024-03-03"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 3.0"
+      }
+    },
+    {
+      "id": "auto-average-6-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-03",
+          "2024-03-09"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-03",
+          "2024-03-09"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          10.198039027185569,
+          7.211102550927978
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-8-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-05",
+          "2024-03-13"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 8.0"
+      }
+    },
+    {
+      "id": "auto-average-14-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-11",
+          "2024-03-25"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-11",
+          "2024-03-25"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          7.211102550927978,
+          5.0990195135927845
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-17-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-14",
+          "2024-03-31"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 17.0"
+      }
+    },
+    {
+      "id": "auto-average-25-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-22",
+          "2024-04-16"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-03-22",
+          "2024-04-16"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          4.898979485566356,
+          3.4641016151377544
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-35-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-04-01",
+          "2024-05-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 35.0"
+      }
+    },
+    {
+      "id": "auto-average-85-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-05-21",
+          "2024-08-14"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-05-21",
+          "2024-08-14"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.8284271247461903,
+          2.0
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-97-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-06-02",
+          "2024-09-07"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 97.0"
+      }
+    },
+    {
+      "id": "auto-average-360-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2025-02-20",
+          "2026-02-15"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2025-02-20",
+          "2026-02-15"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.4142135623730951,
+          1.0
+        ],
+        "unit": "percent",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "auto-average-386-days",
+      "source_ref": "owner-upstream.json",
+      "operation": "volatility",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "none",
+        "auto",
+        "false"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2025-03-18",
+          "2026-04-08"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 386.0"
+      }
+    }
+  ]
+}
