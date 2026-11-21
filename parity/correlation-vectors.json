@@ -1,0 +1,1090 @@
+{
+  "schema": "gsquant-correlation-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/econometrics.py:correlation",
+    "gs_quant/timeseries/econometrics.py:volatility",
+    "gs_quant/timeseries/econometrics.py:_get_annualization_factor",
+    "gs_quant/timeseries/statistics.py:mean",
+    "gs_quant/timeseries/datetime.py:interpolate",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "correlation-returns-2-observations",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        2,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.02,
+          0.03,
+          -0.02,
+          0.04,
+          0.03,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          -0.9999999999999999,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -1.0,
+          -1.0000000000000004
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "correlation-returns-zero-mean",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        2,
+        0,
+        "none",
+        "none",
+        "true"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02,
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.02,
+          -0.02,
+          0.04,
+          0.01,
+          0.03,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          1.0,
+          -0.44721359549995787,
+          0.12403473458920854,
+          0.8574929257125441,
+          0.7071067811865476,
+          0.5368754921931593
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "correlation-returns-3d",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "days",
+        3,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.02,
+          0.03,
+          -0.02,
+          0.04,
+          0.03,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          -0.9999999999999999,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "correlation-returns-zero-denominator",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        2,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          0.02,
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "correlation-prices-default",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "simple",
+        "simple",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9999999999999998,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "correlation-returns-zero-mean-irregular",
+      "source_ref": "upstream-indicators.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        2,
+        0,
+        "none",
+        "none",
+        "true"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.03,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.01,
+          0.04
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-02-26",
+          "2024-02-27",
+          "2024-02-28",
+          "2024-02-29",
+          "2024-03-04",
+          "2024-03-06"
+        ],
+        "values": [
+          0.02,
+          0.03,
+          -0.02,
+          0.04,
+          0.03,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Cannot infer annualization factor, average distance: 3.0"
+      }
+    },
+    {
+      "id": "prices-mixed",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "logarithmic",
+        "absolute",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          20.0,
+          24.0,
+          22.0,
+          19.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          0.9994382571107351
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "prices-observation-ramp",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        2,
+        "logarithmic",
+        "absolute",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          20.0,
+          24.0,
+          22.0,
+          19.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.0,
+          0.9994382571107351
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "prices-calendar-ramp",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "days",
+        3,
+        2,
+        "logarithmic",
+        "absolute",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          20.0,
+          24.0,
+          22.0,
+          19.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.0,
+          1.0
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns-gap",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.04,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          20.0,
+          24.0,
+          22.0,
+          19.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0000000000000009,
+          -0.3711537444790475,
+          -0.9843241382880923
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns-constant",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          {
+            "special": "NaN"
+          },
+          0.02,
+          0.04,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          0.01,
+          0.01,
+          0.01,
+          0.01,
+          0.01
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_rolling_corr_zero_var_inf",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns-no-common",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "false"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-04"
+        ],
+        "values": [
+          22.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns-zero-mean-no-common",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "true"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-04"
+        ],
+        "values": [
+          22.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "returns-zero-mean-empty-left",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "true"
+      ],
+      "input_x": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          20.0,
+          24.0,
+          22.0,
+          19.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "ratio",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "returns-zero-mean-one-common",
+      "source_ref": "boundaries.json",
+      "operation": "correlation",
+      "args": [
+        "observations",
+        3,
+        0,
+        "none",
+        "none",
+        "true"
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01",
+          "2024-03-02",
+          "2024-03-03",
+          "2024-03-05",
+          "2024-03-06"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          14.0,
+          13.0,
+          16.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2024-03-01"
+        ],
+        "values": [
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "AnnualizationFactor",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    }
+  ]
+}
