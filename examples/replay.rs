@@ -2,16 +2,25 @@ use quantus_math::{
     aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
     business_day_offset, corr_swap_correlation, correlation, cov, day_count_fraction,
     exponential_moving_average, has_feb_29, is_business_day, macd, max_drawdown, moving_average,
-    point_sort_order, prices, relative_strength_index, returns, smoothed_moving_average, sort_risk,
-    std as series_std, subtract_risk, vol_swap_volatility, volatility, BasketParam, Date,
-    DayCountConvention, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, RiskRow,
-    RiskTable, Roll, RollingLinearRegression, Series, Window,
+    point_sort_order, prices, relative_strength_index, returns, run_predefined_backtest,
+    smoothed_moving_average, sort_risk, std as series_std, subtract_risk, vol_swap_volatility,
+    volatility, BasketParam, Date, DayCountConvention, HolidayCalendar, PaymentFrequency,
+    PredefinedBacktestInput, PredefinedOrder, PredefinedOrderKind, RebalFreq, ReturnKind, RiskRow,
+    RiskTable, Roll, RollingLinearRegression, Series, Timestamp, TradeStatus, Window,
 };
+use std::collections::BTreeMap;
 use std::io::{self, Read};
 
 fn parse_date(s: &str) -> Date {
     let parts: Vec<i32> = s.split('-').map(|v| v.parse::<i32>().unwrap()).collect();
     Date::new(parts[0], parts[1] as u8, parts[2] as u8).unwrap()
+}
+
+fn parse_timestamp(s: &str) -> Result<Timestamp, quantus_math::Error> {
+    let (d_str, t_str) = s.split_once('T').expect("timestamp must contain T");
+    let d = parse_date(d_str);
+    let t_parts: Vec<u8> = t_str.split(':').map(|v| v.parse::<u8>().unwrap()).collect();
+    Timestamp::new(d, t_parts[0], t_parts[1], t_parts[2])
 }
 
 fn parse_week_mask(s: &str) -> [bool; 7] {
@@ -215,6 +224,218 @@ fn main() {
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "predefined_backtest" {
+        let start = parse_date(args[1]);
+        let end = parse_date(args[2]);
+        let mask = parse_week_mask(args[3]);
+        let eod_h: u8 = args[4].parse().unwrap();
+        let eod_m: u8 = args[5].parse().unwrap();
+        let eod_s: u8 = args[6].parse().unwrap();
+        let initial_value: f64 = args[7].parse().unwrap();
+        let cash_label = args[8].to_string();
+        let n_holidays: usize = args[9].parse().unwrap();
+        let n_daily: usize = args[10].parse().unwrap();
+        let n_intraday: usize = args[11].parse().unwrap();
+        let n_orders: usize = args[12].parse().unwrap();
+
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let holidays: Vec<Date> = remaining[offset..offset + n_holidays]
+            .iter()
+            .map(|l| parse_date(l.trim()))
+            .collect();
+        offset += n_holidays;
+
+        let cal = match HolidayCalendar::try_new(mask, holidays) {
+            Ok(c) => c,
+            Err(err) => {
+                println!("ERROR {err:?}");
+                return;
+            }
+        };
+
+        let mut daily_prices = BTreeMap::new();
+        for _ in 0..n_daily {
+            let hdr: Vec<_> = remaining[offset].split_whitespace().collect();
+            assert_eq!(hdr[0], "DAILY");
+            let inst = hdr[1].to_string();
+            let nrows: usize = hdr[2].parse().unwrap();
+            offset += 1;
+            let s = parse_rows(remaining[offset..offset + nrows].iter().copied());
+            offset += nrows;
+            daily_prices.insert(inst, s);
+        }
+
+        let mut intraday_prices = BTreeMap::new();
+        for _ in 0..n_intraday {
+            let hdr: Vec<_> = remaining[offset].split_whitespace().collect();
+            assert_eq!(hdr[0], "INTRADAY");
+            let inst = hdr[1].to_string();
+            let nrows: usize = hdr[2].parse().unwrap();
+            offset += 1;
+            let mut ticks = Vec::with_capacity(nrows);
+            for &row in &remaining[offset..offset + nrows] {
+                let mut parts = row.split_whitespace();
+                let ts = match parse_timestamp(parts.next().unwrap()) {
+                    Ok(t) => t,
+                    Err(err) => {
+                        println!("ERROR {err:?}");
+                        return;
+                    }
+                };
+                let px: f64 = parts.next().unwrap().parse().unwrap();
+                ticks.push((ts, px));
+            }
+            offset += nrows;
+            intraday_prices.insert(inst, ticks);
+        }
+
+        let mut orders = Vec::with_capacity(n_orders);
+        for _ in 0..n_orders {
+            let fields: Vec<_> = remaining[offset].split('\t').collect();
+            offset += 1;
+            let kind_tag = fields[0];
+            let instrument = fields[1].to_string();
+            let quantity: f64 = fields[2].parse().unwrap();
+            let generation_time = match parse_timestamp(fields[3]) {
+                Ok(t) => t,
+                Err(err) => {
+                    println!("ERROR {err:?}");
+                    return;
+                }
+            };
+            let (kind, source) = match kind_tag {
+                "MOC" => (
+                    PredefinedOrderKind::MarketOnClose {
+                        execution_date: parse_date(fields[4]),
+                    },
+                    fields[5].to_string(),
+                ),
+                "TWAP" => {
+                    let s_ts = match parse_timestamp(fields[4]) {
+                        Ok(t) => t,
+                        Err(err) => {
+                            println!("ERROR {err:?}");
+                            return;
+                        }
+                    };
+                    let e_ts = match parse_timestamp(fields[5]) {
+                        Ok(t) => t,
+                        Err(err) => {
+                            println!("ERROR {err:?}");
+                            return;
+                        }
+                    };
+                    (
+                        PredefinedOrderKind::Twap {
+                            start: s_ts,
+                            end: e_ts,
+                        },
+                        fields[6].to_string(),
+                    )
+                }
+                "AT_MARKET" => {
+                    let ex_ts = match parse_timestamp(fields[4]) {
+                        Ok(t) => t,
+                        Err(err) => {
+                            println!("ERROR {err:?}");
+                            return;
+                        }
+                    };
+                    (
+                        PredefinedOrderKind::AtMarket {
+                            execution_time: ex_ts,
+                        },
+                        fields[5].to_string(),
+                    )
+                }
+                "COST" => {
+                    let ex_ts = match parse_timestamp(fields[4]) {
+                        Ok(t) => t,
+                        Err(err) => {
+                            println!("ERROR {err:?}");
+                            return;
+                        }
+                    };
+                    (
+                        PredefinedOrderKind::Cost {
+                            execution_time: ex_ts,
+                        },
+                        fields[5].to_string(),
+                    )
+                }
+                _ => panic!("unknown predefined order kind: {kind_tag}"),
+            };
+            orders.push(PredefinedOrder {
+                instrument,
+                quantity,
+                generation_time,
+                kind,
+                source,
+            });
+        }
+
+        let input = PredefinedBacktestInput {
+            start,
+            end,
+            calendar: &cal,
+            initial_value,
+            eod_valuation_time: (eod_h, eod_m, eod_s),
+            cash_label,
+            daily_prices,
+            intraday_prices,
+            orders,
+        };
+
+        match run_predefined_backtest(&input) {
+            Ok(res) => {
+                println!("PERFORMANCE {}", res.performance.dates().len());
+                for (d, v) in res.performance.dates().iter().zip(res.performance.values()) {
+                    println!("{d} {v:?}");
+                }
+                println!("SNAPSHOTS {}", res.snapshots.len());
+                for snap in &res.snapshots {
+                    println!("SNAP {} {}", snap.date, snap.holdings.len());
+                    for (inst, &units) in &snap.holdings {
+                        let w = snap.weights[inst];
+                        println!("{inst}\t{units:?}\t{w:?}");
+                    }
+                }
+                println!("FILLS {}", res.fills.len());
+                for f in &res.fills {
+                    println!(
+                        "{}\t{:?}\t{:?}\t{}\t{}",
+                        f.instrument, f.quantity, f.filled_price, f.execution_time, f.source
+                    );
+                }
+                println!("LEDGER {}", res.trade_ledger.len());
+                for e in &res.trade_ledger {
+                    let close_ts = match e.close_time {
+                        Some(t) => t.to_string(),
+                        None => "-".to_string(),
+                    };
+                    let close_px = match e.close_price {
+                        Some(p) => format!("{p:?}"),
+                        None => "-".to_string(),
+                    };
+                    let status = match e.status {
+                        TradeStatus::Open => "open",
+                        TradeStatus::Closed => "closed",
+                    };
+                    let pnl = match e.trade_pnl {
+                        Some(p) => format!("{p:?}"),
+                        None => "-".to_string(),
+                    };
+                    println!(
+                        "{}\t{}\t{}\t{:?}\t{}\t{}\t{}",
+                        e.instrument, e.open_time, close_ts, e.open_price, close_px, status, pnl
+                    );
+                }
+            }
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
     if args[0] == "point_sort_order" {
         let ref_date = parse_date(args[1]);
         let point = lines.next().unwrap_or("");

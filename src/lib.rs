@@ -1,12 +1,13 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility (`volatility`, `vol_swap_volatility`), correlation (`correlation`, `corr_swap_correlation`), beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), and offline bucketed risk aggregation, subtraction, sorting, and market-point sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`).
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility (`volatility`, `vol_swap_volatility`), correlation (`correlation`, `corr_swap_correlation`), beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), offline event-driven predefined-asset backtesting (`Timestamp`, `PredefinedOrderKind`, `PredefinedOrder`, `SimulatedFill`, `TradeStatus`, `TradeLedgerEntry`, `DailyPositionSnapshot`, `PredefinedBacktestResult`, `PredefinedBacktestInput`, `run_predefined_backtest`), and offline bucketed risk aggregation, subtraction, sorting, and market-point sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`).
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,backtesting,helper}.py,
-//! gs_quant/datetime/{date,point}.py (with explicit-holiday `np.busdaycalendar` semantics), and
-//! gs_quant/risk/core.py at 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and
+//! gs_quant/datetime/{date,point}.py (with explicit-holiday `np.busdaycalendar` semantics),
+//! gs_quant/backtests/{predefined_asset_engine,execution_engine,order,backtest_objects,data_handler,data_sources}.py,
+//! and gs_quant/risk/core.py at 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and
 //! modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
 //! Licensed under Apache-2.0; see LICENSE and both NOTICE files.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
 const MIN_ORDINAL: i64 = 1; // 0001-01-01 (Monday)
@@ -3966,4 +3967,584 @@ pub fn subtract_risk(
     };
 
     aggregate_risk(&[left.clone(), right_negated], None, ref_date)
+}
+
+/// A UTC wall-clock timestamp `(date, hour, minute, second)` for offline event-driven simulation.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Timestamp {
+    date: Date,
+    hour: u8,
+    minute: u8,
+    second: u8,
+}
+
+impl Timestamp {
+    /// Validate `hour < 24`, `minute < 60`, `second < 60`.
+    pub fn new(date: Date, hour: u8, minute: u8, second: u8) -> Result<Self, Error> {
+        if hour >= 24 || minute >= 60 || second >= 60 {
+            return Err(Error::Date);
+        }
+        Ok(Self {
+            date,
+            hour,
+            minute,
+            second,
+        })
+    }
+
+    /// Calendar date component.
+    pub fn date(&self) -> Date {
+        self.date
+    }
+
+    /// Hour of day (`0..=23`).
+    pub fn hour(&self) -> u8 {
+        self.hour
+    }
+
+    /// Minute of hour (`0..=59`).
+    pub fn minute(&self) -> u8 {
+        self.minute
+    }
+
+    /// Second of minute (`0..=59`).
+    pub fn second(&self) -> u8 {
+        self.second
+    }
+}
+
+impl fmt::Display for Timestamp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}",
+            self.date.year, self.date.month, self.date.day, self.hour, self.minute, self.second
+        )
+    }
+}
+
+/// Execution style for a simulated [`PredefinedOrder`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PredefinedOrderKind {
+    /// Fill at `23:00:00` on `execution_date` using the daily close price.
+    MarketOnClose { execution_date: Date },
+    /// Fill at `end` using the arithmetic mean of intraday prices in the half-open interval `(start, end]`.
+    Twap { start: Timestamp, end: Timestamp },
+    /// Fill at `execution_time` using the exact intraday price at `execution_time`.
+    AtMarket { execution_time: Timestamp },
+    /// Cash-only cost/fee adjustment executed at `execution_time` with fill price `0.0` (adds `quantity` to cash).
+    Cost { execution_time: Timestamp },
+}
+
+/// A simulated order submitted into [`run_predefined_backtest`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct PredefinedOrder {
+    pub instrument: String,
+    pub quantity: f64,
+    pub generation_time: Timestamp,
+    pub kind: PredefinedOrderKind,
+    pub source: String,
+}
+
+/// Recorded execution fill in chronological event order.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SimulatedFill {
+    pub instrument: String,
+    pub quantity: f64,
+    pub filled_price: f64,
+    pub execution_time: Timestamp,
+    pub source: String,
+}
+
+/// Status of an entry in the FIFO trade ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TradeStatus {
+    Open,
+    Closed,
+}
+
+/// One FIFO-matched entry in [`PredefinedBacktestResult::trade_ledger`], matching upstream
+/// `PredefinedAssetBacktest.trade_ledger()`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TradeLedgerEntry {
+    pub instrument: String,
+    pub open_time: Timestamp,
+    pub close_time: Option<Timestamp>,
+    pub open_price: f64,
+    pub close_price: Option<f64>,
+    pub status: TradeStatus,
+    pub trade_pnl: Option<f64>,
+}
+
+/// End-of-day portfolio snapshot (only positions with `|units| > 1e-12` are included).
+#[derive(Debug, Clone, PartialEq)]
+pub struct DailyPositionSnapshot {
+    pub date: Date,
+    pub holdings: BTreeMap<String, f64>,
+    pub weights: BTreeMap<String, f64>,
+}
+
+/// Output of [`run_predefined_backtest`]: NAV `performance` series, EOD position `snapshots`,
+/// chronological `fills`, and FIFO `trade_ledger`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PredefinedBacktestResult {
+    pub performance: Series,
+    pub snapshots: Vec<DailyPositionSnapshot>,
+    pub fills: Vec<SimulatedFill>,
+    pub trade_ledger: Vec<TradeLedgerEntry>,
+}
+
+/// Offline market data and schedule configuration for [`run_predefined_backtest`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct PredefinedBacktestInput<'a> {
+    pub start: Date,
+    pub end: Date,
+    pub calendar: &'a HolidayCalendar,
+    pub initial_value: f64,
+    pub eod_valuation_time: (u8, u8, u8),
+    pub cash_label: String,
+    pub daily_prices: BTreeMap<String, Series>,
+    pub intraday_prices: BTreeMap<String, Vec<(Timestamp, f64)>>,
+    pub orders: Vec<PredefinedOrder>,
+}
+
+fn order_execution_end_time(kind: PredefinedOrderKind) -> Result<Timestamp, Error> {
+    match kind {
+        PredefinedOrderKind::MarketOnClose { execution_date } => {
+            Timestamp::new(execution_date, 23, 0, 0)
+        }
+        PredefinedOrderKind::Twap { end, .. } => Ok(end),
+        PredefinedOrderKind::AtMarket { execution_time }
+        | PredefinedOrderKind::Cost { execution_time } => Ok(execution_time),
+    }
+}
+
+fn lookup_daily_price(
+    daily_prices: &BTreeMap<String, Series>,
+    instrument: &str,
+    date: Date,
+) -> Result<f64, Error> {
+    let series = daily_prices.get(instrument).ok_or(Error::Length)?;
+    let idx = series
+        .dates()
+        .binary_search(&date)
+        .map_err(|_| Error::Length)?;
+    let px = series.values()[idx];
+    if px.is_nan() {
+        return Err(Error::Length);
+    }
+    Ok(px)
+}
+
+fn resolve_execution_price(
+    instrument: &str,
+    kind: PredefinedOrderKind,
+    daily_prices: &BTreeMap<String, Series>,
+    intraday_prices: &BTreeMap<String, Vec<(Timestamp, f64)>>,
+) -> Result<f64, Error> {
+    match kind {
+        PredefinedOrderKind::MarketOnClose { execution_date } => {
+            lookup_daily_price(daily_prices, instrument, execution_date)
+        }
+        PredefinedOrderKind::Twap { start, end } => {
+            let ticks = intraday_prices.get(instrument).ok_or(Error::Length)?;
+            let lo = ticks.partition_point(|&(ts, _)| ts <= start);
+            let hi = ticks.partition_point(|&(ts, _)| ts <= end);
+            if lo >= hi {
+                return Err(Error::Length);
+            }
+            let mut sum = 0.0_f64;
+            for &(_, px) in &ticks[lo..hi] {
+                sum += px;
+            }
+            let mean = sum / ((hi - lo) as f64);
+            if mean.is_nan() {
+                return Err(Error::Length);
+            }
+            Ok(mean)
+        }
+        PredefinedOrderKind::AtMarket { execution_time } => {
+            let ticks = intraday_prices.get(instrument).ok_or(Error::Length)?;
+            let idx = ticks
+                .binary_search_by_key(&execution_time, |&(ts, _)| ts)
+                .map_err(|_| Error::Length)?;
+            let px = ticks[idx].1;
+            if px.is_nan() {
+                return Err(Error::Length);
+            }
+            Ok(px)
+        }
+        PredefinedOrderKind::Cost { .. } => Ok(0.0),
+    }
+}
+
+/// Run an offline event-driven predefined-asset backtest over explicit market data and orders.
+///
+/// Mirrors upstream `gs_quant/backtests/{predefined_asset_engine,execution_engine,order,backtest_objects,data_handler,data_sources}.py`
+/// at commit `70220e300524d54bd273be0f4c485d53b3780482`:
+///
+/// - Validates `eod_valuation_time` (`h < 24 && m < 60 && s < 60`), `start <= end`, and strictly
+///   increasing timestamps in every `intraday_prices` entry.
+/// - Adjusts `start` and `end` backward onto `calendar` (`business_day_offset(..., 0, Roll::Backward, calendar)`).
+///   Records initial NAV `(adjusted_start, initial_value)` and cash holding `(cash_label, initial_value)`.
+/// - Builds a sorted, deduplicated UTC wall-clock timer over all active business days
+///   `d in (adjusted_start, adjusted_end]` containing each EOD valuation timestamp and every order's
+///   `generation_time` falling on an active business day.
+/// - At each timestamp `state`, executes the exact FIFO `VecDeque` event loop:
+///   1. `ping(state)` pops pending orders (stably sorted by `execution_end_time()`) with
+///      `execution_end_time() <= state`, resolves their fill price (`MarketOnClose` daily close,
+///      `Twap` arithmetic mean over half-open `(start, end]`, `AtMarket` exact intraday tick,
+///      `Cost` `0.0`), and enqueues `Fill` events.
+///   2. Enqueues a `Market` event (submitting orders whose `generation_time == state` in input order).
+///   3. If `state` time equals `eod_valuation_time`, enqueues a `Valuation` event (`mark_to_market`
+///      with `epsilon = 1e-12` zero-position pruning).
+///   4. Drains all queued events in FIFO order (`Fill` -> `Market` -> `Valuation` -> newly queued `Order`).
+/// - Builds a FIFO `trade_ledger` over executed orders grouped by first-seen instrument (`Cost`
+///   orders use `cash_label`), pairing `longs` (`qty >= 0.0`) with `shorts` (`qty < 0.0`) so that
+///   the earlier `execution_end_time()` is `open`, the later is `close`, and
+///   `trade_pnl = Some((close_price - open_price) * sign(open_qty))` (exact `np.sign`).
+///
+/// # Documented Parity Boundaries
+/// - Offline deterministic subset of `PredefinedAssetEngine`: requires an explicit
+///   [`HolidayCalendar`], daily/intraday price tables, and explicit [`PredefinedOrder`] events;
+///   remote `GsDataSource`, `GsCalendar`, `PricingContext`, `GenericEngine`, and IANA timezone
+///   conversions are out of scope (all [`Timestamp`] values are UTC wall-clock).
+/// - Missing or `NaN` execution/valuation prices return typed `Err(Error::Length)` (vs upstream
+///   `KeyError`/`RuntimeError`), invalid date/time ranges return `Err(Error::Date)`, and
+///   unsorted/duplicate intraday timestamps return `Err(Error::UnsortedOrDuplicate)`.
+///
+/// # Example
+/// ```
+/// use std::collections::BTreeMap;
+/// use quantus_math::{
+///     run_predefined_backtest, Date, HolidayCalendar, PredefinedBacktestInput, PredefinedOrder,
+///     PredefinedOrderKind, Series, Timestamp, TradeStatus,
+/// };
+///
+/// let start = Date::new(2021, 1, 4).unwrap();
+/// let mid = Date::new(2021, 1, 5).unwrap();
+/// let end = Date::new(2021, 1, 6).unwrap();
+/// let cal = HolidayCalendar::weekdays(vec![]);
+///
+/// let mut daily_prices = BTreeMap::new();
+/// daily_prices.insert(
+///     "TestRic".into(),
+///     Series::try_new(vec![start, mid, end], vec![1.0, 1.5, 2.0]).unwrap(),
+/// );
+/// let input = PredefinedBacktestInput {
+///     start,
+///     end,
+///     calendar: &cal,
+///     initial_value: 100.0,
+///     eod_valuation_time: (23, 0, 0),
+///     cash_label: "USD".into(),
+///     daily_prices,
+///     intraday_prices: BTreeMap::new(),
+///     orders: vec![PredefinedOrder {
+///         instrument: "TestRic".into(),
+///         quantity: 1.0,
+///         generation_time: Timestamp::new(mid, 10, 0, 0).unwrap(),
+///         kind: PredefinedOrderKind::MarketOnClose { execution_date: mid },
+///         source: "Test".into(),
+///     }],
+/// };
+///
+/// let res = run_predefined_backtest(&input).unwrap();
+/// assert_eq!(res.performance.dates(), &[start, mid, end]);
+/// assert_eq!(res.performance.values(), &[100.0, 100.0, 100.5]);
+/// assert_eq!(res.snapshots[0].holdings["USD"], 98.5);
+/// assert_eq!(res.snapshots[0].holdings["TestRic"], 1.0);
+/// assert_eq!(res.trade_ledger.len(), 1);
+/// assert_eq!(res.trade_ledger[0].status, TradeStatus::Open);
+/// ```
+pub fn run_predefined_backtest(
+    input: &PredefinedBacktestInput<'_>,
+) -> Result<PredefinedBacktestResult, Error> {
+    let (eod_h, eod_m, eod_s) = input.eod_valuation_time;
+    if eod_h >= 24 || eod_m >= 60 || eod_s >= 60 {
+        return Err(Error::Date);
+    }
+    if input.start > input.end {
+        return Err(Error::Date);
+    }
+    for ticks in input.intraday_prices.values() {
+        if ticks.windows(2).any(|w| w[0].0 >= w[1].0) {
+            return Err(Error::UnsortedOrDuplicate);
+        }
+    }
+
+    let adjusted_start = business_day_offset(input.start, 0, Roll::Backward, input.calendar)?;
+    let adjusted_end = business_day_offset(input.end, 0, Roll::Backward, input.calendar)?;
+    if adjusted_start > adjusted_end {
+        return Err(Error::Date);
+    }
+
+    let mut active_days = Vec::new();
+    let mut ord = adjusted_start.ordinal() + 1;
+    let end_ord = adjusted_end.ordinal();
+    while ord <= end_ord {
+        let d = Date::from_ordinal(ord)?;
+        if is_business_day(d, input.calendar) {
+            active_days.push(d);
+        }
+        ord += 1;
+    }
+
+    let mut timer = Vec::with_capacity(active_days.len() + input.orders.len());
+    for &d in &active_days {
+        timer.push(Timestamp::new(d, eod_h, eod_m, eod_s)?);
+    }
+    for order in &input.orders {
+        if active_days
+            .binary_search(&order.generation_time.date())
+            .is_ok()
+        {
+            timer.push(order.generation_time);
+        }
+    }
+    timer.sort_unstable();
+    timer.dedup();
+
+    struct PendingOrder {
+        order_idx: usize,
+        end_time: Timestamp,
+    }
+    struct RecordedOrder {
+        instrument: String,
+        quantity: f64,
+        end_time: Timestamp,
+        source: String,
+        kind: PredefinedOrderKind,
+        executed_price: Option<f64>,
+    }
+    enum SimEvent {
+        Fill {
+            order_idx: usize,
+            filled_price: f64,
+            end_time: Timestamp,
+        },
+        Market,
+        Order {
+            order_idx: usize,
+            end_time: Timestamp,
+        },
+        Valuation,
+    }
+
+    let mut perf_dates = Vec::with_capacity(active_days.len() + 1);
+    let mut perf_values = Vec::with_capacity(active_days.len() + 1);
+    perf_dates.push(adjusted_start);
+    perf_values.push(input.initial_value);
+
+    let mut holdings: BTreeMap<String, f64> = BTreeMap::new();
+    holdings.insert(input.cash_label.clone(), input.initial_value);
+
+    let mut snapshots = Vec::with_capacity(active_days.len());
+    let mut fills = Vec::new();
+    let mut pending: VecDeque<PendingOrder> = VecDeque::new();
+    let mut recorded_orders: Vec<RecordedOrder> = Vec::new();
+    let mut events: VecDeque<SimEvent> = VecDeque::new();
+
+    const EPSILON: f64 = 1e-12;
+
+    for state in timer {
+        // Step 1: execution_engine.ping(state)
+        while let Some(front) = pending.front() {
+            if front.end_time > state {
+                break;
+            }
+            let p = pending.pop_front().expect("front exists");
+            let rec = &recorded_orders[p.order_idx];
+            let filled_price = resolve_execution_price(
+                &rec.instrument,
+                rec.kind,
+                &input.daily_prices,
+                &input.intraday_prices,
+            )?;
+            events.push_back(SimEvent::Fill {
+                order_idx: p.order_idx,
+                filled_price,
+                end_time: p.end_time,
+            });
+        }
+
+        // Step 2: Market event
+        events.push_back(SimEvent::Market);
+
+        // Step 3: Valuation event at EOD valuation time
+        if (state.hour(), state.minute(), state.second()) == input.eod_valuation_time {
+            events.push_back(SimEvent::Valuation);
+        }
+
+        // Step 4: Drain FIFO event queue
+        while let Some(ev) = events.pop_front() {
+            match ev {
+                SimEvent::Fill {
+                    order_idx,
+                    filled_price,
+                    end_time,
+                } => {
+                    let rec = &mut recorded_orders[order_idx];
+                    rec.executed_price = Some(filled_price);
+                    match rec.kind {
+                        PredefinedOrderKind::Cost { .. } => {
+                            *holdings.entry(input.cash_label.clone()).or_insert(0.0) +=
+                                rec.quantity;
+                        }
+                        _ => {
+                            *holdings.entry(input.cash_label.clone()).or_insert(0.0) -=
+                                filled_price * rec.quantity;
+                            *holdings.entry(rec.instrument.clone()).or_insert(0.0) += rec.quantity;
+                        }
+                    }
+                    fills.push(SimulatedFill {
+                        instrument: rec.instrument.clone(),
+                        quantity: rec.quantity,
+                        filled_price,
+                        execution_time: end_time,
+                        source: rec.source.clone(),
+                    });
+                }
+                SimEvent::Market => {
+                    for order in &input.orders {
+                        if order.generation_time == state {
+                            let end_time = order_execution_end_time(order.kind)?;
+                            let instrument = match order.kind {
+                                PredefinedOrderKind::Cost { .. } => input.cash_label.clone(),
+                                _ => order.instrument.clone(),
+                            };
+                            let order_idx = recorded_orders.len();
+                            recorded_orders.push(RecordedOrder {
+                                instrument,
+                                quantity: order.quantity,
+                                end_time,
+                                source: order.source.clone(),
+                                kind: order.kind,
+                                executed_price: None,
+                            });
+                            events.push_back(SimEvent::Order {
+                                order_idx,
+                                end_time,
+                            });
+                        }
+                    }
+                }
+                SimEvent::Order {
+                    order_idx,
+                    end_time,
+                } => {
+                    pending.push_back(PendingOrder {
+                        order_idx,
+                        end_time,
+                    });
+                    pending.make_contiguous().sort_by_key(|p| p.end_time);
+                }
+                SimEvent::Valuation => {
+                    let mut mtm = 0.0_f64;
+                    let mut snap_h = BTreeMap::new();
+                    let mut snap_w = BTreeMap::new();
+                    for (inst, &units) in &holdings {
+                        if units.abs() > EPSILON {
+                            let fixing = if inst == &input.cash_label {
+                                1.0
+                            } else {
+                                lookup_daily_price(&input.daily_prices, inst, state.date())?
+                            };
+                            let notional = fixing * units;
+                            snap_h.insert(inst.clone(), units);
+                            snap_w.insert(inst.clone(), notional);
+                            mtm += notional;
+                        }
+                    }
+                    for w in snap_w.values_mut() {
+                        *w /= mtm;
+                    }
+                    perf_dates.push(state.date());
+                    perf_values.push(mtm);
+                    snapshots.push(DailyPositionSnapshot {
+                        date: state.date(),
+                        holdings: snap_h,
+                        weights: snap_w,
+                    });
+                }
+            }
+        }
+    }
+
+    // Step 5: FIFO trade_ledger over executed orders, preserving first-seen instrument order
+    let mut inst_index: BTreeMap<String, usize> = BTreeMap::new();
+    let mut inst_queues: Vec<(String, VecDeque<usize>, VecDeque<usize>)> = Vec::new();
+    for (idx, rec) in recorded_orders.iter().enumerate() {
+        if rec.executed_price.is_none() {
+            continue;
+        }
+        let q_idx = match inst_index.get(&rec.instrument) {
+            Some(&i) => i,
+            None => {
+                let i = inst_queues.len();
+                inst_index.insert(rec.instrument.clone(), i);
+                inst_queues.push((rec.instrument.clone(), VecDeque::new(), VecDeque::new()));
+                i
+            }
+        };
+        if rec.quantity < 0.0 {
+            inst_queues[q_idx].2.push_back(idx);
+        } else {
+            inst_queues[q_idx].1.push_back(idx);
+        }
+    }
+
+    let mut trade_ledger = Vec::new();
+    for (instrument, mut longs, mut shorts) in inst_queues {
+        while let (Some(l_idx), Some(s_idx)) = (longs.front().copied(), shorts.front().copied()) {
+            longs.pop_front();
+            shorts.pop_front();
+            let l = &recorded_orders[l_idx];
+            let s = &recorded_orders[s_idx];
+            let (open, close) = if l.end_time < s.end_time {
+                (l, s)
+            } else {
+                (s, l)
+            };
+            let open_price = open.executed_price.expect("executed order");
+            let close_price = close.executed_price.expect("executed order");
+            let sign = if open.quantity > 0.0 {
+                1.0
+            } else if open.quantity < 0.0 {
+                -1.0
+            } else {
+                0.0
+            };
+            trade_ledger.push(TradeLedgerEntry {
+                instrument: instrument.clone(),
+                open_time: open.end_time,
+                close_time: Some(close.end_time),
+                open_price,
+                close_price: Some(close_price),
+                status: TradeStatus::Closed,
+                trade_pnl: Some((close_price - open_price) * sign),
+            });
+        }
+        while let Some(open_idx) = longs.pop_front().or_else(|| shorts.pop_front()) {
+            let open = &recorded_orders[open_idx];
+            let open_price = open.executed_price.expect("executed order");
+            trade_ledger.push(TradeLedgerEntry {
+                instrument: instrument.clone(),
+                open_time: open.end_time,
+                close_time: None,
+                open_price,
+                close_price: None,
+                status: TradeStatus::Open,
+                trade_pnl: None,
+            });
+        }
+    }
+
+    let performance = Series::try_new(perf_dates, perf_values)?;
+    Ok(PredefinedBacktestResult {
+        performance,
+        snapshots,
+        fills,
+        trade_ledger,
+    })
 }

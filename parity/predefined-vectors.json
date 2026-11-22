@@ -1,0 +1,2759 @@
+{
+  "schema": "gsquant-predefined-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "cases": [
+    {
+      "id": "upstream-moc-basic",
+      "source_ref": "test_backtest_predefined.py::test_backtest_predefined[MOC]",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "TestRic": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            1.0,
+            1.5,
+            2.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "TestRic",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "Test",
+          "execution_date": "2021-01-05"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            100.0,
+            100.5
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "TestRic": 1.0,
+              "USD": 98.5
+            },
+            "weights": {
+              "TestRic": 0.015,
+              "USD": 0.985
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "TestRic": 1.0,
+              "USD": 98.5
+            },
+            "weights": {
+              "TestRic": 0.01990049751243781,
+              "USD": 0.9800995024875622
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "TestRic",
+            "quantity": 1.0,
+            "filled_price": 1.5,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "Test"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "TestRic",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": null,
+            "open_price": 1.5,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "upstream-twap-intraday-roundtrip",
+      "source_ref": "test_backtest_predefined.py::test_backtest_predefined[TWAP]",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "TestRic": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            1.0,
+            1.5,
+            2.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "TestRic": [
+          [
+            "2021-01-05T10:30:00",
+            16.0
+          ],
+          [
+            "2021-01-05T14:30:00",
+            25.0
+          ],
+          [
+            "2021-01-06T10:30:00",
+            30.0
+          ],
+          [
+            "2021-01-06T14:30:00",
+            40.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "TWAP",
+          "instrument": "TestRic",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T09:30:00",
+          "source": "FuturesExample",
+          "start": "2021-01-05T10:00:00",
+          "end": "2021-01-05T10:30:00"
+        },
+        {
+          "kind": "TWAP",
+          "instrument": "TestRic",
+          "quantity": -1.0,
+          "generation_time": "2021-01-05T09:30:00",
+          "source": "FuturesExample",
+          "start": "2021-01-05T14:00:00",
+          "end": "2021-01-05T14:30:00"
+        },
+        {
+          "kind": "TWAP",
+          "instrument": "TestRic",
+          "quantity": 1.0,
+          "generation_time": "2021-01-06T09:30:00",
+          "source": "FuturesExample",
+          "start": "2021-01-06T10:00:00",
+          "end": "2021-01-06T10:30:00"
+        },
+        {
+          "kind": "TWAP",
+          "instrument": "TestRic",
+          "quantity": -1.0,
+          "generation_time": "2021-01-06T09:30:00",
+          "source": "FuturesExample",
+          "start": "2021-01-06T14:00:00",
+          "end": "2021-01-06T14:30:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            109.0,
+            119.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "USD": 109.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "USD": 119.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "TestRic",
+            "quantity": 1.0,
+            "filled_price": 16.0,
+            "execution_time": "2021-01-05T10:30:00",
+            "source": "FuturesExample"
+          },
+          {
+            "instrument": "TestRic",
+            "quantity": -1.0,
+            "filled_price": 25.0,
+            "execution_time": "2021-01-05T14:30:00",
+            "source": "FuturesExample"
+          },
+          {
+            "instrument": "TestRic",
+            "quantity": 1.0,
+            "filled_price": 30.0,
+            "execution_time": "2021-01-06T10:30:00",
+            "source": "FuturesExample"
+          },
+          {
+            "instrument": "TestRic",
+            "quantity": -1.0,
+            "filled_price": 40.0,
+            "execution_time": "2021-01-06T14:30:00",
+            "source": "FuturesExample"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "TestRic",
+            "open_time": "2021-01-05T10:30:00",
+            "close_time": "2021-01-05T14:30:00",
+            "open_price": 16.0,
+            "close_price": 25.0,
+            "status": "closed",
+            "trade_pnl": 9.0
+          },
+          {
+            "instrument": "TestRic",
+            "open_time": "2021-01-06T10:30:00",
+            "close_time": "2021-01-06T14:30:00",
+            "open_price": 30.0,
+            "close_price": 40.0,
+            "status": "closed",
+            "trade_pnl": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "twap-half-open-multi-tick",
+      "source_ref": "synthetic::twap-half-open",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "FutA": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            14.0,
+            16.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "FutA": [
+          [
+            "2021-01-05T10:00:00",
+            999.0
+          ],
+          [
+            "2021-01-05T10:10:00",
+            10.0
+          ],
+          [
+            "2021-01-05T10:20:00",
+            12.0
+          ],
+          [
+            "2021-01-05T10:30:00",
+            14.0
+          ],
+          [
+            "2021-01-05T10:31:00",
+            888.0
+          ],
+          [
+            "2021-01-06T14:00:00",
+            777.0
+          ],
+          [
+            "2021-01-06T14:15:00",
+            15.0
+          ],
+          [
+            "2021-01-06T14:30:00",
+            19.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "TWAP",
+          "instrument": "FutA",
+          "quantity": 2.0,
+          "generation_time": "2021-01-05T09:30:00",
+          "source": "TwapEntry",
+          "start": "2021-01-05T10:00:00",
+          "end": "2021-01-05T10:30:00"
+        },
+        {
+          "kind": "TWAP",
+          "instrument": "FutA",
+          "quantity": -2.0,
+          "generation_time": "2021-01-06T09:30:00",
+          "source": "TwapExit",
+          "start": "2021-01-06T14:00:00",
+          "end": "2021-01-06T14:30:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            104.0,
+            110.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "FutA": 2.0,
+              "USD": 76.0
+            },
+            "weights": {
+              "FutA": 0.2692307692307692,
+              "USD": 0.7307692307692307
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "USD": 110.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "FutA",
+            "quantity": 2.0,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-05T10:30:00",
+            "source": "TwapEntry"
+          },
+          {
+            "instrument": "FutA",
+            "quantity": -2.0,
+            "filled_price": 17.0,
+            "execution_time": "2021-01-06T14:30:00",
+            "source": "TwapExit"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "FutA",
+            "open_time": "2021-01-05T10:30:00",
+            "close_time": "2021-01-06T14:30:00",
+            "open_price": 12.0,
+            "close_price": 17.0,
+            "status": "closed",
+            "trade_pnl": 5.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "at-market-intraday-roundtrip",
+      "source_ref": "synthetic::at-market-intraday",
+      "start": "2021-01-04",
+      "end": "2021-01-05",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {
+        "SpotX": [
+          [
+            "2021-01-05T10:15:00",
+            20.5
+          ],
+          [
+            "2021-01-05T15:45:00",
+            23.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "SpotX",
+          "quantity": 4.0,
+          "generation_time": "2021-01-05T10:15:00",
+          "source": "MktOpen",
+          "execution_time": "2021-01-05T10:15:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "SpotX",
+          "quantity": -4.0,
+          "generation_time": "2021-01-05T15:45:00",
+          "source": "MktClose",
+          "execution_time": "2021-01-05T15:45:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05"
+          ],
+          "values": [
+            100.0,
+            110.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "USD": 110.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "SpotX",
+            "quantity": 4.0,
+            "filled_price": 20.5,
+            "execution_time": "2021-01-05T10:15:00",
+            "source": "MktOpen"
+          },
+          {
+            "instrument": "SpotX",
+            "quantity": -4.0,
+            "filled_price": 23.0,
+            "execution_time": "2021-01-05T15:45:00",
+            "source": "MktClose"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "SpotX",
+            "open_time": "2021-01-05T10:15:00",
+            "close_time": "2021-01-05T15:45:00",
+            "open_price": 20.5,
+            "close_price": 23.0,
+            "status": "closed",
+            "trade_pnl": 2.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "at-market-multi-day-hold",
+      "source_ref": "synthetic::at-market-multiday",
+      "start": "2021-01-04",
+      "end": "2021-01-07",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "SpotX": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            49.0,
+            52.0,
+            48.0,
+            55.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "SpotX": [
+          [
+            "2021-01-05T09:45:00",
+            50.0
+          ],
+          [
+            "2021-01-07T11:00:00",
+            54.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "SpotX",
+          "quantity": 1.5,
+          "generation_time": "2021-01-05T09:45:00",
+          "source": "Enter",
+          "execution_time": "2021-01-05T09:45:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "SpotX",
+          "quantity": -1.5,
+          "generation_time": "2021-01-07T11:00:00",
+          "source": "Exit",
+          "execution_time": "2021-01-07T11:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            100.0,
+            103.0,
+            97.0,
+            106.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "SpotX": 1.5,
+              "USD": 25.0
+            },
+            "weights": {
+              "SpotX": 0.7572815533980582,
+              "USD": 0.24271844660194175
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "SpotX": 1.5,
+              "USD": 25.0
+            },
+            "weights": {
+              "SpotX": 0.7422680412371134,
+              "USD": 0.25773195876288657
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "USD": 106.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "SpotX",
+            "quantity": 1.5,
+            "filled_price": 50.0,
+            "execution_time": "2021-01-05T09:45:00",
+            "source": "Enter"
+          },
+          {
+            "instrument": "SpotX",
+            "quantity": -1.5,
+            "filled_price": 54.0,
+            "execution_time": "2021-01-07T11:00:00",
+            "source": "Exit"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "SpotX",
+            "open_time": "2021-01-05T09:45:00",
+            "close_time": "2021-01-07T11:00:00",
+            "open_price": 50.0,
+            "close_price": 54.0,
+            "status": "closed",
+            "trade_pnl": 4.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "order-cost-fee-outflow",
+      "source_ref": "synthetic::order-cost-fee",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "BondA": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            12.0,
+            15.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "BondA",
+          "quantity": 2.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "MocBuy",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "COST",
+          "instrument": "USD",
+          "quantity": -2.5,
+          "generation_time": "2021-01-05T11:00:00",
+          "source": "Commission",
+          "execution_time": "2021-01-05T11:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            97.5,
+            103.5
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "BondA": 2.0,
+              "USD": 73.5
+            },
+            "weights": {
+              "BondA": 0.24615384615384617,
+              "USD": 0.7538461538461538
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "BondA": 2.0,
+              "USD": 73.5
+            },
+            "weights": {
+              "BondA": 0.2898550724637681,
+              "USD": 0.7101449275362319
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "USD",
+            "quantity": -2.5,
+            "filled_price": 0.0,
+            "execution_time": "2021-01-05T11:00:00",
+            "source": "Commission"
+          },
+          {
+            "instrument": "BondA",
+            "quantity": 2.0,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "MocBuy"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "BondA",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": null,
+            "open_price": 12.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          },
+          {
+            "instrument": "USD",
+            "open_time": "2021-01-05T11:00:00",
+            "close_time": null,
+            "open_price": 0.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "order-cost-fee-and-rebate",
+      "source_ref": "synthetic::order-cost-pair",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "COST",
+          "instrument": "USD",
+          "quantity": -3.0,
+          "generation_time": "2021-01-05T12:00:00",
+          "source": "Fee",
+          "execution_time": "2021-01-05T12:00:00"
+        },
+        {
+          "kind": "COST",
+          "instrument": "USD",
+          "quantity": 0.75,
+          "generation_time": "2021-01-06T12:00:00",
+          "source": "Rebate",
+          "execution_time": "2021-01-06T12:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            97.0,
+            97.75
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "USD": 97.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "USD": 97.75
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "USD",
+            "quantity": -3.0,
+            "filled_price": 0.0,
+            "execution_time": "2021-01-05T12:00:00",
+            "source": "Fee"
+          },
+          {
+            "instrument": "USD",
+            "quantity": 0.75,
+            "filled_price": 0.0,
+            "execution_time": "2021-01-06T12:00:00",
+            "source": "Rebate"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "USD",
+            "open_time": "2021-01-05T12:00:00",
+            "close_time": "2021-01-06T12:00:00",
+            "open_price": 0.0,
+            "close_price": 0.0,
+            "status": "closed",
+            "trade_pnl": -0.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "multi-asset-mixed-orders",
+      "source_ref": "synthetic::multi-asset",
+      "start": "2021-01-04",
+      "end": "2021-01-07",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 1000.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "AssetA": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            100.0,
+            102.0,
+            108.0,
+            110.0
+          ]
+        },
+        "AssetB": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            50.0,
+            51.0,
+            49.0,
+            53.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "AssetA": [
+          [
+            "2021-01-06T10:15:00",
+            106.0
+          ],
+          [
+            "2021-01-06T10:30:00",
+            108.0
+          ]
+        ],
+        "AssetB": [
+          [
+            "2021-01-05T11:00:00",
+            50.5
+          ],
+          [
+            "2021-01-07T15:00:00",
+            52.5
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "AssetB",
+          "quantity": 4.0,
+          "generation_time": "2021-01-05T11:00:00",
+          "source": "BuyB",
+          "execution_time": "2021-01-05T11:00:00"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "AssetA",
+          "quantity": 2.0,
+          "generation_time": "2021-01-05T14:00:00",
+          "source": "BuyA",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "COST",
+          "instrument": "USD",
+          "quantity": -1.5,
+          "generation_time": "2021-01-05T16:00:00",
+          "source": "Fee1",
+          "execution_time": "2021-01-05T16:00:00"
+        },
+        {
+          "kind": "TWAP",
+          "instrument": "AssetA",
+          "quantity": -2.0,
+          "generation_time": "2021-01-06T09:30:00",
+          "source": "SellA",
+          "start": "2021-01-06T10:00:00",
+          "end": "2021-01-06T10:30:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "AssetB",
+          "quantity": -4.0,
+          "generation_time": "2021-01-07T15:00:00",
+          "source": "SellB",
+          "execution_time": "2021-01-07T15:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            1000.0,
+            1000.5,
+            1002.5,
+            1016.5
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "AssetA": 2.0,
+              "AssetB": 4.0,
+              "USD": 592.5
+            },
+            "weights": {
+              "AssetA": 0.20389805097451275,
+              "AssetB": 0.20389805097451275,
+              "USD": 0.5922038980509745
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "AssetB": 4.0,
+              "USD": 806.5
+            },
+            "weights": {
+              "AssetB": 0.19551122194513715,
+              "USD": 0.8044887780548629
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "USD": 1016.5
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "AssetB",
+            "quantity": 4.0,
+            "filled_price": 50.5,
+            "execution_time": "2021-01-05T11:00:00",
+            "source": "BuyB"
+          },
+          {
+            "instrument": "USD",
+            "quantity": -1.5,
+            "filled_price": 0.0,
+            "execution_time": "2021-01-05T16:00:00",
+            "source": "Fee1"
+          },
+          {
+            "instrument": "AssetA",
+            "quantity": 2.0,
+            "filled_price": 102.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "BuyA"
+          },
+          {
+            "instrument": "AssetA",
+            "quantity": -2.0,
+            "filled_price": 107.0,
+            "execution_time": "2021-01-06T10:30:00",
+            "source": "SellA"
+          },
+          {
+            "instrument": "AssetB",
+            "quantity": -4.0,
+            "filled_price": 52.5,
+            "execution_time": "2021-01-07T15:00:00",
+            "source": "SellB"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "AssetB",
+            "open_time": "2021-01-05T11:00:00",
+            "close_time": "2021-01-07T15:00:00",
+            "open_price": 50.5,
+            "close_price": 52.5,
+            "status": "closed",
+            "trade_pnl": 2.0
+          },
+          {
+            "instrument": "AssetA",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": "2021-01-06T10:30:00",
+            "open_price": 102.0,
+            "close_price": 107.0,
+            "status": "closed",
+            "trade_pnl": 5.0
+          },
+          {
+            "instrument": "USD",
+            "open_time": "2021-01-05T16:00:00",
+            "close_time": null,
+            "open_price": 0.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "short-first-profit-fifo",
+      "source_ref": "synthetic::short-first-profit",
+      "start": "2021-01-04",
+      "end": "2021-01-07",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 500.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "ShortFut": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            102.0,
+            100.0,
+            95.0,
+            90.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "ShortFut",
+          "quantity": -2.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "ShortEntry",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "ShortFut",
+          "quantity": 2.0,
+          "generation_time": "2021-01-07T10:00:00",
+          "source": "ShortCover",
+          "execution_date": "2021-01-07"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            500.0,
+            500.0,
+            510.0,
+            520.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "ShortFut": -2.0,
+              "USD": 700.0
+            },
+            "weights": {
+              "ShortFut": -0.4,
+              "USD": 1.4
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "ShortFut": -2.0,
+              "USD": 700.0
+            },
+            "weights": {
+              "ShortFut": -0.37254901960784315,
+              "USD": 1.3725490196078431
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "USD": 520.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "ShortFut",
+            "quantity": -2.0,
+            "filled_price": 100.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "ShortEntry"
+          },
+          {
+            "instrument": "ShortFut",
+            "quantity": 2.0,
+            "filled_price": 90.0,
+            "execution_time": "2021-01-07T23:00:00",
+            "source": "ShortCover"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "ShortFut",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": "2021-01-07T23:00:00",
+            "open_price": 100.0,
+            "close_price": 90.0,
+            "status": "closed",
+            "trade_pnl": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "short-first-loss-fifo",
+      "source_ref": "synthetic::short-first-loss",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 500.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "ShortFut": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            50.0,
+            50.0,
+            58.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "ShortFut",
+          "quantity": -1.5,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "ShortEntry",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "ShortFut",
+          "quantity": 1.5,
+          "generation_time": "2021-01-06T10:00:00",
+          "source": "ShortCover",
+          "execution_date": "2021-01-06"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            500.0,
+            500.0,
+            488.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "ShortFut": -1.5,
+              "USD": 575.0
+            },
+            "weights": {
+              "ShortFut": -0.15,
+              "USD": 1.15
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "USD": 488.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "ShortFut",
+            "quantity": -1.5,
+            "filled_price": 50.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "ShortEntry"
+          },
+          {
+            "instrument": "ShortFut",
+            "quantity": 1.5,
+            "filled_price": 58.0,
+            "execution_time": "2021-01-06T23:00:00",
+            "source": "ShortCover"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "ShortFut",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": "2021-01-06T23:00:00",
+            "open_price": 50.0,
+            "close_price": 58.0,
+            "status": "closed",
+            "trade_pnl": -8.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "multiple-sequential-roundtrips-fifo",
+      "source_ref": "synthetic::multi-roundtrip-fifo",
+      "start": "2021-01-04",
+      "end": "2021-01-08",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 1000.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "EqA": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            10.0,
+            12.0,
+            15.0,
+            14.0,
+            18.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "EqA": [
+          [
+            "2021-01-05T10:00:00",
+            11.0
+          ],
+          [
+            "2021-01-05T14:00:00",
+            13.0
+          ],
+          [
+            "2021-01-06T10:00:00",
+            14.5
+          ],
+          [
+            "2021-01-07T11:00:00",
+            16.0
+          ],
+          [
+            "2021-01-08T10:00:00",
+            17.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "EqA",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "L1",
+          "execution_time": "2021-01-05T10:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "EqA",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T14:00:00",
+          "source": "L2",
+          "execution_time": "2021-01-05T14:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "EqA",
+          "quantity": -1.0,
+          "generation_time": "2021-01-06T10:00:00",
+          "source": "S1",
+          "execution_time": "2021-01-06T10:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "EqA",
+          "quantity": -1.0,
+          "generation_time": "2021-01-07T11:00:00",
+          "source": "S2",
+          "execution_time": "2021-01-07T11:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "EqA",
+          "quantity": 1.0,
+          "generation_time": "2021-01-08T10:00:00",
+          "source": "L3",
+          "execution_time": "2021-01-08T10:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            1000.0,
+            1000.0,
+            1005.5,
+            1006.5,
+            1007.5
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "EqA": 2.0,
+              "USD": 976.0
+            },
+            "weights": {
+              "EqA": 0.024,
+              "USD": 0.976
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "EqA": 1.0,
+              "USD": 990.5
+            },
+            "weights": {
+              "EqA": 0.014917951268025857,
+              "USD": 0.9850820487319741
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "USD": 1006.5
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-08",
+            "holdings": {
+              "EqA": 1.0,
+              "USD": 989.5
+            },
+            "weights": {
+              "EqA": 0.017866004962779156,
+              "USD": 0.9821339950372209
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "EqA",
+            "quantity": 1.0,
+            "filled_price": 11.0,
+            "execution_time": "2021-01-05T10:00:00",
+            "source": "L1"
+          },
+          {
+            "instrument": "EqA",
+            "quantity": 1.0,
+            "filled_price": 13.0,
+            "execution_time": "2021-01-05T14:00:00",
+            "source": "L2"
+          },
+          {
+            "instrument": "EqA",
+            "quantity": -1.0,
+            "filled_price": 14.5,
+            "execution_time": "2021-01-06T10:00:00",
+            "source": "S1"
+          },
+          {
+            "instrument": "EqA",
+            "quantity": -1.0,
+            "filled_price": 16.0,
+            "execution_time": "2021-01-07T11:00:00",
+            "source": "S2"
+          },
+          {
+            "instrument": "EqA",
+            "quantity": 1.0,
+            "filled_price": 17.0,
+            "execution_time": "2021-01-08T10:00:00",
+            "source": "L3"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "EqA",
+            "open_time": "2021-01-05T10:00:00",
+            "close_time": "2021-01-06T10:00:00",
+            "open_price": 11.0,
+            "close_price": 14.5,
+            "status": "closed",
+            "trade_pnl": 3.5
+          },
+          {
+            "instrument": "EqA",
+            "open_time": "2021-01-05T14:00:00",
+            "close_time": "2021-01-07T11:00:00",
+            "open_price": 13.0,
+            "close_price": 16.0,
+            "status": "closed",
+            "trade_pnl": 3.0
+          },
+          {
+            "instrument": "EqA",
+            "open_time": "2021-01-08T10:00:00",
+            "close_time": null,
+            "open_price": 17.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "partial-size-order-fifo",
+      "source_ref": "synthetic::partial-size-fifo",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "FutP": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            12.0,
+            15.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "FutP",
+          "quantity": 3.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "Buy3",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "FutP",
+          "quantity": -1.0,
+          "generation_time": "2021-01-06T10:00:00",
+          "source": "Sell1",
+          "execution_date": "2021-01-06"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            100.0,
+            109.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "FutP": 3.0,
+              "USD": 64.0
+            },
+            "weights": {
+              "FutP": 0.36,
+              "USD": 0.64
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "FutP": 2.0,
+              "USD": 79.0
+            },
+            "weights": {
+              "FutP": 0.27522935779816515,
+              "USD": 0.7247706422018348
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "FutP",
+            "quantity": 3.0,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "Buy3"
+          },
+          {
+            "instrument": "FutP",
+            "quantity": -1.0,
+            "filled_price": 15.0,
+            "execution_time": "2021-01-06T23:00:00",
+            "source": "Sell1"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "FutP",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": "2021-01-06T23:00:00",
+            "open_price": 12.0,
+            "close_price": 15.0,
+            "status": "closed",
+            "trade_pnl": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "same-timestamp-tie-stability",
+      "source_ref": "synthetic::tie-stability",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "TieA": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            20.0,
+            22.0,
+            25.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "TieA": [
+          [
+            "2021-01-05T11:00:00",
+            21.0
+          ],
+          [
+            "2021-01-05T14:00:00",
+            23.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "TieA",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T09:00:00",
+          "source": "LaterEndFirstSub",
+          "execution_time": "2021-01-05T14:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "TieA",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T09:00:00",
+          "source": "EarlierEndSecondSub",
+          "execution_time": "2021-01-05T11:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "TieA",
+          "quantity": -1.0,
+          "generation_time": "2021-01-05T09:00:00",
+          "source": "SameEndShort",
+          "execution_time": "2021-01-05T14:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            101.0,
+            104.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "TieA": 1.0,
+              "USD": 79.0
+            },
+            "weights": {
+              "TieA": 0.21782178217821782,
+              "USD": 0.7821782178217822
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "TieA": 1.0,
+              "USD": 79.0
+            },
+            "weights": {
+              "TieA": 0.2403846153846154,
+              "USD": 0.7596153846153846
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "TieA",
+            "quantity": 1.0,
+            "filled_price": 21.0,
+            "execution_time": "2021-01-05T11:00:00",
+            "source": "EarlierEndSecondSub"
+          },
+          {
+            "instrument": "TieA",
+            "quantity": 1.0,
+            "filled_price": 23.0,
+            "execution_time": "2021-01-05T14:00:00",
+            "source": "LaterEndFirstSub"
+          },
+          {
+            "instrument": "TieA",
+            "quantity": -1.0,
+            "filled_price": 23.0,
+            "execution_time": "2021-01-05T14:00:00",
+            "source": "SameEndShort"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "TieA",
+            "open_time": "2021-01-05T14:00:00",
+            "close_time": "2021-01-05T14:00:00",
+            "open_price": 23.0,
+            "close_price": 23.0,
+            "status": "closed",
+            "trade_pnl": -0.0
+          },
+          {
+            "instrument": "TieA",
+            "open_time": "2021-01-05T11:00:00",
+            "close_time": null,
+            "open_price": 21.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "holiday-calendar-skip",
+      "source_ref": "synthetic::holiday-skip",
+      "start": "2021-01-04",
+      "end": "2021-01-08",
+      "week_mask": "1111100",
+      "holidays": [
+        "2021-01-06"
+      ],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "HolFut": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            10.0,
+            11.0,
+            13.0,
+            14.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "HolFut",
+          "quantity": 2.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "BeforeHol",
+          "execution_date": "2021-01-05"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "HolFut",
+          "quantity": 5.0,
+          "generation_time": "2021-01-06T10:00:00",
+          "source": "OnHolidayIgnored",
+          "execution_date": "2021-01-06"
+        },
+        {
+          "kind": "MOC",
+          "instrument": "HolFut",
+          "quantity": -2.0,
+          "generation_time": "2021-01-08T10:00:00",
+          "source": "AfterHol",
+          "execution_date": "2021-01-08"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            100.0,
+            100.0,
+            104.0,
+            106.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "HolFut": 2.0,
+              "USD": 78.0
+            },
+            "weights": {
+              "HolFut": 0.22,
+              "USD": 0.78
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "HolFut": 2.0,
+              "USD": 78.0
+            },
+            "weights": {
+              "HolFut": 0.25,
+              "USD": 0.75
+            }
+          },
+          {
+            "date": "2021-01-08",
+            "holdings": {
+              "USD": 106.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "HolFut",
+            "quantity": 2.0,
+            "filled_price": 11.0,
+            "execution_time": "2021-01-05T23:00:00",
+            "source": "BeforeHol"
+          },
+          {
+            "instrument": "HolFut",
+            "quantity": -2.0,
+            "filled_price": 14.0,
+            "execution_time": "2021-01-08T23:00:00",
+            "source": "AfterHol"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "HolFut",
+            "open_time": "2021-01-05T23:00:00",
+            "close_time": "2021-01-08T23:00:00",
+            "open_price": 11.0,
+            "close_price": 14.0,
+            "status": "closed",
+            "trade_pnl": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "weekend-start-end-backward-roll",
+      "source_ref": "synthetic::weekend-roll",
+      "start": "2021-01-03",
+      "end": "2021-01-09",
+      "week_mask": "1111100",
+      "holidays": [
+        "2021-01-01"
+      ],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "RollFut": {
+          "dates": [
+            "2020-12-31",
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            100.0,
+            101.0,
+            103.0,
+            102.0,
+            105.0,
+            106.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "RollFut",
+          "quantity": 1.0,
+          "generation_time": "2021-01-04T10:00:00",
+          "source": "MondayEntry",
+          "execution_date": "2021-01-04"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2020-12-31",
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            100.0,
+            100.0,
+            102.0,
+            101.0,
+            104.0,
+            105.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-04",
+            "holdings": {
+              "RollFut": 1.0,
+              "USD": -1.0
+            },
+            "weights": {
+              "RollFut": 1.01,
+              "USD": -0.01
+            }
+          },
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "RollFut": 1.0,
+              "USD": -1.0
+            },
+            "weights": {
+              "RollFut": 1.0098039215686274,
+              "USD": -0.00980392156862745
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "RollFut": 1.0,
+              "USD": -1.0
+            },
+            "weights": {
+              "RollFut": 1.00990099009901,
+              "USD": -0.009900990099009901
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "RollFut": 1.0,
+              "USD": -1.0
+            },
+            "weights": {
+              "RollFut": 1.0096153846153846,
+              "USD": -0.009615384615384616
+            }
+          },
+          {
+            "date": "2021-01-08",
+            "holdings": {
+              "RollFut": 1.0,
+              "USD": -1.0
+            },
+            "weights": {
+              "RollFut": 1.0095238095238095,
+              "USD": -0.009523809523809525
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "RollFut",
+            "quantity": 1.0,
+            "filled_price": 101.0,
+            "execution_time": "2021-01-04T23:00:00",
+            "source": "MondayEntry"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "RollFut",
+            "open_time": "2021-01-04T23:00:00",
+            "close_time": null,
+            "open_price": 101.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "start-equals-end-initial-only",
+      "source_ref": "synthetic::start-eq-end",
+      "start": "2021-01-04",
+      "end": "2021-01-04",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 1234.5,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "IgnoredFut",
+          "quantity": 1.0,
+          "generation_time": "2021-01-04T10:00:00",
+          "source": "OnStartDayIgnored",
+          "execution_date": "2021-01-04"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04"
+          ],
+          "values": [
+            1234.5
+          ]
+        },
+        "snapshots": [],
+        "fills": [],
+        "trade_ledger": []
+      }
+    },
+    {
+      "id": "friday-to-saturday-collapses-to-initial",
+      "source_ref": "synthetic::fri-sat-collapse",
+      "start": "2021-01-08",
+      "end": "2021-01-09",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 750.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {},
+      "orders": [],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-08"
+          ],
+          "values": [
+            750.0
+          ]
+        },
+        "snapshots": [],
+        "fills": [],
+        "trade_ledger": []
+      }
+    },
+    {
+      "id": "custom-initial-zero-orders",
+      "source_ref": "synthetic::custom-initial-hold",
+      "start": "2021-01-04",
+      "end": "2021-01-08",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 250000.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {},
+      "orders": [],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07",
+            "2021-01-08"
+          ],
+          "values": [
+            250000.0,
+            250000.0,
+            250000.0,
+            250000.0,
+            250000.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "USD": 250000.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "USD": 250000.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "USD": 250000.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-08",
+            "holdings": {
+              "USD": 250000.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          }
+        ],
+        "fills": [],
+        "trade_ledger": []
+      }
+    },
+    {
+      "id": "epsilon-zero-position-pruning",
+      "source_ref": "synthetic::epsilon-pruning",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "Kept": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            10.0,
+            20.0
+          ]
+        },
+        "Pruned": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            10.0,
+            20.0
+          ]
+        }
+      },
+      "intraday_prices": {
+        "Kept": [
+          [
+            "2021-01-05T10:00:00",
+            10.0
+          ],
+          [
+            "2021-01-05T14:00:00",
+            12.0
+          ]
+        ],
+        "Pruned": [
+          [
+            "2021-01-05T10:00:00",
+            10.0
+          ],
+          [
+            "2021-01-05T14:00:00",
+            12.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "Pruned",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "P1",
+          "execution_time": "2021-01-05T10:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "Pruned",
+          "quantity": -0.9999999999995,
+          "generation_time": "2021-01-05T14:00:00",
+          "source": "P2",
+          "execution_time": "2021-01-05T14:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "Kept",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "K1",
+          "execution_time": "2021-01-05T10:00:00"
+        },
+        {
+          "kind": "AT_MARKET",
+          "instrument": "Kept",
+          "quantity": -0.999999999995,
+          "generation_time": "2021-01-05T14:00:00",
+          "source": "K2",
+          "execution_time": "2021-01-05T14:00:00"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06"
+          ],
+          "values": [
+            100.0,
+            103.999999999984,
+            104.000000000034
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "Kept": 5.000000413701855e-12,
+              "USD": 103.999999999934
+            },
+            "weights": {
+              "Kept": 4.807692705483293e-13,
+              "USD": 0.9999999999995193
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "Kept": 5.000000413701855e-12,
+              "USD": 103.999999999934
+            },
+            "weights": {
+              "Kept": 9.615385410961961e-13,
+              "USD": 0.9999999999990384
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "Pruned",
+            "quantity": 1.0,
+            "filled_price": 10.0,
+            "execution_time": "2021-01-05T10:00:00",
+            "source": "P1"
+          },
+          {
+            "instrument": "Kept",
+            "quantity": 1.0,
+            "filled_price": 10.0,
+            "execution_time": "2021-01-05T10:00:00",
+            "source": "K1"
+          },
+          {
+            "instrument": "Pruned",
+            "quantity": -0.9999999999995,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-05T14:00:00",
+            "source": "P2"
+          },
+          {
+            "instrument": "Kept",
+            "quantity": -0.999999999995,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-05T14:00:00",
+            "source": "K2"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "Pruned",
+            "open_time": "2021-01-05T10:00:00",
+            "close_time": "2021-01-05T14:00:00",
+            "open_price": 10.0,
+            "close_price": 12.0,
+            "status": "closed",
+            "trade_pnl": 2.0
+          },
+          {
+            "instrument": "Kept",
+            "open_time": "2021-01-05T10:00:00",
+            "close_time": "2021-01-05T14:00:00",
+            "open_price": 10.0,
+            "close_price": 12.0,
+            "status": "closed",
+            "trade_pnl": 2.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "deferred-next-day-moc",
+      "source_ref": "synthetic::deferred-moc",
+      "start": "2021-01-04",
+      "end": "2021-01-07",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "DefFut": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            10.0,
+            11.0,
+            12.0,
+            15.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "DefFut",
+          "quantity": 2.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "DeferredMoc",
+          "execution_date": "2021-01-06"
+        }
+      ],
+      "output": {
+        "performance": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05",
+            "2021-01-06",
+            "2021-01-07"
+          ],
+          "values": [
+            100.0,
+            100.0,
+            100.0,
+            106.0
+          ]
+        },
+        "snapshots": [
+          {
+            "date": "2021-01-05",
+            "holdings": {
+              "USD": 100.0
+            },
+            "weights": {
+              "USD": 1.0
+            }
+          },
+          {
+            "date": "2021-01-06",
+            "holdings": {
+              "DefFut": 2.0,
+              "USD": 76.0
+            },
+            "weights": {
+              "DefFut": 0.24,
+              "USD": 0.76
+            }
+          },
+          {
+            "date": "2021-01-07",
+            "holdings": {
+              "DefFut": 2.0,
+              "USD": 76.0
+            },
+            "weights": {
+              "DefFut": 0.2830188679245283,
+              "USD": 0.7169811320754716
+            }
+          }
+        ],
+        "fills": [
+          {
+            "instrument": "DefFut",
+            "quantity": 2.0,
+            "filled_price": 12.0,
+            "execution_time": "2021-01-06T23:00:00",
+            "source": "DeferredMoc"
+          }
+        ],
+        "trade_ledger": [
+          {
+            "instrument": "DefFut",
+            "open_time": "2021-01-06T23:00:00",
+            "close_time": null,
+            "open_price": 12.0,
+            "close_price": null,
+            "status": "open",
+            "trade_pnl": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "err-missing-daily-moc",
+      "source_ref": "synthetic::error-missing-daily-moc",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "MissMoc": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-06"
+          ],
+          "values": [
+            10.0,
+            12.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "MissMoc",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "BadMoc",
+          "execution_date": "2021-01-05"
+        }
+      ],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "KeyError"
+      }
+    },
+    {
+      "id": "err-empty-twap-window",
+      "source_ref": "synthetic::error-empty-twap",
+      "start": "2021-01-04",
+      "end": "2021-01-05",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {
+        "EmptyTwap": [
+          [
+            "2021-01-05T10:00:00",
+            25.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "TWAP",
+          "instrument": "EmptyTwap",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T09:30:00",
+          "source": "BadTwap",
+          "start": "2021-01-05T10:00:00",
+          "end": "2021-01-05T10:30:00"
+        }
+      ],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "RuntimeError"
+      }
+    },
+    {
+      "id": "err-nan-twap-tick",
+      "source_ref": "synthetic::error-nan-twap",
+      "start": "2021-01-04",
+      "end": "2021-01-05",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {
+        "NanTwap": [
+          [
+            "2021-01-05T10:10:00",
+            20.0
+          ],
+          [
+            "2021-01-05T10:20:00",
+            "NaN"
+          ],
+          [
+            "2021-01-05T10:30:00",
+            22.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "TWAP",
+          "instrument": "NanTwap",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T09:30:00",
+          "source": "NanTwapOrder",
+          "start": "2021-01-05T10:00:00",
+          "end": "2021-01-05T10:30:00"
+        }
+      ],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "KeyError"
+      }
+    },
+    {
+      "id": "err-missing-intraday-at-market",
+      "source_ref": "synthetic::error-missing-at-market",
+      "start": "2021-01-04",
+      "end": "2021-01-05",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {},
+      "intraday_prices": {
+        "MissMkt": [
+          [
+            "2021-01-05T10:00:00",
+            20.0
+          ]
+        ]
+      },
+      "orders": [
+        {
+          "kind": "AT_MARKET",
+          "instrument": "MissMkt",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:15:00",
+          "source": "BadMkt",
+          "execution_time": "2021-01-05T10:15:00"
+        }
+      ],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "KeyError"
+      }
+    },
+    {
+      "id": "err-missing-daily-valuation",
+      "source_ref": "synthetic::error-missing-eod-val",
+      "start": "2021-01-04",
+      "end": "2021-01-06",
+      "week_mask": "1111100",
+      "holidays": [],
+      "initial_value": 100.0,
+      "eod_valuation_time": [
+        23,
+        0,
+        0
+      ],
+      "cash_label": "USD",
+      "daily_prices": {
+        "MissVal": {
+          "dates": [
+            "2021-01-04",
+            "2021-01-05"
+          ],
+          "values": [
+            10.0,
+            12.0
+          ]
+        }
+      },
+      "intraday_prices": {},
+      "orders": [
+        {
+          "kind": "MOC",
+          "instrument": "MissVal",
+          "quantity": 1.0,
+          "generation_time": "2021-01-05T10:00:00",
+          "source": "HoldIntoMissingDay",
+          "execution_date": "2021-01-05"
+        }
+      ],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "KeyError"
+      }
+    }
+  ]
+}
