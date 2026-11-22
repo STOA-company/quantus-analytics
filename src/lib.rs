@@ -1,10 +1,18 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
-//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, and business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`).
+//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py and
+//! gs_quant/datetime/date.py (with explicit-holiday `np.busdaycalendar` semantics) at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
 //! Licensed under Apache-2.0; see LICENSE and both NOTICE files.
 
 use std::fmt;
+
+const MIN_ORDINAL: i64 = 1; // 0001-01-01 (Monday)
+const MAX_ORDINAL: i64 = 3_652_059; // 9999-12-31 (Friday)
+
+fn is_leap_year(year: i32) -> bool {
+    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+}
 
 /// A Gregorian calendar date without a time or time zone.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -16,7 +24,7 @@ pub struct Date {
 impl Date {
     /// Validate a date in years 1 through 9999.
     pub fn new(year: i32, month: u8, day: u8) -> Result<Self, Error> {
-        let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+        let leap = is_leap_year(year);
         let max = match month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
             4 | 6 | 9 | 11 => 30,
@@ -29,6 +37,18 @@ impl Date {
         }
         Ok(Self { year, month, day })
     }
+    /// Calendar year (`1..=9999`).
+    pub fn year(&self) -> i32 {
+        self.year
+    }
+    /// Calendar month (`1..=12`).
+    pub fn month(&self) -> u8 {
+        self.month
+    }
+    /// Day of month (`1..=31`).
+    pub fn day(&self) -> u8 {
+        self.day
+    }
     fn ordinal(self) -> i64 {
         let y = i64::from(self.year - 1);
         let mut n = 365 * y + y / 4 - y / 100 + y / 400 + i64::from(self.day);
@@ -36,11 +56,34 @@ impl Date {
             n += match m {
                 1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
                 4 | 6 | 9 | 11 => 30,
-                _ if self.year % 4 == 0 && (self.year % 100 != 0 || self.year % 400 == 0) => 29,
+                _ if is_leap_year(self.year) => 29,
                 _ => 28,
             };
         }
         n
+    }
+    /// Inverse of `ordinal()` in O(1) using Howard Hinnant's proleptic Gregorian civil-from-days
+    /// algorithm, bounded to `0001-01-01..=9999-12-31`.
+    fn from_ordinal(ordinal: i64) -> Result<Self, Error> {
+        if !(MIN_ORDINAL..=MAX_ORDINAL).contains(&ordinal) {
+            return Err(Error::Date);
+        }
+        // Days since proleptic 0000-03-01 (0001-01-01 is day 306, ordinal 1).
+        let z = ordinal + 305;
+        let era = z / 146_097;
+        let doe = z - era * 146_097;
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let y = yoe + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let day = (doy - (153 * mp + 2) / 5 + 1) as u8;
+        let month = (if mp < 10 { mp + 3 } else { mp - 9 }) as u8;
+        let year = (if month <= 2 { y + 1 } else { y }) as i32;
+        Ok(Self { year, month, day })
+    }
+    /// ISO weekday index (`Monday = 0` .. `Sunday = 6`), matching Python `date.weekday()`.
+    fn weekday(self) -> usize {
+        ((self.ordinal() - 1).rem_euclid(7)) as usize
     }
 }
 impl fmt::Display for Date {
@@ -2215,5 +2258,410 @@ impl RollingLinearRegression {
     /// Rolling standard deviation of residuals (`sqrt(SSE / (window - k))`).
     pub fn standard_deviation_of_errors(&self) -> &Series {
         &self.standard_deviation_of_errors
+    }
+}
+
+/// Day-count conventions supported by [`day_count_fraction`].
+///
+/// Mirrors `gs_quant/datetime/date.py:DayCountConvention` at commit
+/// `70220e300524d54bd273be0f4c485d53b3780482`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DayCountConvention {
+    /// Actual calendar days divided by `360.0`.
+    Actual360,
+    /// Actual calendar days divided by `364.0`.
+    Actual364,
+    /// Actual calendar days divided by `365.25`.
+    Actual36525,
+    /// Actual calendar days divided by fixed `365.0`.
+    Actual365F,
+    /// Actual/365L: denominator is `366.0` when `frequency == PaymentFrequency::Annually` and
+    /// [`has_feb_29(start, end)`](has_feb_29) is `true`, or when `frequency != Annually` and
+    /// `end.year()` is a leap year; otherwise `365.0`.
+    Actual365L,
+    /// Always returns `1.0`, even when `start >= end`.
+    OneOne,
+}
+
+/// Payment frequency used by [`day_count_fraction`] (notably [`DayCountConvention::Actual365L`]).
+///
+/// Discriminants match `gs_quant/datetime/date.py:PaymentFrequency`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PaymentFrequency {
+    Daily = 252,
+    Weekly = 52,
+    SemiMonthly = 26,
+    Monthly = 12,
+    SemiQuarterly = 6,
+    Quarterly = 4,
+    TriAnnually = 3,
+    SemiAnnually = 2,
+    Annually = 1,
+}
+
+/// Business-day rolling rule for [`business_day_offset`] when the input date is not a business day.
+///
+/// Matches NumPy `np.busday_offset(..., roll=...)` two-step semantics: roll first if needed, then
+/// apply `offset`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Roll {
+    /// Return `Err(Error::Date)` when `date` is not a business day (maps upstream NumPy
+    /// `ValueError`).
+    Raise,
+    /// Roll to the smallest business day strictly after `date`.
+    Forward,
+    /// Roll to the largest business day strictly before `date`.
+    Backward,
+    /// Roll forward; if rolling forward exits `0001-01-01..=9999-12-31` or changes `(year, month)`,
+    /// fall back to rolling backward.
+    ModifiedFollowing,
+    /// Roll backward; if rolling backward exits `0001-01-01..=9999-12-31` or changes
+    /// `(year, month)`, fall back to rolling forward.
+    ModifiedPreceding,
+}
+
+/// Offline business-day calendar defined by an explicit 7-day weekday mask and holiday list.
+///
+/// Mirrors `numpy.busdaycalendar(weekmask=..., holidays=...)` without any network or dataset
+/// dependency.
+///
+/// # Documented Parity Boundaries
+/// - Explicit `HolidayCalendar` construction (`week_mask` + `holidays`) is required; upstream
+///   remote `GsCalendar` exchange/currency dataset fetches (`HOLIDAY`, `HOLIDAY_CURRENCY`) are
+///   intentionally out of scope for this offline crate.
+/// - An all-`false` `week_mask` returns `Err(Error::Date)` (mapping NumPy's `ValueError`).
+/// - Valid [`Date`] values span Gregorian `0001-01-01..=9999-12-31`; rolls or offsets that exit
+///   this range return `Err(Error::Date)` (whereas `np.datetime64[D]` supports wider 64-bit day
+///   offsets outside Python `datetime.date`'s `0001..=9999` range).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HolidayCalendar {
+    week_mask: [bool; 7], // Monday = 0 .. Sunday = 6
+    holidays: Vec<Date>,  // sorted, deduplicated, filtered to week_mask-valid weekdays
+}
+
+impl HolidayCalendar {
+    /// Construct a `HolidayCalendar` from a 7-day weekday mask (`Monday = 0` .. `Sunday = 6`) and
+    /// a list of holiday dates.
+    ///
+    /// Returns `Err(Error::Date)` if every entry in `week_mask` is `false`. Holidays falling on
+    /// non-business weekdays (`!week_mask[weekday]`) are filtered out, and the remaining holidays
+    /// are sorted and deduplicated, matching `numpy.busdaycalendar`.
+    pub fn try_new(week_mask: [bool; 7], holidays: Vec<Date>) -> Result<Self, Error> {
+        if !week_mask.iter().any(|&b| b) {
+            return Err(Error::Date);
+        }
+        let mut normalized: Vec<Date> = holidays
+            .into_iter()
+            .filter(|d| week_mask[d.weekday()])
+            .collect();
+        normalized.sort_unstable();
+        normalized.dedup();
+        Ok(Self {
+            week_mask,
+            holidays: normalized,
+        })
+    }
+
+    /// Construct a standard Monday–Friday calendar (`[true, true, true, true, true, false, false]`)
+    /// with the given holidays normalized.
+    pub fn weekdays(holidays: Vec<Date>) -> Self {
+        Self::try_new([true, true, true, true, true, false, false], holidays)
+            .expect("Monday-Friday week mask is non-empty")
+    }
+
+    /// Weekday mask (`Monday = 0` .. `Sunday = 6`) where `true` indicates a valid business weekday.
+    pub fn week_mask(&self) -> [bool; 7] {
+        self.week_mask
+    }
+
+    /// Sorted, deduplicated holiday dates falling on valid business weekdays.
+    pub fn holidays(&self) -> &[Date] {
+        &self.holidays
+    }
+}
+
+/// Return `true` iff a leap day (`YYYY-02-29`) falls strictly after `start` and on or before `end`
+/// (`start < Date(y, 2, 29) <= end`).
+///
+/// Returns `false` when `start >= end`. Uses the proleptic Gregorian leap-year rule
+/// (`y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)`), so `1900` and `2100` are non-leap while
+/// `2000` and `2400` are leap.
+///
+/// # Example
+/// ```
+/// use quantus_math::{has_feb_29, Date};
+///
+/// let feb28 = Date::new(2020, 2, 28).unwrap();
+/// let feb29 = Date::new(2020, 2, 29).unwrap();
+/// let mar01 = Date::new(2020, 3, 1).unwrap();
+/// assert!(has_feb_29(feb28, feb29));
+/// assert!(!has_feb_29(feb29, mar01));
+/// ```
+pub fn has_feb_29(start: Date, end: Date) -> bool {
+    if start >= end {
+        return false;
+    }
+    for year in start.year..=end.year {
+        if is_leap_year(year) {
+            let feb29 = Date {
+                year,
+                month: 2,
+                day: 29,
+            };
+            if start < feb29 && feb29 <= end {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Year fraction between `start` and `end` under the given [`DayCountConvention`] and
+/// [`PaymentFrequency`].
+///
+/// Mirrors `gs_quant/datetime/date.py:day_count_fraction`. [`DayCountConvention::OneOne`] always
+/// returns `1.0` even when `start >= end`.
+///
+/// # Example
+/// ```
+/// use quantus_math::{day_count_fraction, Date, DayCountConvention, PaymentFrequency};
+///
+/// let start = Date::new(2020, 3, 1).unwrap();
+/// let end = Date::new(2020, 9, 1).unwrap();
+/// let annual = day_count_fraction(start, end, DayCountConvention::Actual365L, PaymentFrequency::Annually);
+/// let monthly = day_count_fraction(start, end, DayCountConvention::Actual365L, PaymentFrequency::Monthly);
+/// assert!((annual - 184.0 / 365.0).abs() < 1e-12);
+/// assert!((monthly - 184.0 / 366.0).abs() < 1e-12);
+/// ```
+pub fn day_count_fraction(
+    start: Date,
+    end: Date,
+    convention: DayCountConvention,
+    frequency: PaymentFrequency,
+) -> f64 {
+    let days = (end.ordinal() - start.ordinal()) as f64;
+    match convention {
+        DayCountConvention::Actual360 => days / 360.0,
+        DayCountConvention::Actual364 => days / 364.0,
+        DayCountConvention::Actual36525 => days / 365.25,
+        DayCountConvention::Actual365F => days / 365.0,
+        DayCountConvention::Actual365L => {
+            let denom = if frequency == PaymentFrequency::Annually {
+                if has_feb_29(start, end) {
+                    366.0
+                } else {
+                    365.0
+                }
+            } else if is_leap_year(end.year) {
+                366.0
+            } else {
+                365.0
+            };
+            days / denom
+        }
+        DayCountConvention::OneOne => 1.0,
+    }
+}
+
+/// Return `true` iff `date` is a valid business day under `calendar` (its weekday is enabled in
+/// `calendar.week_mask()` and `date` is not in `calendar.holidays()`).
+pub fn is_business_day(date: Date, calendar: &HolidayCalendar) -> bool {
+    calendar.week_mask[date.weekday()] && calendar.holidays.binary_search(&date).is_err()
+}
+
+/// Count week-mask-enabled days in half-open ordinal interval `[start_ord, end_ord)` (`start_ord <= end_ord`).
+fn week_mask_days_in_half_open(start_ord: i64, end_ord: i64, week_mask: &[bool; 7]) -> i64 {
+    let total_days = end_ord - start_ord;
+    if total_days <= 0 {
+        return 0;
+    }
+    let per_week = week_mask.iter().filter(|&&b| b).count() as i64;
+    let full_weeks = total_days / 7;
+    let rem = (total_days % 7) as usize;
+    let start_wd = ((start_ord - 1).rem_euclid(7)) as usize;
+    let mut count = full_weeks * per_week;
+    for k in 0..rem {
+        if week_mask[(start_wd + k) % 7] {
+            count += 1;
+        }
+    }
+    count
+}
+
+/// Count week-mask-enabled days in `[MIN_ORDINAL, ord]`.
+fn week_mask_days_up_to(ord: i64, week_mask: &[bool; 7]) -> i64 {
+    if ord < MIN_ORDINAL {
+        return 0;
+    }
+    week_mask_days_in_half_open(MIN_ORDINAL, ord + 1, week_mask)
+}
+
+/// Return the ordinal of the 1-based `t`-th week-mask-enabled day starting from `MIN_ORDINAL` (`t >= 1`).
+fn nth_week_mask_day(t: i64, week_mask: &[bool; 7]) -> i64 {
+    let per_week = week_mask.iter().filter(|&&b| b).count() as i64;
+    let idx = t - 1;
+    let full_weeks = idx / per_week;
+    let mut rem = (idx % per_week) as usize;
+    let mut wd = 0usize;
+    for (i, &allowed) in week_mask.iter().enumerate() {
+        if allowed {
+            if rem == 0 {
+                wd = i;
+                break;
+            }
+            rem -= 1;
+        }
+    }
+    MIN_ORDINAL + full_weeks * 7 + wd as i64
+}
+
+/// Count business days in `[MIN_ORDINAL, ord]` in `O(log H)`.
+fn business_days_up_to(ord: i64, calendar: &HolidayCalendar) -> i64 {
+    if ord < MIN_ORDINAL {
+        return 0;
+    }
+    let wm = week_mask_days_up_to(ord, &calendar.week_mask);
+    let hols = calendar.holidays.partition_point(|h| h.ordinal() <= ord) as i64;
+    wm - hols
+}
+
+/// Return the 1-based `k`-th business day in `0001-01-01..=9999-12-31` in `O(log H)`.
+fn nth_business_day(k: i64, calendar: &HolidayCalendar) -> Result<Date, Error> {
+    if k < 1 {
+        return Err(Error::Date);
+    }
+    let mut lo = 0usize;
+    let mut hi = calendar.holidays.len();
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        let b_before = week_mask_days_up_to(calendar.holidays[mid].ordinal(), &calendar.week_mask)
+            - 1
+            - mid as i64;
+        if b_before < k {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    let ord = nth_week_mask_day(k + lo as i64, &calendar.week_mask);
+    Date::from_ordinal(ord)
+}
+
+/// Shift `date` by `offset` business days under `calendar` using NumPy `np.busday_offset`
+/// two-step semantics:
+///
+/// 1. If `date` is not a business day, roll it according to `roll` (`Roll::Raise` returns
+///    `Err(Error::Date)`).
+/// 2. Shift the rolled business day by `offset` business days in `O(log H)` time.
+///
+/// Returns `Err(Error::Date)` if `Roll::Raise` is used on a non-business day or if the rolled or
+/// shifted date falls outside Gregorian `0001-01-01..=9999-12-31`.
+///
+/// # Documented Parity Boundaries
+/// - `Roll::Raise` on a non-business day returns `Err(Error::Date)` (mapping NumPy `ValueError`).
+/// - Underflow below `0001-01-01` or overflow above `9999-12-31` returns `Err(Error::Date)`
+///   (whereas `np.datetime64[D]` supports dates outside Python `datetime.date`'s `0001..=9999`
+///   range).
+///
+/// # Example
+/// ```
+/// use quantus_math::{business_day_offset, Date, HolidayCalendar, Roll};
+///
+/// let cal = HolidayCalendar::weekdays(vec![Date::new(2020, 1, 31).unwrap()]);
+/// let rolled = business_day_offset(
+///     Date::new(2020, 1, 31).unwrap(),
+///     0,
+///     Roll::ModifiedFollowing,
+///     &cal,
+/// )
+/// .unwrap();
+/// assert_eq!(rolled, Date::new(2020, 1, 30).unwrap());
+/// ```
+pub fn business_day_offset(
+    date: Date,
+    offset: i32,
+    roll: Roll,
+    calendar: &HolidayCalendar,
+) -> Result<Date, Error> {
+    let ord = date.ordinal();
+    let max_b = business_days_up_to(MAX_ORDINAL, calendar);
+    let (rolled, idx) = if is_business_day(date, calendar) {
+        (date, business_days_up_to(ord, calendar))
+    } else {
+        let r = business_days_up_to(ord, calendar);
+        let forward = || -> Result<(Date, i64), Error> {
+            let k = r + 1;
+            if k > max_b {
+                return Err(Error::Date);
+            }
+            Ok((nth_business_day(k, calendar)?, k))
+        };
+        let backward = || -> Result<(Date, i64), Error> {
+            if r < 1 {
+                return Err(Error::Date);
+            }
+            Ok((nth_business_day(r, calendar)?, r))
+        };
+        match roll {
+            Roll::Raise => return Err(Error::Date),
+            Roll::Forward => forward()?,
+            Roll::Backward => backward()?,
+            Roll::ModifiedFollowing => match forward() {
+                Ok((fwd, k)) if fwd.year == date.year && fwd.month == date.month => (fwd, k),
+                _ => backward()?,
+            },
+            Roll::ModifiedPreceding => match backward() {
+                Ok((bwd, k)) if bwd.year == date.year && bwd.month == date.month => (bwd, k),
+                _ => forward()?,
+            },
+        }
+    };
+
+    if offset == 0 {
+        return Ok(rolled);
+    }
+    let target = idx + i64::from(offset);
+    if target < 1 || target > max_b {
+        return Err(Error::Date);
+    }
+    nth_business_day(target, calendar)
+}
+
+/// Count business days between `begin` and `end` under `calendar` in `O(log H)` time, matching
+/// NumPy `np.busday_count` exact asymmetric interval semantics:
+///
+/// - When `begin <= end`: `+count(d in [begin, end) where is_business_day(d))` (`begin` inclusive,
+///   `end` exclusive).
+/// - When `begin > end`: `-count(d in (end, begin] where is_business_day(d))` (`end` exclusive,
+///   `begin` inclusive).
+///
+/// # Example
+/// ```
+/// use quantus_math::{business_day_count, Date, HolidayCalendar};
+///
+/// let cal = HolidayCalendar::weekdays(vec![Date::new(2020, 1, 1).unwrap()]);
+/// let jan1 = Date::new(2020, 1, 1).unwrap();
+/// let jan6 = Date::new(2020, 1, 6).unwrap();
+/// assert_eq!(business_day_count(jan1, jan6, &cal), 2);
+/// assert_eq!(business_day_count(jan6, jan1, &cal), -3);
+/// ```
+pub fn business_day_count(begin: Date, end: Date, calendar: &HolidayCalendar) -> i64 {
+    if begin == end {
+        return 0;
+    }
+    if begin < end {
+        let wm = week_mask_days_in_half_open(begin.ordinal(), end.ordinal(), &calendar.week_mask);
+        let lo = calendar.holidays.partition_point(|&h| h < begin);
+        let hi = calendar.holidays.partition_point(|&h| h < end);
+        wm - (hi - lo) as i64
+    } else {
+        let wm = week_mask_days_in_half_open(
+            end.ordinal() + 1,
+            begin.ordinal() + 1,
+            &calendar.week_mask,
+        );
+        let lo = calendar.holidays.partition_point(|&h| h <= end);
+        let hi = calendar.holidays.partition_point(|&h| h <= begin);
+        -(wm - (hi - lo) as i64)
     }
 }
