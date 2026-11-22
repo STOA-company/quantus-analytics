@@ -1,0 +1,3953 @@
+{
+  "schema": "gsquant-bollinger-bands-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:bollinger_bands",
+    "gs_quant/timeseries/technicals.py:moving_average",
+    "gs_quant/timeseries/statistics.py:mean",
+    "gs_quant/timeseries/statistics.py:std",
+    "gs_quant/timeseries/statistics.py:rolling_std",
+    "gs_quant/timeseries/helper.py:normalize_window",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "test-bb-expanding-default",
+      "source_ref": "test_technicals.py::test_bollinger_bands",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          1.0857864376269049,
+          1.5119661282874148,
+          0.3351457844873238,
+          0.6111456180001682,
+          -0.34664010613630225
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          3.914213562373095,
+          3.8213672050459184,
+          4.164854215512676,
+          4.188854381999832,
+          6.346640106136302
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "test-bb-cal2d-r2d-default",
+      "source_ref": "test_technicals.py::test_bollinger_bands",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        2,
+        2,
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          1.0857864376269049,
+          -0.8284271247461903,
+          -0.8284271247461903,
+          0.25735931288071523
+        ],
+        "upper": [
+          3.914213562373095,
+          4.82842712474619,
+          4.82842712474619,
+          8.742640687119284
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "upstream-k15-obs3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        1.5
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          1.4393398282201786,
+          1.8006412628822277,
+          0.5,
+          0.6012825257644563,
+          -0.4415838843020419
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          3.5606601717798214,
+          3.5326920704511053,
+          3.5,
+          4.065384140902211,
+          7.108250550968709
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "obs3-r2-k2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        2,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          1.5119661282874148,
+          0.0,
+          0.023932256574830557,
+          -1.6998896235138337
+        ],
+        "upper": [
+          3.8213672050459184,
+          4.0,
+          4.642734410091837,
+          8.366556290180501
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "days3-r0-k2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          8.17157287525381,
+          9.0,
+          7.343145750507619,
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          13.82842712474619,
+          13.0,
+          18.65685424949238,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "days3-r3-k2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        3,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          7.343145750507619,
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          18.65685424949238,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-zero",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        0.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          2.5,
+          2.6666666666666665,
+          2.0,
+          2.3333333333333335,
+          3.3333333333333335
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          2.5,
+          2.6666666666666665,
+          2.0,
+          2.3333333333333335,
+          3.3333333333333335
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-neg-zero",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        -0.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          2.5,
+          2.6666666666666665,
+          2.0,
+          2.3333333333333335,
+          3.3333333333333335
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          2.5,
+          2.6666666666666665,
+          2.0,
+          2.3333333333333335,
+          3.3333333333333335
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-negative",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        -2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          3.914213562373095,
+          3.8213672050459184,
+          4.0,
+          4.642734410091837,
+          8.366556290180501
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          1.0857864376269049,
+          1.5119661282874148,
+          0.0,
+          0.023932256574830557,
+          -1.6998896235138337
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-nan",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        {
+          "special": "NaN"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-inf",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        {
+          "special": "+Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "k-neg-inf",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        {
+          "special": "-Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-expanding",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-obs2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        2,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-obs0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-days2-r2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        2,
+        2,
+        2.0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "singleton-expanding",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "obs-size0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "days-size0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_zero_day_offset_fallthrough",
+      "rust_error": "Window",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          0.5857864376269049,
+          1.8452994616207483,
+          -0.9148542155126762,
+          1.2111456180001683,
+          2.6533598938636977
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          3.414213562373095,
+          4.1547005383792515,
+          2.914854215512676,
+          4.7888543819998315,
+          9.346640106136302
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "obs-ramp-gt-len",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        2,
+        7,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "obs-ramp-eq-len",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        2,
+        6,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "obs-oversize",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        10,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-obs3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-neg0-obs3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "nan-obs3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "NaN"
+          },
+          5.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          7.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1715728752538097,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          6.82842712474619,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "inf-obs3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          5.0,
+          7.0,
+          {
+            "special": "-Inf"
+          },
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1715728752538097,
+          3.1715728752538097,
+          3.1715728752538097,
+          5.17157287525381
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          6.82842712474619,
+          8.82842712474619,
+          8.82842712474619,
+          10.82842712474619
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "inf-days4",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        4,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          5.0,
+          7.0,
+          {
+            "special": "-Inf"
+          },
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "leap-7d-r0-k15",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        7,
+        0,
+        1.5
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          8.878679656440358,
+          9.5,
+          8.75962965079607,
+          8.437822173508929
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          13.121320343559642,
+          12.5,
+          15.24037034920393,
+          20.562177826491073
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "leap-expanding-default",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          8.17157287525381,
+          9.0,
+          7.679506201061426,
+          5.52534830472546
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          13.82842712474619,
+          13.0,
+          16.320493798938575,
+          21.67465169527454
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "leap-obs3-r1-k15",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        1,
+        1.5
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          8.878679656440358,
+          9.5,
+          9.544167667467466,
+          8.569458704098992
+        ],
+        "upper": [
+          13.121320343559642,
+          12.5,
+          15.789165665865866,
+          22.097207962567676
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "days-1d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        1,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "days-oversize-ramp",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        30,
+        30,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          20.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "obs1-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        1,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-days3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-neg0-days3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-neg0-k-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        0.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-neg0-k-neg-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        -0.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-neg0-k-negative",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        -2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-k-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        {
+          "special": "+Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-k-neg-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        {
+          "special": "-Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "nan-days4",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        4,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "NaN"
+          },
+          5.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          7.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1715728752538097,
+          1.1715728752538097,
+          {
+            "special": "NaN"
+          },
+          3.1715728752538097
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          6.82842712474619,
+          6.82842712474619,
+          {
+            "special": "NaN"
+          },
+          8.82842712474619
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "all-nan-obs3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "all-nan-days3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "inf-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          5.0,
+          7.0,
+          {
+            "special": "-Inf"
+          },
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1715728752538097,
+          1.0,
+          1.0,
+          0.8360222050567776
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          6.82842712474619,
+          9.0,
+          9.0,
+          11.163977794943222
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "inf-days3-partial",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          5.0,
+          7.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.8284271247461903,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          3.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          4.82842712474619,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          11.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "all-inf-obs3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "all-inf-days3",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        3,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-days0-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        0,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "empty-k-nan",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        {
+          "special": "NaN"
+        }
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "singleton-obs1-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        1,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "singleton-obs2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        2,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "lower": [],
+        "upper": [],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "singleton-days2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        2,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "singleton-obs1-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        1,
+        2,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "obs-oversize-and-ramp-gt-len",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        10,
+        10,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "obs-size0-and-ramp-gt-len",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        0,
+        10,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "neg-values-obs3-k15",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        3,
+        0,
+        1.5
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          -5.0,
+          -2.0,
+          -8.0,
+          -2.0,
+          -11.0,
+          -5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -6.681980515339464,
+          -9.5,
+          -9.196152422706632,
+          -13.87386354243376,
+          -12.87386354243376
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          -0.3180194846605362,
+          -0.5,
+          1.196152422706632,
+          -0.1261364575662398,
+          0.8738635424337602
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "mixed-signed-zeros-exp",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "expanding",
+        0,
+        0,
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02"
+        ],
+        "values": [
+          0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_rolling_mean_mixed_signed_zero_gh42064",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "mixed-signed-zeros-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "observations",
+        2,
+        0,
+        2.0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02"
+        ],
+        "values": [
+          0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_rolling_mean_mixed_signed_zero_gh42064",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          -0.0
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-42-days10-k-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        10,
+        0,
+        {
+          "special": "+Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07",
+          "2019-01-08",
+          "2019-01-09",
+          "2019-01-10"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "numpy_calendar_const_std_rounding_residue_k_inf",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07",
+          "2019-01-08",
+          "2019-01-09",
+          "2019-01-10"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    },
+    {
+      "id": "constant-42-days10-k-neg-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "bollinger_bands",
+      "args": [
+        "days",
+        10,
+        0,
+        {
+          "special": "-Inf"
+        }
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07",
+          "2019-01-08",
+          "2019-01-09",
+          "2019-01-10"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "numpy_calendar_const_std_rounding_residue_k_inf",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07",
+          "2019-01-08",
+          "2019-01-09",
+          "2019-01-10"
+        ],
+        "lower": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "upper": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "input",
+        "dtypes": [
+          "float64",
+          "float64"
+        ]
+      }
+    }
+  ]
+}

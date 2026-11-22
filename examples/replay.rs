@@ -1,7 +1,7 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
-    relative_strength_index, returns, smoothed_moving_average, std as series_std, volatility, Date,
-    ReturnKind, Series, Window,
+    beta, bollinger_bands, correlation, exponential_moving_average, macd, max_drawdown,
+    moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
+    std as series_std, volatility, Date, ReturnKind, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -51,6 +51,30 @@ fn main() {
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "bollinger_bands" {
+        let window = parse_window(args[1], args[2], args[3]);
+        let k = match args[4] {
+            "default" => None,
+            v => Some(v.parse().unwrap()),
+        };
+        let series = parse_rows(lines);
+        match bollinger_bands(&series, window, k) {
+            Ok(bands) => {
+                assert_eq!(bands.lower.dates(), bands.upper.dates());
+                for ((date, lower), upper) in bands
+                    .lower
+                    .dates()
+                    .iter()
+                    .zip(bands.lower.values())
+                    .zip(bands.upper.values())
+                {
+                    println!("{date} {lower:?} {upper:?}");
+                }
+            }
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
     let result = if args[0] == "correlation" {
         let window = parse_window(args[1], args[2], args[3]);
         let returns_kind = match (args[4], args[5]) {

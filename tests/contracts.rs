@@ -1,7 +1,7 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
-    relative_strength_index, returns, smoothed_moving_average, std as series_std, volatility, Date,
-    Error, ReturnKind, Series, Window,
+    beta, bollinger_bands, correlation, exponential_moving_average, macd, max_drawdown,
+    moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
+    std as series_std, volatility, BollingerBands, Date, Error, ReturnKind, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -3020,6 +3020,451 @@ fn std_empty_singleton_size1_oversize_ramp_and_errors() {
     );
     assert_eq!(
         series_std(&x, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
+    );
+}
+
+#[test]
+fn bollinger_bands_default_and_custom_k_across_windows() {
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 5),
+        date(2019, 1, 6),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // Upstream test_bollinger_bands default Window::Expanding, k = None (2.0)
+    let exp_def: BollingerBands = bollinger_bands(&x, Window::Expanding, None).unwrap();
+    let exp_k2 = bollinger_bands(&x, Window::Expanding, Some(2.0)).unwrap();
+    assert_eq!(exp_def.lower.dates(), dates.as_slice());
+    assert_eq!(exp_def.upper.dates(), dates.as_slice());
+    assert!(exp_def.lower.values()[0].is_nan() && exp_def.upper.values()[0].is_nan());
+    let expected_low = [
+        1.0857864376269049,
+        1.5119661282874148,
+        0.3351457844873238,
+        0.6111456180001682,
+        -0.34664010613630225,
+    ];
+    let expected_high = [
+        3.914213562373095,
+        3.8213672050459184,
+        4.164854215512676,
+        4.188854381999832,
+        6.346640106136302,
+    ];
+    for (i, (&lo, &hi)) in expected_low.iter().zip(&expected_high).enumerate() {
+        assert!((exp_def.lower.values()[i + 1] - lo).abs() < 1e-12);
+        assert!((exp_def.upper.values()[i + 1] - hi).abs() < 1e-12);
+    }
+    assert!(exp_def
+        .lower
+        .values()
+        .iter()
+        .zip(exp_k2.lower.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!(exp_def
+        .upper
+        .values()
+        .iter()
+        .zip(exp_k2.upper.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+
+    // Upstream test_bollinger_bands("2d") -> Window::Days { size: 2, ramp: 2 }
+    let cal2d = bollinger_bands(&x, Window::Days { size: 2, ramp: 2 }, None).unwrap();
+    assert_eq!(cal2d.lower.dates(), &dates[2..]);
+    assert_eq!(cal2d.upper.dates(), &dates[2..]);
+    let expected_2d_low = [
+        1.0857864376269049,
+        -0.8284271247461903,
+        -0.8284271247461903,
+        0.2573593128807148,
+    ];
+    let expected_2d_high = [
+        3.914213562373095,
+        4.82842712474619,
+        4.82842712474619,
+        8.742640687119286,
+    ];
+    for i in 0..4 {
+        assert!((cal2d.lower.values()[i] - expected_2d_low[i]).abs() < 1e-12);
+        assert!((cal2d.upper.values()[i] - expected_2d_high[i]).abs() < 1e-12);
+    }
+
+    // Custom k = Some(1.5) with Window::Observations { size: 3, ramp: 0 }
+    let obs_k15 =
+        bollinger_bands(&x, Window::Observations { size: 3, ramp: 0 }, Some(1.5)).unwrap();
+    assert_eq!(obs_k15.lower.dates(), dates.as_slice());
+    assert!(obs_k15.lower.values()[0].is_nan() && obs_k15.upper.values()[0].is_nan());
+    assert!((obs_k15.lower.values()[3] - 0.5).abs() < 1e-12);
+    assert!((obs_k15.upper.values()[3] - 3.5).abs() < 1e-12);
+    assert!((obs_k15.lower.values()[5] - (-0.4415838843020419)).abs() < 1e-12);
+    assert!((obs_k15.upper.values()[5] - 7.108250550968709).abs() < 1e-12);
+
+    // Observation ramp Window::Observations { size: 3, ramp: 2 }, k = 2.0
+    let obs_r2 = bollinger_bands(&x, Window::Observations { size: 3, ramp: 2 }, Some(2.0)).unwrap();
+    assert_eq!(obs_r2.lower.dates(), &dates[2..]);
+    assert_eq!(obs_r2.upper.dates(), &dates[2..]);
+    assert!((obs_r2.lower.values()[0] - 1.5119661282874148).abs() < 1e-12);
+    assert!(obs_r2.lower.values()[1] == 0.0 && obs_r2.lower.values()[1].is_sign_positive());
+    assert!((obs_r2.upper.values()[1] - 4.0).abs() < 1e-12);
+}
+
+#[test]
+fn bollinger_bands_leap_day_calendar_windows() {
+    let leap_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 2),
+        date(2020, 3, 5),
+    ];
+    let leap = Series::try_new(leap_dates.clone(), vec![10.0, 12.0, 11.0, 15.0, 20.0]).unwrap();
+
+    // Window::Days { size: 3, ramp: 0 } across leap day 2020-02-29
+    let d3_r0 = bollinger_bands(&leap, Window::Days { size: 3, ramp: 0 }, Some(2.0)).unwrap();
+    assert_eq!(d3_r0.lower.dates(), leap_dates.as_slice());
+    assert_eq!(d3_r0.upper.dates(), leap_dates.as_slice());
+    assert!(d3_r0.lower.values()[0].is_nan() && d3_r0.upper.values()[0].is_nan());
+    assert!((d3_r0.lower.values()[1] - 8.17157287525381).abs() < 1e-12);
+    assert!((d3_r0.upper.values()[1] - 13.82842712474619).abs() < 1e-12);
+    assert!((d3_r0.lower.values()[2] - 9.0).abs() < 1e-12);
+    assert!((d3_r0.upper.values()[2] - 13.0).abs() < 1e-12);
+    assert!((d3_r0.lower.values()[3] - 7.343145750507619).abs() < 1e-12);
+    assert!((d3_r0.upper.values()[3] - 18.65685424949238).abs() < 1e-12);
+    assert!(d3_r0.lower.values()[4].is_nan() && d3_r0.upper.values()[4].is_nan());
+
+    // Window::Days { size: 3, ramp: 3 } keeps 2020-03-02 and 2020-03-05
+    let d3_r3 = bollinger_bands(&leap, Window::Days { size: 3, ramp: 3 }, Some(2.0)).unwrap();
+    assert_eq!(d3_r3.lower.dates(), &[date(2020, 3, 2), date(2020, 3, 5)]);
+    assert_eq!(d3_r3.upper.dates(), &[date(2020, 3, 2), date(2020, 3, 5)]);
+    assert!((d3_r3.lower.values()[0] - 7.343145750507619).abs() < 1e-12);
+    assert!((d3_r3.upper.values()[0] - 18.65685424949238).abs() < 1e-12);
+    assert!(d3_r3.lower.values()[1].is_nan() && d3_r3.upper.values()[1].is_nan());
+
+    // Window::Days { size: 1, ramp: 0 } -> all NaN; oversize ramp -> empty
+    let d1 = bollinger_bands(&leap, Window::Days { size: 1, ramp: 0 }, None).unwrap();
+    assert_eq!(d1.lower.dates(), leap_dates.as_slice());
+    assert!(d1.lower.values().iter().all(|v| v.is_nan()));
+    assert!(d1.upper.values().iter().all(|v| v.is_nan()));
+
+    let d30 = bollinger_bands(&leap, Window::Days { size: 30, ramp: 30 }, None).unwrap();
+    assert!(d30.lower.dates().is_empty() && d30.upper.dates().is_empty());
+}
+
+#[test]
+fn bollinger_bands_constants_missing_infinities_k_edges_and_determinism() {
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 5),
+        date(2019, 1, 6),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // Constant 4.2 -> lower == upper == 4.2 for count >= 2
+    let c42 = Series::try_new(dates.clone(), vec![4.2; 6]).unwrap();
+    let c42_obs = bollinger_bands(&c42, Window::Observations { size: 3, ramp: 0 }, None).unwrap();
+    assert!(c42_obs.lower.values()[0].is_nan() && c42_obs.upper.values()[0].is_nan());
+    for i in 1..6 {
+        assert!((c42_obs.lower.values()[i] - 4.2).abs() < 1e-12);
+        assert!((c42_obs.upper.values()[i] - 4.2).abs() < 1e-12);
+    }
+
+    // Constant -0.0 -> lower = -0.0, upper = +0.0 for finite k > 0.0 or +0.0 (k.is_sign_positive());
+    // swapped to (+0.0, -0.0) for finite k < 0.0 or -0.0 (k.is_sign_negative()).
+    let cneg0 = Series::try_new(dates.clone(), vec![-0.0; 6]).unwrap();
+    for w in [
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        for k in [2.0, 0.0] {
+            let out = bollinger_bands(&cneg0, w, Some(k)).unwrap();
+            assert!(out.lower.values()[0].is_nan() && out.upper.values()[0].is_nan());
+            for i in 1..6 {
+                assert!(out.lower.values()[i] == 0.0 && out.lower.values()[i].is_sign_negative());
+                assert!(out.upper.values()[i] == 0.0 && out.upper.values()[i].is_sign_positive());
+            }
+        }
+    }
+    for k in [-2.0, -0.0] {
+        let out =
+            bollinger_bands(&cneg0, Window::Observations { size: 3, ramp: 0 }, Some(k)).unwrap();
+        assert!(out.lower.values()[0].is_nan() && out.upper.values()[0].is_nan());
+        for i in 1..6 {
+            assert!(out.lower.values()[i] == 0.0 && out.lower.values()[i].is_sign_positive());
+            assert!(out.upper.values()[i] == 0.0 && out.upper.values()[i].is_sign_negative());
+        }
+    }
+
+    // Documented boundary (P1-1): mixed signed zeros [+0.0, -0.0] under Expanding and Observations
+    // emit (+0.0, +0.0) via IEEE-754 +0.0 + (-0.0) = +0.0 (numeric diff 0 vs pandas GH#42064 (-0.0, +0.0)).
+    let mixed_zeros = Series::try_new(dates[..2].to_vec(), vec![0.0, -0.0]).unwrap();
+    for (w, k) in [
+        (Window::Expanding, None),
+        (Window::Observations { size: 2, ramp: 0 }, Some(2.0)),
+    ] {
+        let out = bollinger_bands(&mixed_zeros, w, k).unwrap();
+        assert_eq!(out.lower.dates(), &dates[..2]);
+        assert!(out.lower.values()[0].is_nan() && out.upper.values()[0].is_nan());
+        assert!(out.lower.values()[1] == 0.0 && out.lower.values()[1].is_sign_positive());
+        assert!(out.upper.values()[1] == 0.0 && out.upper.values()[1].is_sign_positive());
+    }
+
+    // Mid-series NaN and all-NaN
+    let mid_nan = Series::try_new(
+        dates.clone(),
+        vec![3.0, f64::NAN, 5.0, f64::NAN, f64::NAN, 7.0],
+    )
+    .unwrap();
+    let nan_obs =
+        bollinger_bands(&mid_nan, Window::Observations { size: 3, ramp: 0 }, None).unwrap();
+    assert!(nan_obs.lower.values()[0].is_nan() && nan_obs.lower.values()[1].is_nan());
+    assert!((nan_obs.lower.values()[2] - 1.1715728752538097).abs() < 1e-12);
+    assert!((nan_obs.upper.values()[2] - 6.82842712474619).abs() < 1e-12);
+    assert!(nan_obs.lower.values()[3..].iter().all(|v| v.is_nan()));
+    assert!(nan_obs.upper.values()[3..].iter().all(|v| v.is_nan()));
+
+    let all_nan = Series::try_new(dates.clone(), vec![f64::NAN; 6]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = bollinger_bands(&all_nan, w, None).unwrap();
+        assert_eq!(out.lower.dates(), dates.as_slice());
+        assert!(out.lower.values().iter().all(|v| v.is_nan()));
+        assert!(out.upper.values().iter().all(|v| v.is_nan()));
+    }
+
+    // ±Inf: skipped in Observations / Expanding vs NaN in Days
+    let infs = Series::try_new(
+        dates,
+        vec![3.0, f64::INFINITY, 5.0, 7.0, f64::NEG_INFINITY, 9.0],
+    )
+    .unwrap();
+    let inf_obs = bollinger_bands(&infs, Window::Observations { size: 3, ramp: 0 }, None).unwrap();
+    assert!(inf_obs.lower.values()[0].is_nan() && inf_obs.lower.values()[1].is_nan());
+    assert!((inf_obs.lower.values()[2] - 1.1715728752538097).abs() < 1e-12);
+    assert!((inf_obs.upper.values()[2] - 6.82842712474619).abs() < 1e-12);
+    assert!((inf_obs.lower.values()[3] - 3.1715728752538097).abs() < 1e-12);
+    assert!((inf_obs.upper.values()[3] - 8.82842712474619).abs() < 1e-12);
+    assert!((inf_obs.lower.values()[5] - 5.17157287525381).abs() < 1e-12);
+    assert!((inf_obs.upper.values()[5] - 10.82842712474619).abs() < 1e-12);
+
+    let inf_days = bollinger_bands(&infs, Window::Days { size: 4, ramp: 0 }, None).unwrap();
+    assert!(inf_days.lower.values().iter().all(|v| v.is_nan()));
+    assert!(inf_days.upper.values().iter().all(|v| v.is_nan()));
+
+    // k boundary values: 0.0, -0.0, negative (-2.0), NaN, +Inf, -Inf
+    let w3 = Window::Observations { size: 3, ramp: 0 };
+    for kz in [0.0, -0.0] {
+        let out = bollinger_bands(&x, w3, Some(kz)).unwrap();
+        assert!(out.lower.values()[0].is_nan() && out.upper.values()[0].is_nan());
+        for i in 1..6 {
+            assert!((out.lower.values()[i] - out.upper.values()[i]).abs() < 1e-12);
+        }
+    }
+    let k_neg = bollinger_bands(&x, w3, Some(-2.0)).unwrap();
+    let k_pos = bollinger_bands(&x, w3, Some(2.0)).unwrap();
+    for i in 1..6 {
+        assert!((k_neg.lower.values()[i] - k_pos.upper.values()[i]).abs() < 1e-12);
+        assert!((k_neg.upper.values()[i] - k_pos.lower.values()[i]).abs() < 1e-12);
+    }
+    let k_nan = bollinger_bands(&x, w3, Some(f64::NAN)).unwrap();
+    assert!(k_nan.lower.values().iter().all(|v| v.is_nan()));
+    assert!(k_nan.upper.values().iter().all(|v| v.is_nan()));
+
+    let k_inf = bollinger_bands(&x, w3, Some(f64::INFINITY)).unwrap();
+    assert!(k_inf.lower.values()[0].is_nan() && k_inf.upper.values()[0].is_nan());
+    assert!(k_inf.lower.values()[1..]
+        .iter()
+        .all(|v| v.is_infinite() && v.is_sign_negative()));
+    assert!(k_inf.upper.values()[1..]
+        .iter()
+        .all(|v| v.is_infinite() && v.is_sign_positive()));
+
+    let k_ninf = bollinger_bands(&x, w3, Some(f64::NEG_INFINITY)).unwrap();
+    assert!(k_ninf.lower.values()[0].is_nan() && k_ninf.upper.values()[0].is_nan());
+    assert!(k_ninf.lower.values()[1..]
+        .iter()
+        .all(|v| v.is_infinite() && v.is_sign_positive()));
+    assert!(k_ninf.upper.values()[1..]
+        .iter()
+        .all(|v| v.is_infinite() && v.is_sign_negative()));
+
+    // Constant series with k = ±Inf -> Inf * 0.0 = NaN (both observation and 10-day calendar
+    // windows: P1-2 documents Rust's exact +0.0 std contract vs NumPy 2.2.6 ~9.36e-16 residue).
+    let c42_inf = bollinger_bands(&c42, w3, Some(f64::INFINITY)).unwrap();
+    assert!(c42_inf.lower.values().iter().all(|v| v.is_nan()));
+    assert!(c42_inf.upper.values().iter().all(|v| v.is_nan()));
+
+    let ten_dates: Vec<_> = (1..=10).map(|day| date(2019, 1, day)).collect();
+    let c42_10 = Series::try_new(ten_dates.clone(), vec![4.2; 10]).unwrap();
+    for k in [f64::INFINITY, f64::NEG_INFINITY] {
+        let out = bollinger_bands(&c42_10, Window::Days { size: 10, ramp: 0 }, Some(k)).unwrap();
+        assert_eq!(out.lower.dates(), ten_dates.as_slice());
+        assert_eq!(out.upper.dates(), ten_dates.as_slice());
+        assert!(out.lower.values().iter().all(|v| v.is_nan()));
+        assert!(out.upper.values().iter().all(|v| v.is_nan()));
+    }
+
+    // Back-to-back bitwise determinism across all edge inputs
+    let checks: [(&Series, Window, Option<f64>); 18] = [
+        (&c42, w3, None),
+        (&cneg0, w3, Some(2.0)),
+        (&cneg0, w3, Some(-0.0)),
+        (&cneg0, Window::Days { size: 3, ramp: 0 }, Some(2.0)),
+        (&mixed_zeros, Window::Expanding, None),
+        (
+            &mixed_zeros,
+            Window::Observations { size: 2, ramp: 0 },
+            Some(2.0),
+        ),
+        (&mid_nan, w3, None),
+        (&all_nan, w3, None),
+        (&infs, w3, None),
+        (&infs, Window::Days { size: 4, ramp: 0 }, None),
+        (&x, w3, Some(0.0)),
+        (&x, w3, Some(-0.0)),
+        (&x, w3, Some(-2.0)),
+        (&x, w3, Some(f64::NAN)),
+        (&x, w3, Some(f64::INFINITY)),
+        (&x, w3, Some(f64::NEG_INFINITY)),
+        (
+            &c42_10,
+            Window::Days { size: 10, ramp: 0 },
+            Some(f64::INFINITY),
+        ),
+        (
+            &c42_10,
+            Window::Days { size: 10, ramp: 0 },
+            Some(f64::NEG_INFINITY),
+        ),
+    ];
+    for (series, window, k) in checks {
+        let a = bollinger_bands(series, window, k).unwrap();
+        let b = bollinger_bands(series, window, k).unwrap();
+        assert_eq!(a.lower.dates(), b.lower.dates());
+        assert_eq!(a.upper.dates(), b.upper.dates());
+        assert!(a
+            .lower
+            .values()
+            .iter()
+            .zip(b.lower.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+        assert!(a
+            .upper
+            .values()
+            .iter()
+            .zip(b.upper.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+    }
+}
+
+#[test]
+fn bollinger_bands_empty_singleton_oversize_ramp_and_errors() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for (w, k) in [
+        (Window::Expanding, None),
+        (Window::Observations { size: 2, ramp: 0 }, Some(2.0)),
+        (Window::Observations { size: 0, ramp: 0 }, Some(2.0)),
+        (Window::Observations { size: 2, ramp: 5 }, Some(2.0)),
+        (Window::Days { size: 0, ramp: 0 }, Some(2.0)),
+        (Window::Days { size: 2, ramp: 2 }, Some(2.0)),
+        (Window::Expanding, Some(f64::NAN)),
+    ] {
+        let out = bollinger_bands(&empty, w, k).unwrap();
+        assert!(out.lower.dates().is_empty() && out.lower.values().is_empty());
+        assert!(out.upper.dates().is_empty() && out.upper.values().is_empty());
+    }
+
+    let single = Series::try_new(vec![date(2020, 1, 1)], vec![5.0]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 1, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+    ] {
+        let out = bollinger_bands(&single, w, None).unwrap();
+        assert_eq!(out.lower.dates(), single.dates());
+        assert_eq!(out.upper.dates(), single.dates());
+        assert!(out.lower.values()[0].is_nan() && out.upper.values()[0].is_nan());
+    }
+    assert!(
+        bollinger_bands(&single, Window::Observations { size: 2, ramp: 0 }, None)
+            .unwrap()
+            .lower
+            .values()
+            .is_empty()
+    );
+    assert!(
+        bollinger_bands(&single, Window::Observations { size: 1, ramp: 1 }, None)
+            .unwrap()
+            .lower
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        bollinger_bands(&single, Window::Observations { size: 1, ramp: 2 }, None),
+        Err(Error::Ramp)
+    );
+
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 5),
+        date(2019, 1, 6),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // Size-1 observation window -> all NaN
+    let obs1 = bollinger_bands(&x, Window::Observations { size: 1, ramp: 0 }, None).unwrap();
+    assert_eq!(obs1.lower.dates(), dates.as_slice());
+    assert!(obs1.lower.values().iter().all(|v| v.is_nan()));
+    assert!(obs1.upper.values().iter().all(|v| v.is_nan()));
+
+    // Oversize observation window & ramp == len -> empty
+    assert!(
+        bollinger_bands(&x, Window::Observations { size: 10, ramp: 0 }, None)
+            .unwrap()
+            .lower
+            .values()
+            .is_empty()
+    );
+    assert!(
+        bollinger_bands(&x, Window::Observations { size: 2, ramp: 6 }, None)
+            .unwrap()
+            .lower
+            .values()
+            .is_empty()
+    );
+
+    // Error::Window and Error::Ramp (including documented Days { size: 0 } rejection and precedence)
+    assert_eq!(
+        bollinger_bands(&x, Window::Observations { size: 0, ramp: 0 }, None),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        bollinger_bands(&x, Window::Days { size: 0, ramp: 0 }, None),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        bollinger_bands(&x, Window::Observations { size: 0, ramp: 10 }, None),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        bollinger_bands(&x, Window::Observations { size: 2, ramp: 7 }, None),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        bollinger_bands(&x, Window::Observations { size: 10, ramp: 10 }, None),
         Err(Error::Ramp)
     );
 }

@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -1372,4 +1372,139 @@ pub fn std(x: &Series, window: Window) -> Result<Series, Error> {
     }
 
     Series::try_new(dates, values)
+}
+
+/// Lower and upper Bollinger bands sharing identical dates.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BollingerBands {
+    pub lower: Series,
+    pub upper: Series,
+}
+
+fn bollinger_mean(x: &Series, window: Window) -> Vec<f64> {
+    let n = x.dates.len();
+    let mut values = Vec::new();
+    let mut day_start = 0usize;
+
+    for i in 0..n {
+        let include = match window {
+            Window::Expanding => true,
+            Window::Observations { ramp, .. } => i >= ramp,
+            Window::Days { ramp, .. } => {
+                x.dates[i].ordinal() - x.dates[0].ordinal() >= i64::from(ramp)
+            }
+        };
+        if !include {
+            continue;
+        }
+        let start = match window {
+            Window::Expanding => 0,
+            Window::Observations { size, .. } => (i + 1).saturating_sub(size),
+            Window::Days { size, .. } => {
+                while day_start < i
+                    && x.dates[i].ordinal() - x.dates[day_start].ordinal() >= i64::from(size)
+                {
+                    day_start += 1;
+                }
+                day_start
+            }
+        };
+
+        let slice = &x.values[start..=i];
+        let mut sum = -0.0_f64;
+        let mut count = 0usize;
+        match window {
+            Window::Expanding | Window::Observations { .. } => {
+                for &v in slice {
+                    if v.is_finite() {
+                        sum += v;
+                        count += 1;
+                    }
+                }
+            }
+            Window::Days { .. } => {
+                for &v in slice {
+                    if !v.is_nan() {
+                        sum += v;
+                        count += 1;
+                    }
+                }
+            }
+        }
+        values.push(if count == 0 {
+            f64::NAN
+        } else {
+            sum / count as f64
+        });
+    }
+
+    values
+}
+
+/// Bollinger bands (`avg - k * sigma`, `avg + k * sigma`) over a rolling or expanding window.
+///
+/// Mirrors upstream `gs_quant/timeseries/technicals.py:bollinger_bands` (lines 98–143) on a
+/// `datetime.date` index:
+///
+/// - Defaults `k = 2.0` when `None`. Any `f64` value of `k` (including `0.0`, `-0.0`, negative
+///   values that swap `lower` and `upper`, `NaN`, and `±Inf`) follows IEEE-754 arithmetic without
+///   validation errors.
+/// - Empty input returns empty `lower` and `upper` `Series` before window or ramp validation.
+/// - Reuses [`std`] for window/ramp validation and unbiased sample standard deviation (`ddof = 1`):
+///   on non-empty input, `size == 0` returns `Err(Error::Window)` (including
+///   `Window::Days { size: 0, .. }`, whereas upstream `DateOffset(days=0)` silently falls through
+///   as an expanding window), observation `ramp > x.dates().len()` returns `Err(Error::Ramp)`, and
+///   oversize observation windows or ramps leaving no rows return empty bands.
+/// - Computes the rolling mean internally without altering [`moving_average`]: `Window::Expanding`
+///   and `Window::Observations` aggregate finite values (`v.is_finite()`, skipping both `NaN` and
+///   `±Inf`), whereas `Window::Days` aggregates non-`NaN` values (`!v.is_nan()`, so `±Inf` yields
+///   `NaN` via `sigma`). Initializing the mean sum to `-0.0` preserves the upstream signed zero on
+///   all-`-0.0` constant windows: `lower = -0.0`, `upper = +0.0` for finite `k > 0.0` or `+0.0`
+///   (`k.is_sign_positive()`), and swapped to `lower = +0.0`, `upper = -0.0` for finite `k < 0.0`
+///   or `-0.0` (`k.is_sign_negative()`).
+/// - Documented upstream parity boundaries:
+///   - Mixed signed zeros (`[+0.0, -0.0]`): under `Window::Expanding` and `Window::Observations`,
+///     Rust's IEEE-754 summation (`+0.0 + (-0.0) = +0.0`) produces `(+0.0, +0.0)` (numeric
+///     difference `0`), whereas pinned pandas 2.3.3 `rolling().mean()` takes the GH#42064
+///     equal-value fast path and adopts the last zero's sign `-0.0`, producing `(-0.0, +0.0)`.
+///   - Constant calendar-day windows with `k = ±Inf` (e.g. ten days of `4.2` under
+///     `Window::Days { size: 10, ramp: 0 }`): Rust reuses [`std`]'s exact `+0.0` constant-window
+///     contract (consistent with `std`, `correlation`, `beta`, and pandas observation windows), so
+///     `0.0 * ±Inf = NaN`, whereas pinned NumPy 2.2.6 `rolling_std` retains a mean-rounding
+///     residue (`~9.36e-16` on ten `4.2` values) that multiplies with `±Inf` into `(-Inf, +Inf)` /
+///     `(+Inf, -Inf)`.
+pub fn bollinger_bands(
+    x: &Series,
+    window: Window,
+    k: Option<f64>,
+) -> Result<BollingerBands, Error> {
+    if x.dates.is_empty() {
+        return Ok(BollingerBands {
+            lower: Series::try_new(vec![], vec![])?,
+            upper: Series::try_new(vec![], vec![])?,
+        });
+    }
+
+    let sigma = std(x, window)?;
+    if sigma.dates.is_empty() {
+        return Ok(BollingerBands {
+            lower: Series::try_new(vec![], vec![])?,
+            upper: Series::try_new(vec![], vec![])?,
+        });
+    }
+
+    let avg = bollinger_mean(x, window);
+    let k = k.unwrap_or(2.0);
+    let mut lower_values = Vec::with_capacity(sigma.values.len());
+    let mut upper_values = Vec::with_capacity(sigma.values.len());
+    for (&mean, &sd) in avg.iter().zip(&sigma.values) {
+        let delta = k * sd;
+        lower_values.push(mean - delta);
+        upper_values.push(mean + delta);
+    }
+
+    Ok(BollingerBands {
+        lower: Series::try_new(sigma.dates.clone(), lower_values)?,
+        upper: Series::try_new(sigma.dates, upper_values)?,
+    })
 }
