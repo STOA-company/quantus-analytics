@@ -1,6 +1,6 @@
 use quantus_math::{
     beta, correlation, exponential_moving_average, max_drawdown, moving_average, returns,
-    volatility, Date, Error, ReturnKind, Series, Window,
+    smoothed_moving_average, volatility, Date, Error, ReturnKind, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -1477,4 +1477,339 @@ fn ema_empty_singleton_all_missing_and_beta_errors() {
             Err(Error::Beta)
         );
     }
+}
+
+#[test]
+fn smma_expanding_and_observation_windows() {
+    let dates: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // Default expanding window (normalized size = len(x) = 6, ramp = 0)
+    let def = smoothed_moving_average(&x, Window::Expanding).unwrap();
+    assert_eq!(def.dates(), dates.as_slice());
+    let expected_def = [
+        3.0,
+        17.0 / 6.0,
+        103.0 / 36.0,
+        551.0 / 216.0,
+        3403.0 / 1296.0,
+        24791.0 / 7776.0,
+    ];
+    for (&actual, &expected) in def.values().iter().zip(&expected_def) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Observation window size 1 -> identity on finite series
+    let obs1 = smoothed_moving_average(&x, Window::Observations { size: 1, ramp: 0 }).unwrap();
+    assert_eq!(obs1.dates(), dates.as_slice());
+    assert_eq!(obs1.values(), &[3.0, 2.0, 3.0, 1.0, 3.0, 6.0]);
+
+    // Observation window size 2, ramp 0 vs ramp 2
+    let obs2_r0 = smoothed_moving_average(&x, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(obs2_r0.dates(), dates.as_slice());
+    assert_eq!(obs2_r0.values(), &[3.0, 2.5, 2.75, 1.875, 2.4375, 4.21875]);
+
+    let obs2_r2 = smoothed_moving_average(&x, Window::Observations { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(obs2_r2.dates(), &dates[2..]);
+    assert_eq!(obs2_r2.values(), &[2.5, 1.75, 2.375, 4.1875]);
+
+    // Observation window size 3, ramp 2: initial mean is mean([3, 2, 3]) = 8/3
+    let obs3_r2 = smoothed_moving_average(&x, Window::Observations { size: 3, ramp: 2 }).unwrap();
+    assert_eq!(obs3_r2.dates(), &dates[2..]);
+    let expected_obs3 = [8.0 / 3.0, 19.0 / 9.0, 65.0 / 27.0, 292.0 / 81.0];
+    for (&actual, &expected) in obs3_r2.values().iter().zip(&expected_obs3) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Ramp == len -> empty series
+    let ramp_eq = smoothed_moving_average(&x, Window::Observations { size: 2, ramp: 6 }).unwrap();
+    assert!(ramp_eq.dates().is_empty() && ramp_eq.values().is_empty());
+}
+
+#[test]
+fn smma_calendar_windows_irregular_leap_day_and_post_ramp_slicing() {
+    let regular_dates: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+    let regular =
+        Series::try_new(regular_dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // 2d with default ramp (2) vs ramp 0 on regular daily dates
+    let reg_2d = smoothed_moving_average(&regular, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(reg_2d.dates(), &regular_dates[2..]);
+    assert_eq!(reg_2d.values(), &[2.5, 1.75, 2.375, 4.1875]);
+
+    let reg_2d_r0 = smoothed_moving_average(&regular, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(reg_2d_r0.dates(), regular_dates.as_slice());
+    assert_eq!(
+        reg_2d_r0.values(),
+        &[3.0, 2.5, 2.75, 1.875, 2.4375, 4.21875]
+    );
+
+    // 4d with ramp 2d on dense dates: initial value uses full x ([3, 2, 3] -> 8/3),
+    // while recurrence counts observations inside post-ramp sliced x (so Jan 4 has n = 2, not 4).
+    let reg_4d_r2 = smoothed_moving_average(&regular, Window::Days { size: 4, ramp: 2 }).unwrap();
+    assert_eq!(reg_4d_r2.dates(), &regular_dates[2..]);
+    let s0 = 8.0 / 3.0;
+    let s1 = (1.0 * s0 + 1.0) / 2.0; // {Jan 3, Jan 4} -> n = 2
+    let s2 = (2.0 * s1 + 3.0) / 3.0; // {Jan 3, Jan 4, Jan 5} -> n = 3
+    let s3 = (3.0 * s2 + 6.0) / 4.0; // {Jan 3, Jan 4, Jan 5, Jan 6} -> n = 4
+    for (&actual, &expected) in reg_4d_r2.values().iter().zip(&[s0, s1, s2, s3]) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Irregular spacing crossing leap day 2020-02-29
+    let irreg_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 3, 2),
+        date(2020, 3, 7),
+        date(2020, 3, 14),
+        date(2020, 3, 23),
+    ];
+    let irreg = Series::try_new(irreg_dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    let irreg_4d = smoothed_moving_average(&irreg, Window::Days { size: 4, ramp: 4 }).unwrap();
+    assert_eq!(irreg_4d.dates(), &irreg_dates[2..]);
+    assert_eq!(irreg_4d.values(), &[2.5, 1.0, 3.0, 6.0]);
+
+    let irreg_4d_r0 = smoothed_moving_average(&irreg, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert_eq!(irreg_4d_r0.dates(), irreg_dates.as_slice());
+    assert_eq!(irreg_4d_r0.values(), &[3.0, 2.5, 2.75, 1.0, 3.0, 6.0]);
+
+    let irreg_2d = smoothed_moving_average(&irreg, Window::Days { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(irreg_2d.dates(), &irreg_dates[2..]);
+    assert_eq!(irreg_2d.values(), &[3.0, 1.0, 3.0, 6.0]);
+
+    let irreg_2d_r0 = smoothed_moving_average(&irreg, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(irreg_2d_r0.dates(), irreg_dates.as_slice());
+    assert_eq!(irreg_2d_r0.values(), &[3.0, 2.5, 3.0, 1.0, 3.0, 6.0]);
+
+    // 4d with ramp 1d: Feb 28 survives ramp, so Mar 2 sees {Feb 28, Mar 2} (n = 2)
+    let irreg_4d_r1 = smoothed_moving_average(&irreg, Window::Days { size: 4, ramp: 1 }).unwrap();
+    assert_eq!(irreg_4d_r1.dates(), &irreg_dates[1..]);
+    assert_eq!(irreg_4d_r1.values(), &[2.5, 2.75, 1.0, 3.0, 6.0]);
+
+    // Extreme calendar ranges handled via integer ordinals (beyond pandas DateOffset limits)
+    let ancient =
+        Series::try_new(vec![date(1677, 9, 22), date(1677, 9, 23)], vec![2.0, 4.0]).unwrap();
+    let anc_out = smoothed_moving_average(&ancient, Window::Days { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(anc_out.dates(), ancient.dates());
+    assert_eq!(anc_out.values(), &[2.0, 3.0]);
+    let huge_ramp = smoothed_moving_average(
+        &regular,
+        Window::Days {
+            size: 1_000_000,
+            ramp: 1_000_000,
+        },
+    )
+    .unwrap();
+    assert!(huge_ramp.dates().is_empty() && huge_ramp.values().is_empty());
+}
+
+#[test]
+fn smma_nan_inf_signed_zero_oversize_and_determinism() {
+    let dates: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+
+    // NaN propagation: leading, mid, all-NaN, and NaN skipped in initial mean window
+    let nan_lead = Series::try_new(dates.clone(), vec![f64::NAN, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+    let nl1 =
+        smoothed_moving_average(&nan_lead, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    let nl2 =
+        smoothed_moving_average(&nan_lead, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(nl1.dates(), nl2.dates());
+    assert!(nl1.values().iter().all(|v| v.is_nan()));
+    assert!(nl1
+        .values()
+        .iter()
+        .zip(nl2.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+
+    let nan_mid = Series::try_new(dates.clone(), vec![2.0, 4.0, f64::NAN, 1.0, 3.0, 6.0]).unwrap();
+    let nm = smoothed_moving_average(&nan_mid, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(&nm.values()[..2], &[2.0, 3.0]);
+    assert!(nm.values()[2..].iter().all(|v| v.is_nan()));
+
+    let nan_init = Series::try_new(dates[..4].to_vec(), vec![f64::NAN, 2.0, 4.0, 6.0]).unwrap();
+    let ni = smoothed_moving_average(&nan_init, Window::Observations { size: 3, ramp: 2 }).unwrap();
+    assert_eq!(ni.dates(), &dates[2..4]);
+    assert_eq!(ni.values(), &[3.0, 4.0]);
+
+    // ±Inf: skipped in initial mean window (matching pandas rolling().mean()), propagated in loop
+    let inf_lead =
+        Series::try_new(dates[..4].to_vec(), vec![f64::INFINITY, 2.0, 4.0, 6.0]).unwrap();
+    let il_r0 =
+        smoothed_moving_average(&inf_lead, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert!(il_r0.values().iter().all(|v| v.is_nan()));
+    let il_r1 =
+        smoothed_moving_average(&inf_lead, Window::Observations { size: 2, ramp: 1 }).unwrap();
+    assert_eq!(il_r1.dates(), &dates[1..4]);
+    assert_eq!(il_r1.values(), &[2.0, 3.0, 4.5]);
+    let il_2d_r1 = smoothed_moving_average(&inf_lead, Window::Days { size: 2, ramp: 1 }).unwrap();
+    assert_eq!(il_2d_r1.dates(), &dates[1..4]);
+    assert_eq!(il_2d_r1.values(), &[2.0, 3.0, 4.5]);
+
+    let inf_mid =
+        Series::try_new(dates.clone(), vec![2.0, 4.0, f64::INFINITY, 1.0, 3.0, 6.0]).unwrap();
+    let im1 = smoothed_moving_average(&inf_mid, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    let im2 = smoothed_moving_average(&inf_mid, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(im1.dates(), im2.dates());
+    assert!(im1
+        .values()
+        .iter()
+        .zip(im2.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert_eq!(
+        im1.values(),
+        &[
+            2.0,
+            3.0,
+            f64::INFINITY,
+            f64::INFINITY,
+            f64::INFINITY,
+            f64::INFINITY
+        ]
+    );
+
+    // Opposite-sign infinity and 0 * inf produce NaN
+    let inf_opp = Series::try_new(
+        dates[..4].to_vec(),
+        vec![2.0, f64::INFINITY, f64::NEG_INFINITY, 6.0],
+    )
+    .unwrap();
+    let io = smoothed_moving_average(&inf_opp, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(io.values()[0], 2.0);
+    assert_eq!(io.values()[1], f64::INFINITY);
+    assert!(io.values()[2].is_nan() && io.values()[3].is_nan());
+
+    let inf_w1 = Series::try_new(dates[..3].to_vec(), vec![2.0, f64::INFINITY, 6.0]).unwrap();
+    let iw1 = smoothed_moving_average(&inf_w1, Window::Observations { size: 1, ramp: 0 }).unwrap();
+    assert_eq!(iw1.values()[0], 2.0);
+    assert_eq!(iw1.values()[1], f64::INFINITY);
+    assert!(iw1.values()[2].is_nan());
+
+    // Signed zero: [-0.0, 0.0, -0.0, -0.0] -> [-0.0, +0.0, +0.0, +0.0] deterministically
+    let neg_zero = Series::try_new(dates[..4].to_vec(), vec![-0.0, 0.0, -0.0, -0.0]).unwrap();
+    let nz1 =
+        smoothed_moving_average(&neg_zero, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    let nz2 =
+        smoothed_moving_average(&neg_zero, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(nz1.dates(), nz2.dates());
+    assert!(nz1
+        .values()
+        .iter()
+        .zip(nz2.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!(nz1.values()[0] == 0.0 && nz1.values()[0].is_sign_negative());
+    assert!(nz1.values()[1..]
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+
+    let all_neg_zero = Series::try_new(dates[..4].to_vec(), vec![-0.0; 4]).unwrap();
+    let anz =
+        smoothed_moving_average(&all_neg_zero, Window::Observations { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(anz.dates(), &dates[2..4]);
+    assert!(anz
+        .values()
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_negative()));
+
+    // Oversize windows (size > len with valid ramp) -> empty, deterministic across re-runs
+    let full = Series::try_new(dates, vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+    let ov1 = smoothed_moving_average(&full, Window::Observations { size: 10, ramp: 0 }).unwrap();
+    let ov2 = smoothed_moving_average(&full, Window::Observations { size: 10, ramp: 0 }).unwrap();
+    assert!(ov1.dates().is_empty() && ov2.dates().is_empty());
+    let ov_days = smoothed_moving_average(
+        &full,
+        Window::Days {
+            size: 100,
+            ramp: 100,
+        },
+    )
+    .unwrap();
+    assert!(ov_days.dates().is_empty() && ov_days.values().is_empty());
+}
+
+#[test]
+fn smma_empty_singleton_and_invalid_window_errors() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    assert!(smoothed_moving_average(&empty, Window::Expanding)
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(
+        smoothed_moving_average(&empty, Window::Observations { size: 2, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert!(
+        smoothed_moving_average(&empty, Window::Observations { size: 2, ramp: 2 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert!(
+        smoothed_moving_average(&empty, Window::Days { size: 2, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        smoothed_moving_average(&empty, Window::Days { size: 2, ramp: 2 }),
+        Err(Error::Ramp)
+    );
+
+    // Singleton series
+    let single = Series::try_new(vec![date(2019, 1, 1)], vec![5.0]).unwrap();
+    let s_def = smoothed_moving_average(&single, Window::Expanding).unwrap();
+    assert_eq!(s_def.dates(), &[date(2019, 1, 1)]);
+    assert_eq!(s_def.values(), &[5.0]);
+    assert!(
+        smoothed_moving_average(&single, Window::Observations { size: 2, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        smoothed_moving_average(&single, Window::Observations { size: 2, ramp: 2 }),
+        Err(Error::Ramp)
+    );
+    assert!(
+        smoothed_moving_average(&single, Window::Days { size: 2, ramp: 2 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        smoothed_moving_average(&single, Window::Days { size: 2, ramp: 0 })
+            .unwrap()
+            .values(),
+        &[5.0]
+    );
+
+    // Non-empty invalid window / ramp errors
+    let multi = Series::try_new(
+        (1..=6).map(|d| date(2019, 1, d)).collect(),
+        vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0],
+    )
+    .unwrap();
+    assert_eq!(
+        smoothed_moving_average(&multi, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        smoothed_moving_average(&multi, Window::Days { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        smoothed_moving_average(&multi, Window::Days { size: 0, ramp: 2 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        smoothed_moving_average(&multi, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        smoothed_moving_average(&multi, Window::Observations { size: 2, ramp: 7 }),
+        Err(Error::Ramp)
+    );
 }

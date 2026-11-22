@@ -1,6 +1,6 @@
 use quantus_math::{
     beta, correlation, exponential_moving_average, max_drawdown, moving_average, returns,
-    volatility, Date, ReturnKind, Series, Window,
+    smoothed_moving_average, volatility, Date, ReturnKind, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -131,6 +131,9 @@ fn main() {
                     v => Some(v.parse().unwrap()),
                 };
                 exponential_moving_average(&series, beta)
+            }
+            "smoothed_moving_average" => {
+                smoothed_moving_average(&series, parse_window(args[1], args[2], args[3]))
             }
             _ => panic!("unknown operation"),
         }

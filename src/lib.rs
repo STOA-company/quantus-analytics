@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, exponential moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -905,4 +905,105 @@ pub fn exponential_moving_average(x: &Series, beta: Option<f64>) -> Result<Serie
     }
 
     Series::try_new(x.dates.clone(), values)
+}
+
+/// Smoothed (modified / running) moving average over a rolling or expanding window.
+///
+/// Mirrors upstream `gs_quant/timeseries/technicals.py:smoothed_moving_average` on a
+/// `datetime.date` index:
+///
+/// 1. Normalizes `window` (`Window::Expanding` uses size `x.dates().len()` and ramp `0`).
+/// 2. Computes the initial value as the first post-ramp entry of `mean(x, Window(size, 0))`,
+///    skipping `NaN` and `±Inf` in that initial window (yielding `NaN` if none are finite, and
+///    preserving `-0.0` when all finite values in that window are `-0.0`).
+/// 3. Applies the ramp to `x` first, then iterates over the post-ramp rows with
+///    `out[i] = ((n - 1) * out[i - 1] + x[i]) / n`. For `Window::Expanding` and
+///    `Window::Observations`, `n` is the normalized window size; for `Window::Days`, `n` is the
+///    number of post-ramp observations in `(date - size, date]`.
+///
+/// Empty input returns empty for `Window::Expanding`, `Window::Observations`, and
+/// `Window::Days { ramp: 0, .. }`, and returns `Err(Error::Ramp)` for `Window::Days` with
+/// `ramp > 0` (mapping upstream's `IndexError`). On non-empty input, `size == 0` returns
+/// `Err(Error::Window)`, observation `ramp > x.dates().len()` returns `Err(Error::Ramp)`, and
+/// observation `size > x.dates().len()` (or a ramp leaving no rows) returns an empty `Series`.
+pub fn smoothed_moving_average(x: &Series, window: Window) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        if matches!(window, Window::Days { ramp, .. } if ramp > 0) {
+            return Err(Error::Ramp);
+        }
+        return Series::try_new(vec![], vec![]);
+    }
+    let n = x.dates.len();
+    match window {
+        Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+            return Err(Error::Window)
+        }
+        Window::Observations { ramp, .. } if ramp > n => return Err(Error::Ramp),
+        Window::Observations { size, .. } if size > n => return Series::try_new(vec![], vec![]),
+        _ => {}
+    }
+
+    let ramp_idx = match window {
+        Window::Expanding => 0,
+        Window::Observations { ramp, .. } => {
+            if ramp >= n {
+                return Series::try_new(vec![], vec![]);
+            }
+            ramp
+        }
+        Window::Days { ramp, .. } => {
+            match (0..n).find(|&i| x.dates[i].ordinal() - x.dates[0].ordinal() >= i64::from(ramp)) {
+                Some(idx) => idx,
+                None => return Series::try_new(vec![], vec![]),
+            }
+        }
+    };
+
+    let init_start = match window {
+        Window::Expanding => 0,
+        Window::Observations { size, .. } => (ramp_idx + 1).saturating_sub(size),
+        Window::Days { size, .. } => (0..=ramp_idx)
+            .find(|&j| x.dates[ramp_idx].ordinal() - x.dates[j].ordinal() < i64::from(size))
+            .unwrap_or(ramp_idx),
+    };
+    let mut init_sum = -0.0_f64;
+    let mut init_count = 0usize;
+    for &v in &x.values[init_start..=ramp_idx] {
+        if v.is_finite() {
+            init_sum += v;
+            init_count += 1;
+        }
+    }
+    let initial_moving_average = if init_count == 0 {
+        f64::NAN
+    } else {
+        init_sum / init_count as f64
+    };
+
+    let sliced_dates = &x.dates[ramp_idx..];
+    let sliced_values = &x.values[ramp_idx..];
+    let m = sliced_dates.len();
+    let mut out_values = Vec::with_capacity(m);
+    out_values.push(initial_moving_average);
+
+    let mut start = 0usize;
+    for i in 1..m {
+        let window_num_elem = match window {
+            Window::Expanding => n as f64,
+            Window::Observations { size, .. } => size as f64,
+            Window::Days { size, .. } => {
+                while start < i
+                    && sliced_dates[i].ordinal() - sliced_dates[start].ordinal() >= i64::from(size)
+                {
+                    start += 1;
+                }
+                (i + 1 - start) as f64
+            }
+        };
+        let prev = out_values[i - 1];
+        let cur = sliced_values[i];
+        out_values.push(((window_num_elem - 1.0) * prev + cur) / window_num_elem);
+    }
+
+    Series::try_new(sliced_dates.to_vec(), out_values)
 }
