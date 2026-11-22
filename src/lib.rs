@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -1507,4 +1507,307 @@ pub fn bollinger_bands(
         lower: Series::try_new(sigma.dates.clone(), lower_values)?,
         upper: Series::try_new(sigma.dates, upper_values)?,
     })
+}
+
+fn sample_cov_finite_pairs(xs: &[f64], ys: &[f64]) -> f64 {
+    let mut count = 0usize;
+    let mut sum_x = 0.0_f64;
+    let mut sum_y = 0.0_f64;
+    let mut first_x = 0.0_f64;
+    let mut first_y = 0.0_f64;
+    let mut all_eq_x = true;
+    let mut all_eq_y = true;
+
+    for (&vx, &vy) in xs.iter().zip(ys) {
+        if vx.is_finite() && vy.is_finite() {
+            if count == 0 {
+                first_x = vx;
+                first_y = vy;
+            } else {
+                if vx != first_x {
+                    all_eq_x = false;
+                }
+                if vy != first_y {
+                    all_eq_y = false;
+                }
+            }
+            sum_x += vx;
+            sum_y += vy;
+            count += 1;
+        }
+    }
+
+    if count < 2 {
+        return f64::NAN;
+    }
+    if all_eq_x || all_eq_y {
+        return 0.0;
+    }
+
+    let count_f = count as f64;
+    let mean_x = if sum_x.is_finite() {
+        sum_x / count_f
+    } else {
+        xs.iter()
+            .zip(ys)
+            .filter(|&(&vx, &vy)| vx.is_finite() && vy.is_finite())
+            .map(|(&vx, _)| vx / count_f)
+            .sum()
+    };
+    let mean_y = if sum_y.is_finite() {
+        sum_y / count_f
+    } else {
+        xs.iter()
+            .zip(ys)
+            .filter(|&(&vx, &vy)| vx.is_finite() && vy.is_finite())
+            .map(|(_, &vy)| vy / count_f)
+            .sum()
+    };
+
+    let mut sxy = 0.0_f64;
+    for (&vx, &vy) in xs.iter().zip(ys) {
+        if vx.is_finite() && vy.is_finite() {
+            sxy += (vx - mean_x) * (vy - mean_y);
+        }
+    }
+    sxy / (count - 1) as f64
+}
+
+fn sample_cov_non_nan_pairs(xs: &[f64], ys: &[f64]) -> f64 {
+    let count = xs.len();
+    if count < 2 {
+        return f64::NAN;
+    }
+
+    let mut sum_x = 0.0_f64;
+    let mut sum_y = 0.0_f64;
+    let first_x = xs[0];
+    let first_y = ys[0];
+    let mut all_eq_x = true;
+    let mut all_eq_y = true;
+
+    for (&vx, &vy) in xs.iter().zip(ys) {
+        if !vx.is_finite() || !vy.is_finite() {
+            return f64::NAN;
+        }
+        if vx != first_x {
+            all_eq_x = false;
+        }
+        if vy != first_y {
+            all_eq_y = false;
+        }
+        sum_x += vx;
+        sum_y += vy;
+    }
+
+    if all_eq_x || all_eq_y {
+        return 0.0;
+    }
+
+    let count_f = count as f64;
+    let mean_x = if sum_x.is_finite() {
+        sum_x / count_f
+    } else {
+        xs.iter().map(|&vx| vx / count_f).sum()
+    };
+    let mean_y = if sum_y.is_finite() {
+        sum_y / count_f
+    } else {
+        ys.iter().map(|&vy| vy / count_f).sum()
+    };
+
+    let mut sxy = 0.0_f64;
+    for (&vx, &vy) in xs.iter().zip(ys) {
+        sxy += (vx - mean_x) * (vy - mean_y);
+    }
+    sxy / (count - 1) as f64
+}
+
+/// Unbiased rolling or expanding sample covariance (`ddof = 1`) between two date-indexed series.
+///
+/// Mirrors upstream `gs_quant/timeseries/statistics.py:cov` (lines 678–724) and
+/// `gs_quant/timeseries/helper.py:{normalize_window,apply_ramp}` on a `datetime.date` index:
+///
+/// - **Validation:**
+///   - When `x` is non-empty, `size == 0` returns `Err(Error::Window)` (for both
+///     `Window::Observations` and `Window::Days`) and observation `ramp > x.dates().len()`
+///     returns `Err(Error::Ramp)`.
+///   - Under `Window::Days`, an empty `x` returns an empty `Series`.
+///   - Under `Window::Expanding` and `Window::Observations`, the sorted date union of `x` and `y`
+///     is formed first (filling unmatched dates with `NaN`), with effective `(win_size, ramp)`
+///     equal to `(x.dates().len(), 0)` for `Window::Expanding` and `(size, ramp)` for
+///     `Window::Observations`. If the union is empty, returns empty; if `win_size == 0` (e.g.
+///     empty `x` with non-empty `y` under `Window::Expanding` or `size == 0`), returns
+///     `Err(Error::Window)`; if `ramp > union.len()`, returns `Err(Error::Ramp)`; if
+///     `win_size > union.len()` or `ramp >= union.len()`, returns an empty `Series`.
+/// - **Window computation:**
+///   - `Window::Expanding` and `Window::Observations` emit `union_dates[ramp..]` and aggregate
+///     pairs in `(idx + 1).saturating_sub(win_size)..=idx` where `vx.is_finite() && vy.is_finite()`
+///     (skipping both `NaN` and `±Inf`, matching pandas 2.3.3 `rolling().cov()`).
+///   - `Window::Days` emits `x.dates()` at or after `x.dates()[0] + ramp` and aggregates dates in
+///     `(date - size, date]` present in both `x` and `y` where `!vx.is_nan() && !vy.is_nan()`
+///     (matching upstream `Series.cov(y)` / `np.cov`, where `±Inf` paired with `NaN` or an
+///     unmatched date is dropped first, whereas `±Inf` paired with any non-`NaN` value yields
+///     `NaN`).
+///   - Windows with `< 2` kept pairs yield `f64::NAN`. Constant finite `x` or constant finite `y`
+///     windows return exact `+0.0`. Otherwise computes two-pass centered sample covariance
+///     `sum((vx - mean_x) * (vy - mean_y)) / (count - 1)` with an overflow-safe `sum(v / count)`
+///     mean fallback when the running sum overflows `f64::MAX`.
+/// - **Documented upstream parity boundaries:**
+///   - `Window::Days { size: 0, .. }` on non-empty `x` returns `Err(Error::Window)` consistently
+///     across the crate, whereas upstream `DateOffset(days=0)` produces all `NaN`.
+///   - Empty `x` with `Window::Days { size > 0, ramp > 0 }` returns an empty `Series`, whereas
+///     upstream `apply_ramp` raises `IndexError` indexing an empty date index.
+///   - Constant finite windows return exact `+0.0`, whereas upstream pandas/NumPy leave floating-point
+///     rounding residue (e.g. `-2.66e-15` in `rolling().cov()` on `4.2`, `2.89e-34` in `np.cov`
+///     on `0.1`).
+///   - Large-offset observation/expanding windows (e.g. `1e9 + [1, 2, 4, 7, 11]` vs
+///     `1e9 + [2, 5, 3, 9, 12]`) match the exact mathematical covariance (and upstream
+///     `Window::Days` / `np.cov`) via two-pass centering, whereas pinned pandas 2.3.3
+///     `rolling().cov()` suffers catastrophic cancellation from single-pass `E[XY] - E[X]E[Y]`.
+///   - [`Series::try_new`] enforces strictly increasing unique dates on both `x` and `y` (upstream
+///     only asserts monotonicity on `x`).
+pub fn cov(x: &Series, y: &Series, window: Window) -> Result<Series, Error> {
+    if !x.dates.is_empty() {
+        match window {
+            Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+                return Err(Error::Window);
+            }
+            Window::Observations { ramp, .. } if ramp > x.dates.len() => {
+                return Err(Error::Ramp);
+            }
+            _ => {}
+        }
+    }
+
+    match window {
+        Window::Days { size, ramp } => {
+            if x.dates.is_empty() {
+                return Series::try_new(vec![], vec![]);
+            }
+
+            let cap = x.dates.len().min(y.dates.len());
+            let mut common_dates = Vec::with_capacity(cap);
+            let mut common_x = Vec::with_capacity(cap);
+            let mut common_y = Vec::with_capacity(cap);
+            let mut i = 0;
+            let mut j = 0;
+            while i < x.dates.len() && j < y.dates.len() {
+                match x.dates[i].cmp(&y.dates[j]) {
+                    std::cmp::Ordering::Less => i += 1,
+                    std::cmp::Ordering::Greater => j += 1,
+                    std::cmp::Ordering::Equal => {
+                        let vx = x.values[i];
+                        let vy = y.values[j];
+                        if !vx.is_nan() && !vy.is_nan() {
+                            common_dates.push(x.dates[i]);
+                            common_x.push(vx);
+                            common_y.push(vy);
+                        }
+                        i += 1;
+                        j += 1;
+                    }
+                }
+            }
+
+            let first_ord = x.dates[0].ordinal();
+            let size_i64 = i64::from(size);
+            let ramp_i64 = i64::from(ramp);
+            let mut out_dates = Vec::new();
+            let mut out_values = Vec::new();
+            let mut lo = 0usize;
+            let mut hi = 0usize;
+
+            for &d in &x.dates {
+                let d_ord = d.ordinal();
+                if d_ord - first_ord < ramp_i64 {
+                    continue;
+                }
+                while hi < common_dates.len() && common_dates[hi] <= d {
+                    hi += 1;
+                }
+                while lo < hi && d_ord - common_dates[lo].ordinal() >= size_i64 {
+                    lo += 1;
+                }
+                out_dates.push(d);
+                out_values.push(sample_cov_non_nan_pairs(
+                    &common_x[lo..hi],
+                    &common_y[lo..hi],
+                ));
+            }
+
+            Series::try_new(out_dates, out_values)
+        }
+        Window::Expanding | Window::Observations { .. } => {
+            let cap = x.dates.len() + y.dates.len();
+            let mut union_dates = Vec::with_capacity(cap);
+            let mut union_x = Vec::with_capacity(cap);
+            let mut union_y = Vec::with_capacity(cap);
+            let mut i = 0;
+            let mut j = 0;
+            while i < x.dates.len() || j < y.dates.len() {
+                let ord = if i < x.dates.len() && j < y.dates.len() {
+                    x.dates[i].cmp(&y.dates[j])
+                } else if i < x.dates.len() {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Greater
+                };
+                match ord {
+                    std::cmp::Ordering::Less => {
+                        union_dates.push(x.dates[i]);
+                        union_x.push(x.values[i]);
+                        union_y.push(f64::NAN);
+                        i += 1;
+                    }
+                    std::cmp::Ordering::Greater => {
+                        union_dates.push(y.dates[j]);
+                        union_x.push(f64::NAN);
+                        union_y.push(y.values[j]);
+                        j += 1;
+                    }
+                    std::cmp::Ordering::Equal => {
+                        union_dates.push(x.dates[i]);
+                        union_x.push(x.values[i]);
+                        union_y.push(y.values[j]);
+                        i += 1;
+                        j += 1;
+                    }
+                }
+            }
+
+            let (win_size, ramp) = match window {
+                Window::Expanding => (x.dates.len(), 0),
+                Window::Observations { size, ramp } => (size, ramp),
+                Window::Days { .. } => unreachable!(),
+            };
+
+            let n = union_dates.len();
+            if n == 0 {
+                return Series::try_new(vec![], vec![]);
+            }
+            if win_size == 0 {
+                return Err(Error::Window);
+            }
+            if ramp > n {
+                return Err(Error::Ramp);
+            }
+            if win_size > n || ramp >= n {
+                return Series::try_new(vec![], vec![]);
+            }
+
+            let mut out_dates = Vec::with_capacity(n - ramp);
+            let mut out_values = Vec::with_capacity(n - ramp);
+            for idx in ramp..n {
+                let start = (idx + 1).saturating_sub(win_size);
+                out_dates.push(union_dates[idx]);
+                out_values.push(sample_cov_finite_pairs(
+                    &union_x[start..=idx],
+                    &union_y[start..=idx],
+                ));
+            }
+
+            Series::try_new(out_dates, out_values)
+        }
+    }
 }
