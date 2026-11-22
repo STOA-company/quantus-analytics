@@ -1,0 +1,2433 @@
+{
+  "schema": "gsquant-rsi-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:relative_strength_index",
+    "gs_quant/timeseries/technicals.py:smoothed_moving_average",
+    "gs_quant/timeseries/helper.py:normalize_window",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "test-rsi-spx-default",
+      "source_ref": "test_technicals.py::test_relative_strength_index",
+      "operation": "relative_strength_index",
+      "args": [
+        "default",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10",
+          "2020-01-13",
+          "2020-01-14",
+          "2020-01-15",
+          "2020-01-16",
+          "2020-01-17",
+          "2020-01-21",
+          "2020-01-22",
+          "2020-01-23",
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          3257.8501,
+          3234.8501,
+          3246.28,
+          3237.1799,
+          3253.05,
+          3274.7,
+          3265.3501,
+          3288.1299,
+          3283.1499,
+          3289.29,
+          3316.8101,
+          3329.6201,
+          3320.79,
+          3321.75,
+          3325.54,
+          3295.47,
+          3243.6299,
+          3276.24,
+          3273.3999,
+          3283.6599,
+          3225.52,
+          3248.9199
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          66.35898836410378,
+          50.99376669117847,
+          57.63855067827995,
+          56.91474740753822,
+          58.92161739096986,
+          45.88013675902517,
+          50.617629713259795
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-rsi-increasing-14",
+      "source_ref": "test_technicals.py::test_relative_strength_index",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        14,
+        14
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10",
+          "2020-01-13",
+          "2020-01-14",
+          "2020-01-15",
+          "2020-01-16",
+          "2020-01-17",
+          "2020-01-21",
+          "2020-01-22",
+          "2020-01-23",
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-rsi-3d-increasing",
+      "source_ref": "test_technicals.py::test_relative_strength_index_date_offset_window",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inc-obs3",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "dec-obs3",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          9.0,
+          8.0,
+          7.0,
+          6.0,
+          5.0,
+          4.0,
+          3.0,
+          2.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-obs3",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-obs3-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          80.0,
+          87.5,
+          87.5,
+          32.55813953488372,
+          50.161117078410314,
+          73.9545326971653,
+          52.47958573989246,
+          71.25820634825033
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-obs3-r3",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          66.66666666666666,
+          22.222222222222214,
+          43.43434343434343,
+          71.0594315245478,
+          50.09107468123862,
+          70.00547345374932
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-default-14-short",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "default",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "mixed-obs1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          100.0,
+          0.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          14.0,
+          12.0,
+          12.0,
+          15.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          75.0,
+          37.5,
+          37.5,
+          84.375,
+          21.09375
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        4,
+        4
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          14.0,
+          12.0,
+          12.0,
+          15.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          75.0,
+          37.5,
+          37.5,
+          100.0,
+          0.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          14.0,
+          12.0,
+          12.0,
+          15.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          100.0,
+          66.66666666666666,
+          88.88888888888889,
+          47.05882352941176,
+          47.05882352941176,
+          100.0,
+          0.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-mid-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          {
+            "special": "NaN"
+          },
+          4.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          100.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-mid-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          4.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-obs3",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-3d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "single-obs1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "two-obs1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02"
+        ],
+        "values": [
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "two-obs1-r1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        1,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-ramp",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        10
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "zero-window",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "mixed-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "two-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "spx-obs14-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        14,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10",
+          "2020-01-13",
+          "2020-01-14",
+          "2020-01-15",
+          "2020-01-16",
+          "2020-01-17",
+          "2020-01-21",
+          "2020-01-22",
+          "2020-01-23",
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          3257.8501,
+          3234.8501,
+          3246.28,
+          3237.1799,
+          3253.05,
+          3274.7,
+          3265.3501,
+          3288.1299,
+          3283.1499,
+          3289.29,
+          3316.8101,
+          3329.6201,
+          3320.79,
+          3321.75,
+          3325.54,
+          3295.47,
+          3243.6299,
+          3276.24,
+          3273.3999,
+          3283.6599,
+          3225.52,
+          3248.9199
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-03",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10",
+          "2020-01-13",
+          "2020-01-14",
+          "2020-01-15",
+          "2020-01-16",
+          "2020-01-17",
+          "2020-01-21",
+          "2020-01-22",
+          "2020-01-23",
+          "2020-01-24",
+          "2020-01-27",
+          "2020-01-28",
+          "2020-01-29",
+          "2020-01-30",
+          "2020-01-31",
+          "2020-02-03"
+        ],
+        "values": [
+          0.0,
+          3.6819584711395663,
+          3.5692782454611347,
+          8.810492054182646,
+          15.553605866111326,
+          15.036480821982025,
+          21.85360281648208,
+          21.44844107899266,
+          23.335690889247033,
+          31.302341377397383,
+          34.703718551195635,
+          33.473410143766884,
+          33.74840502624406,
+          34.89263191625217,
+          30.40569784311259,
+          24.545580059804976,
+          33.25946882564915,
+          32.90307514000466,
+          35.588283418977824,
+          28.602812313556853,
+          34.200820657467986
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-3d-r3",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          66.66666666666666,
+          13.333333333333329,
+          33.33333333333333,
+          63.12056737588653,
+          45.64102564102564,
+          66.5086887835703
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-3d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          66.66666666666666,
+          80.0,
+          80.0,
+          28.57142857142857,
+          47.540983606557376,
+          72.81223449447748,
+          51.533373421527365,
+          70.76002176673317
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-3d-r3",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          14.0,
+          12.0,
+          12.0,
+          15.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          0.0,
+          75.0,
+          0.0,
+          100.0,
+          100.0,
+          0.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d-r2d",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        4,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          14.0,
+          12.0,
+          12.0,
+          15.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-04",
+          "2020-03-07",
+          "2020-03-10",
+          "2020-03-14",
+          "2020-03-20"
+        ],
+        "values": [
+          66.66666666666666,
+          88.88888888888889,
+          47.05882352941176,
+          47.05882352941176,
+          100.0,
+          0.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-lead-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.0,
+          3.0,
+          1.0,
+          4.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-all-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ninf-mid-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          {
+            "special": "-Inf"
+          },
+          4.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          100.0,
+          0.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-lead-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          100.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ninf-lead-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "-Inf"
+          },
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-inf-obs2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          100.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-default",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "default",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-3d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-obs0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-obs1-r1",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        1,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-default",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "default",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "single-obs2-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "single-obs0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "single-3d",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "single-3d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "two-obs2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "two-obs2-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "oversize-size-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        20,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ramp-eq-len-gains",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        3,
+        9
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          13.0,
+          13.0,
+          9.0,
+          10.5,
+          14.0,
+          12.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-const",
+      "source_ref": "boundaries-extra",
+      "operation": "relative_strength_index",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          100.0
+        ],
+        "unit": "rsi",
+        "dtype": "float64"
+      }
+    }
+  ]
+}
