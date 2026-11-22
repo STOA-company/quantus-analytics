@@ -1,7 +1,7 @@
 use quantus_math::{
     beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
-    relative_strength_index, returns, smoothed_moving_average, volatility, Date, Error, ReturnKind,
-    Series, Window,
+    relative_strength_index, returns, smoothed_moving_average, std as series_std, volatility, Date,
+    Error, ReturnKind, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -2701,5 +2701,325 @@ fn prices_empty_and_logarithmic_overflow_error() {
     assert_eq!(
         prices(&just_over, Some(1.0), Some(ReturnKind::Logarithmic)),
         Err(Error::Overflow)
+    );
+}
+
+#[test]
+fn std_upstream_test_std_and_windows() {
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // 1. Expanding (upstream default Window(None, 0))
+    let exp = series_std(&x, Window::Expanding).unwrap();
+    assert_eq!(exp.dates(), dates.as_slice());
+    assert!(exp.values()[0].is_nan());
+    let expected_exp = [
+        std::f64::consts::FRAC_1_SQRT_2,
+        0.5773502691896258,
+        0.9574271077563381,
+        0.8944271909999159,
+        1.6733200530681511,
+    ];
+    for (&a, &e) in exp.values()[1..].iter().zip(&expected_exp) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+
+    // 2. Observation window Window(2, 0)
+    let obs2 = series_std(&x, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(obs2.dates(), dates.as_slice());
+    assert!(obs2.values()[0].is_nan());
+    let expected_obs2 = [
+        std::f64::consts::FRAC_1_SQRT_2,
+        std::f64::consts::FRAC_1_SQRT_2,
+        std::f64::consts::SQRT_2,
+        std::f64::consts::SQRT_2,
+        2.1213203435596424,
+    ];
+    for (&a, &e) in obs2.values()[1..].iter().zip(&expected_obs2) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+
+    // 3. Calendar-day window 7d (upstream Window('1w', 0))
+    let cal7d = series_std(&x, Window::Days { size: 7, ramp: 0 }).unwrap();
+    assert_eq!(cal7d.dates(), dates.as_slice());
+    assert!(cal7d.values()[0].is_nan());
+    let expected_cal7d = [
+        std::f64::consts::FRAC_1_SQRT_2,
+        0.5773502691896258,
+        0.9574271077563381,
+        0.8944271909999159,
+        1.8708286933869707,
+    ];
+    for (&a, &e) in cal7d.values()[1..].iter().zip(&expected_cal7d) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+
+    // 4. Observation window with ramp: Window(3, 2)
+    let obs3_r2 = series_std(&x, Window::Observations { size: 3, ramp: 2 }).unwrap();
+    assert_eq!(obs3_r2.dates(), &dates[2..]);
+    let expected_obs3_r2 = [
+        0.5773502691896258,
+        1.0,
+        1.1547005383792515,
+        2.5166114784235836,
+    ];
+    for (&a, &e) in obs3_r2.values().iter().zip(&expected_obs3_r2) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+}
+
+#[test]
+fn std_leap_day_irregular_calendar_windows() {
+    let leap_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 2),
+        date(2020, 3, 5),
+    ];
+    let leap = Series::try_new(leap_dates.clone(), vec![1.0, 3.0, 2.0, 6.0, 10.0]).unwrap();
+
+    // Window::Days { size: 3, ramp: 3 }: half-open (date - 3d, date], keeps Mar 2 and Mar 5
+    let d3_r3 = series_std(&leap, Window::Days { size: 3, ramp: 3 }).unwrap();
+    assert_eq!(d3_r3.dates(), &[date(2020, 3, 2), date(2020, 3, 5)]);
+    assert!((d3_r3.values()[0] - 2.8284271247461903).abs() < 1e-12);
+    assert!(d3_r3.values()[1].is_nan());
+
+    // Window::Days { size: 3, ramp: 0 }
+    let d3_r0 = series_std(&leap, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(d3_r0.dates(), leap_dates.as_slice());
+    assert!(d3_r0.values()[0].is_nan());
+    assert!((d3_r0.values()[1] - std::f64::consts::SQRT_2).abs() < 1e-12);
+    assert!((d3_r0.values()[2] - 1.0).abs() < 1e-12);
+    assert!((d3_r0.values()[3] - 2.8284271247461903).abs() < 1e-12);
+    assert!(d3_r0.values()[4].is_nan());
+
+    // Window::Days { size: 7, ramp: 0 } crossing leap day:
+    // Mar 5 - 7d = Feb 27 (excluded because half-open > Feb 27), so [3, 2, 6, 10]
+    let d7_r0 = series_std(&leap, Window::Days { size: 7, ramp: 0 }).unwrap();
+    assert_eq!(d7_r0.dates(), leap_dates.as_slice());
+    assert!(d7_r0.values()[0].is_nan());
+    assert!((d7_r0.values()[3] - 2.160246899469287).abs() < 1e-12);
+    assert!((d7_r0.values()[4] - 3.593976442141304).abs() < 1e-12);
+
+    // Window::Days { size: 1, ramp: 0 } -> all NaN; oversize ramp -> empty
+    let d1 = series_std(&leap, Window::Days { size: 1, ramp: 0 }).unwrap();
+    assert_eq!(d1.dates(), leap_dates.as_slice());
+    assert!(d1.values().iter().all(|v| v.is_nan()));
+    let d30 = series_std(&leap, Window::Days { size: 30, ramp: 30 }).unwrap();
+    assert!(d30.dates().is_empty() && d30.values().is_empty());
+}
+
+#[test]
+fn std_constants_missing_infinities_overflow_and_determinism() {
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+
+    // Constant series (4.2, 0.1, -0.0, mixed signed zeros) emit exact +0.0 when count >= 2
+    let c42 = Series::try_new(dates.clone(), vec![4.2; 6]).unwrap();
+    let c01 = Series::try_new(dates.clone(), vec![0.1; 6]).unwrap();
+    let cneg0 = Series::try_new(dates.clone(), vec![-0.0; 6]).unwrap();
+    let cmix0 = Series::try_new(dates.clone(), vec![-0.0, 0.0, -0.0, 0.0, -0.0, 0.0]).unwrap();
+    for s in [&c42, &c01, &cneg0, &cmix0] {
+        let obs = series_std(s, Window::Observations { size: 3, ramp: 0 }).unwrap();
+        assert!(obs.values()[0].is_nan());
+        assert!(obs.values()[1..]
+            .iter()
+            .all(|v| *v == 0.0 && v.is_sign_positive()));
+        let cal = series_std(s, Window::Days { size: 3, ramp: 0 }).unwrap();
+        assert!(cal.values()[0].is_nan());
+        assert!(cal.values()[4].is_nan());
+        for idx in [1, 2, 3, 5] {
+            assert!(cal.values()[idx] == 0.0 && cal.values()[idx].is_sign_positive());
+        }
+    }
+
+    // Mid-series NaN and all-NaN
+    let mid_nan = Series::try_new(
+        dates.clone(),
+        vec![1.0, f64::NAN, 3.0, f64::NAN, f64::NAN, 5.0],
+    )
+    .unwrap();
+    let nan_obs = series_std(&mid_nan, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(nan_obs.values()[0].is_nan() && nan_obs.values()[1].is_nan());
+    assert!((nan_obs.values()[2] - std::f64::consts::SQRT_2).abs() < 1e-12);
+    assert!(nan_obs.values()[3..].iter().all(|v| v.is_nan()));
+    let nan_days = series_std(&mid_nan, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert!(nan_days.values()[0].is_nan() && nan_days.values()[1].is_nan());
+    assert!((nan_days.values()[2] - std::f64::consts::SQRT_2).abs() < 1e-12);
+    assert!((nan_days.values()[3] - std::f64::consts::SQRT_2).abs() < 1e-12);
+    assert!(nan_days.values()[4].is_nan() && nan_days.values()[5].is_nan());
+
+    let all_nan = Series::try_new(dates.clone(), vec![f64::NAN; 6]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = series_std(&all_nan, w).unwrap();
+        assert_eq!(out.dates(), dates.as_slice());
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+
+    // ±Inf: skipped in Expanding / Observations vs NaN in Days
+    let infs = Series::try_new(
+        dates.clone(),
+        vec![1.0, f64::INFINITY, 3.0, 5.0, f64::NEG_INFINITY, 7.0],
+    )
+    .unwrap();
+    let inf_obs = series_std(&infs, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(inf_obs.values()[0].is_nan() && inf_obs.values()[1].is_nan());
+    for &v in &inf_obs.values()[2..] {
+        assert!((v - std::f64::consts::SQRT_2).abs() < 1e-12);
+    }
+    let inf_exp = series_std(&infs, Window::Expanding).unwrap();
+    assert!(inf_exp.values()[0].is_nan() && inf_exp.values()[1].is_nan());
+    assert!((inf_exp.values()[2] - std::f64::consts::SQRT_2).abs() < 1e-12);
+    assert!((inf_exp.values()[3] - 2.0).abs() < 1e-12);
+    assert!((inf_exp.values()[4] - 2.0).abs() < 1e-12);
+    assert!((inf_exp.values()[5] - 2.581988897471611).abs() < 1e-12);
+    let inf_days = series_std(&infs, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert!(inf_days.values().iter().all(|v| v.is_nan()));
+
+    // Large variance overflow (1e200): per-window two-pass produces +Inf cleanly (unlike pandas
+    // rolling Welford which turns subsequent windows NaN after overflow)
+    let large = Series::try_new(dates, vec![1e200, 1e200, -1e200, 1e200, -1e200, 1e200]).unwrap();
+    for w in [
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 4, ramp: 0 },
+    ] {
+        let out = series_std(&large, w).unwrap();
+        assert!(out.values()[0].is_nan());
+        assert!(out.values()[1] == 0.0 && out.values()[1].is_sign_positive());
+        assert!(out.values()[2..]
+            .iter()
+            .all(|v| v.is_infinite() && v.is_sign_positive()));
+    }
+
+    // Back-to-back determinism across all edge inputs
+    let checks: [(&Series, Window); 10] = [
+        (&c42, Window::Observations { size: 3, ramp: 0 }),
+        (&c01, Window::Days { size: 3, ramp: 0 }),
+        (&cneg0, Window::Observations { size: 3, ramp: 0 }),
+        (&mid_nan, Window::Observations { size: 3, ramp: 0 }),
+        (&mid_nan, Window::Days { size: 4, ramp: 0 }),
+        (&all_nan, Window::Observations { size: 3, ramp: 0 }),
+        (&infs, Window::Observations { size: 3, ramp: 0 }),
+        (&infs, Window::Days { size: 4, ramp: 0 }),
+        (&large, Window::Observations { size: 3, ramp: 0 }),
+        (&large, Window::Days { size: 4, ramp: 0 }),
+    ];
+    for (series, window) in checks {
+        let a = series_std(series, window).unwrap();
+        let b = series_std(series, window).unwrap();
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+    }
+}
+
+#[test]
+fn std_empty_singleton_size1_oversize_ramp_and_errors() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Observations { size: 0, ramp: 0 },
+        Window::Observations { size: 2, ramp: 5 },
+        Window::Days { size: 0, ramp: 0 },
+        Window::Days { size: 2, ramp: 2 },
+    ] {
+        let out = series_std(&empty, w).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+
+    let single = Series::try_new(vec![date(2020, 1, 1)], vec![5.0]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 1, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+    ] {
+        let out = series_std(&single, w).unwrap();
+        assert_eq!(out.dates(), single.dates());
+        assert!(out.values()[0].is_nan());
+    }
+    assert!(
+        series_std(&single, Window::Observations { size: 2, ramp: 0 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert!(
+        series_std(&single, Window::Observations { size: 1, ramp: 1 })
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(
+        series_std(&single, Window::Observations { size: 1, ramp: 2 }),
+        Err(Error::Ramp)
+    );
+
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // Size-1 observation window -> all NaN
+    let obs1 = series_std(&x, Window::Observations { size: 1, ramp: 0 }).unwrap();
+    assert_eq!(obs1.dates(), dates.as_slice());
+    assert!(obs1.values().iter().all(|v| v.is_nan()));
+
+    // Oversize observation window & ramp == len -> empty
+    assert!(series_std(&x, Window::Observations { size: 10, ramp: 0 })
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(series_std(&x, Window::Observations { size: 2, ramp: 6 })
+        .unwrap()
+        .values()
+        .is_empty());
+
+    // Error::Window and Error::Ramp (including documented Days { size: 0 } rejection and precedence)
+    assert_eq!(
+        series_std(&x, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        series_std(&x, Window::Days { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        series_std(&x, Window::Observations { size: 0, ramp: 10 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        series_std(&x, Window::Observations { size: 2, ramp: 7 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        series_std(&x, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
     );
 }

@@ -1,7 +1,7 @@
 use quantus_math::{
     beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
-    relative_strength_index, returns, smoothed_moving_average, volatility, Date, ReturnKind,
-    Series, Window,
+    relative_strength_index, returns, smoothed_moving_average, std as series_std, volatility, Date,
+    ReturnKind, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -147,6 +147,7 @@ fn main() {
             "smoothed_moving_average" => {
                 smoothed_moving_average(&series, parse_window(args[1], args[2], args[3]))
             }
+            "std" => series_std(&series, parse_window(args[1], args[2], args[3])),
             "relative_strength_index" => {
                 let window = if args[1] == "default" {
                     None
