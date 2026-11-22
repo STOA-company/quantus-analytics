@@ -122,3 +122,21 @@ Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timese
 - Excluded from scope: general calendar week/month windows (`1w`, `1m`, `3m`), mixed-unit ramps, `DatetimeIndex` / time zones (upstream calendar-day branch raises `TypeError`), duplicate or unsorted indices, and calendar windows/ramps outside pinned pandas `DateOffset` range (documented in `README.md`). Zero calendar-day windows (`Window::Days { size: 0, .. }`) are rejected with `Err(Error::Window)` in Rust (verified in `tests/contracts.rs`), whereas upstream with a `datetime.date` index divides by zero (`window_num_elem = 0`).
 
 `python3 parity/check-rsi.py --replay` verifies all 51 cases (42 value outputs and 9 typed errors) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN`/`±Inf` classification, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-rsi.py /path/to/gs-quant` regenerates `parity/rsi-vectors.json` directly from the pinned upstream checkout.
+
+## MACD parity (`parity/macd-vectors.json`)
+
+Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timeseries/technicals.py:macd` (lines 299–344); `gs_quant/timeseries/algebra.py:subtract` (lines 108–165); `gs_quant/timeseries/datetime.py:align` (`Interpolate.STEP` = `ffill().bfill()`, lines 141–145). Upstream `test_technicals.py::test_macd` (1 passed, 3 assertions in the pinned Python environment). All vectors use a Python `datetime.date` index.
+
+- Upstream `test_macd` suite (4 calls covering all 3 assertions): `test-macd-equal-10-10` (`m=10, n=10`), `test-macd-10-12-default-s` (`m=10, n=12`), `test-macd-10-12-explicit-s1` (`m=10, n=12, s=1`), and `test-macd-2-3` (`m=2, n=3`).
+- Bundled synthetic boundary suite (`pinned-boundaries-1.json`, 33 of 34 remaining cases retained — 27 value outputs + 6 typed errors):
+  - Default & signal-smoothing & span combinations: `defaults-12-26-1` (`None, None, None`), `signal-smoothing-s9` (`12, 26, 9`), `signal-smoothing-2-3-4` (`2, 3, 4`), `inverted-spans-m-gt-n` (`5, 2, 3`), `all-span-1` (`1, 1, 1`), `m1-n3-s2` (`1, 3, 2`).
+  - Empty & zero-span validation (`ValueError("span must satisfy: span >= 1")` → `Error::Span`): `empty-defaults`, `empty-m0`, `empty-n0`, `empty-s0`, `nonempty-m0`, `nonempty-n0`, `nonempty-s0`. Excluded: `nonempty_m_neg` (`m = -1`) is unrepresentable in Rust because `m`, `n`, and `s` are `Option<usize>`.
+  - Singletons & all-missing: `singleton-finite` (`+0.0`), `singleton-nan` (`NaN`), `singleton-neg-zero` (`+0.0`), `singleton-inf` (`NaN`), `all-nan-len4`, `all-inf`.
+  - Missing (`NaN` / `±Inf`) propagation & `subtract(STEP)` leading backfill to `+0.0`: `leading-nans-s1`, `leading-nans-s3`, `internal-nans-s1`, `internal-nans-s3`, `trailing-nans-s3`, `leading-inf-s2`, `internal-inf-s2`.
+  - Constant, signed-zero, irregular leap day (`2020-02-29`), negative prices, and large magnitudes: `constant-positive`, `constant-neg-zero`, `mixed-signed-zeros`, `irregular-leap-dates`, `negative-values`, `large-overflow-diff`, `large-same-sign`.
+- Additional boundary probes (`boundaries-extra`, 12 cases):
+  - True `a - b` overflow to `±Inf` entering the third EWM (`span = s`): `true-overflow-diff-s1`, `true-overflow-diff-s3`, `true-overflow-pos-s2`, `leading-nan-true-overflow`.
+  - Extended missing, signed-zero, inverted/unit-span, singleton, empty, and leap-day default coverage: `all-mixed-nonfinite`, `leading-nan-neg-zero-s3`, `trailing-inf-s3`, `m-gt-n-s1`, `n1-m3-s2`, `singleton-ninf`, `empty-explicit-valid`, `irregular-leap-default`.
+- Excluded from scope: negative integer spans (`Option<usize>` makes them unrepresentable in Rust), `DatetimeIndex` / time zones, duplicate or unsorted indices, and pandas nullable extension dtypes distinct from `NaN`.
+
+`python3 parity/check-macd.py --replay` verifies all 49 cases (43 value outputs and 6 typed errors) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN`/`±Inf` classification, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-macd.py /path/to/gs-quant` regenerates `parity/macd-vectors.json` directly from the pinned upstream checkout.

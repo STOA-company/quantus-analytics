@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, max_drawdown, moving_average,
+    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average,
     relative_strength_index, returns, smoothed_moving_average, volatility, Date, Error, ReturnKind,
     Series, Window,
 };
@@ -2152,4 +2152,278 @@ fn rsi_empty_short_expanding_and_error_boundaries() {
         relative_strength_index(&mixed, Some(Window::Days { size: 0, ramp: 3 })),
         Err(Error::Window)
     );
+}
+
+#[test]
+fn macd_defaults_specified_periods_and_signal_smoothing() {
+    let dates10: Vec<_> = (1..=10).map(|d| date(2020, 1, d)).collect();
+    let prices10 = Series::try_new(
+        dates10.clone(),
+        vec![
+            100.0, 102.0, 101.0, 105.0, 104.0, 108.0, 107.0, 111.0, 110.0, 115.0,
+        ],
+    )
+    .unwrap();
+
+    // Default (None, None, None) equals explicit (12, 26, 1) bit-for-bit
+    let def = macd(&prices10, None, None, None).unwrap();
+    let exp_def = macd(&prices10, Some(12), Some(26), Some(1)).unwrap();
+    assert_eq!(def.dates(), dates10.as_slice());
+    assert_eq!(def.dates(), exp_def.dates());
+    assert!(def
+        .values()
+        .iter()
+        .zip(exp_def.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!(def.values()[0] == 0.0 && def.values()[0].is_sign_positive());
+    assert!((def.values()[1] - 0.15954415954415424).abs() < 1e-12);
+    assert!((def.values()[9] - 2.881299976008549).abs() < 1e-12);
+
+    // Signal-line smoothing s = 9
+    let sig9 = macd(&prices10, Some(12), Some(26), Some(9)).unwrap();
+    assert_eq!(sig9.dates(), dates10.as_slice());
+    assert!(sig9.values()[0] == 0.0 && sig9.values()[0].is_sign_positive());
+    assert!((sig9.values()[1] - 0.03190883190883085).abs() < 1e-12);
+    assert!((sig9.values()[9] - 1.533517851885833).abs() < 1e-12);
+
+    // Upstream test_macd assertions: (10, 10), (10, 12, s=1) == (10, 12), and (2, 3)
+    let dates6: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+    let sample = Series::try_new(dates6.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    let eq_10 = macd(&sample, Some(10), Some(10), None).unwrap();
+    assert_eq!(eq_10.dates(), dates6.as_slice());
+    assert!(eq_10
+        .values()
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+
+    let m10_12_def = macd(&sample, Some(10), Some(12), None).unwrap();
+    let m10_12_s1 = macd(&sample, Some(10), Some(12), Some(1)).unwrap();
+    assert!(m10_12_def
+        .values()
+        .iter()
+        .zip(m10_12_s1.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!((m10_12_s1.values()[5] - 0.05817814161076118).abs() < 1e-12);
+
+    let m2_3 = macd(&sample, Some(2), Some(3), None).unwrap();
+    let expected_2_3 = [
+        0.0,
+        -0.16666666666666696,
+        0.02777777777777768,
+        -0.28240740740740744,
+        0.09336419753086433,
+        0.6248713991769552,
+    ];
+    for (&actual, &expected) in m2_3.values().iter().zip(&expected_2_3) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Signal smoothing s = 4 on (2, 3)
+    let m2_3_4 = macd(&sample, Some(2), Some(3), Some(4)).unwrap();
+    assert!((m2_3_4.values()[1] - (-0.06666666666666679)).abs() < 1e-12);
+    assert!((m2_3_4.values()[5] - 0.22544930041152286).abs() < 1e-12);
+}
+
+#[test]
+fn macd_span_combinations_and_irregular_leap_dates() {
+    let dates6: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+    let sample = Series::try_new(dates6.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+
+    // m == n (including all 1s) yields +0.0 everywhere
+    let all_1 = macd(&sample, Some(1), Some(1), Some(1)).unwrap();
+    assert!(all_1
+        .values()
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+
+    // m > n negates (n, m)
+    let fwd = macd(&sample, Some(2), Some(5), Some(3)).unwrap();
+    let inv = macd(&sample, Some(5), Some(2), Some(3)).unwrap();
+    assert!((inv.values()[1] - 0.16666666666666674).abs() < 1e-12);
+    assert!((inv.values()[5] - (-0.5369084362139918)).abs() < 1e-12);
+    for (&f, &r) in fwd.values().iter().zip(inv.values()) {
+        assert!((f + r).abs() < 1e-12);
+    }
+
+    // m = 1, n = 3, s = 2
+    let m1_n3_s2 = macd(&sample, Some(1), Some(3), Some(2)).unwrap();
+    assert!((m1_n3_s2.values()[1] - (-1.0 / 3.0)).abs() < 1e-12);
+    assert!((m1_n3_s2.values()[5] - 1.2497427983539096).abs() < 1e-12);
+
+    // Irregular dates including leap day 2020-02-29: observation-order EWM matches consecutive dates
+    let leap_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 2),
+        date(2020, 3, 10),
+    ];
+    let reg_dates: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let vals = vec![10.0, 12.0, 11.0, 15.0, 13.0];
+    let irreg = Series::try_new(leap_dates.clone(), vals.clone()).unwrap();
+    let reg = Series::try_new(reg_dates, vals).unwrap();
+    let r_irreg = macd(&irreg, Some(2), Some(4), Some(3)).unwrap();
+    let r_reg = macd(&reg, Some(2), Some(4), Some(3)).unwrap();
+    assert_eq!(r_irreg.dates(), leap_dates.as_slice());
+    assert!(r_irreg
+        .values()
+        .iter()
+        .zip(r_reg.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!((r_irreg.values()[4] - 0.6150320987654324).abs() < 1e-12);
+}
+
+#[test]
+fn macd_missing_signed_zero_overflow_and_determinism() {
+    let d5: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let d6: Vec<_> = (1..=6).map(|d| date(2020, 1, d)).collect();
+    let d7: Vec<_> = (1..=7).map(|d| date(2020, 1, d)).collect();
+
+    // Leading NaN with finite tail: subtract(STEP) backfills leading rows to +0.0 entering 3rd EWM
+    let lead_nan =
+        Series::try_new(d6.clone(), vec![f64::NAN, f64::NAN, 10.0, 20.0, 15.0, 25.0]).unwrap();
+    let ln_s1 = macd(&lead_nan, Some(2), Some(4), Some(1)).unwrap();
+    let ln_s3 = macd(&lead_nan, Some(2), Some(4), Some(3)).unwrap();
+    assert!(ln_s1.values()[..3]
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+    assert!((ln_s1.values()[3] - 2.6666666666666643).abs() < 1e-12);
+    assert!(ln_s3.values()[..3]
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+    // Smoothed against the backfilled +0.0 (2.6666666666666643 * 0.5 = 1.3333333333333321)
+    assert!((ln_s3.values()[3] - 1.3333333333333321).abs() < 1e-12);
+    assert!((ln_s3.values()[5] - 2.228148148148147).abs() < 1e-12);
+
+    // Leading ±Inf behaves identically to leading NaN
+    let lead_inf = Series::try_new(
+        d5.clone(),
+        vec![f64::INFINITY, f64::NEG_INFINITY, 10.0, 20.0, 15.0],
+    )
+    .unwrap();
+    let li_s2 = macd(&lead_inf, Some(2), Some(4), Some(2)).unwrap();
+    assert!(li_s2.values()[..3]
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+    assert!((li_s2.values()[3] - 1.7777777777777761).abs() < 1e-12);
+
+    // Internal and trailing NaN / ±Inf
+    let internal_nan = Series::try_new(
+        d7,
+        vec![10.0, f64::NAN, f64::NAN, 20.0, f64::NAN, 5.0, 12.0],
+    )
+    .unwrap();
+    let in_s3 = macd(&internal_nan, Some(2), Some(5), Some(3)).unwrap();
+    assert!((in_s3.values()[3] - 2.089783281733747).abs() < 1e-12);
+    assert!((in_s3.values()[6] - (-0.619508329647647)).abs() < 1e-12);
+
+    let trailing_nan = Series::try_new(
+        d6.clone(),
+        vec![10.0, 20.0, 15.0, f64::NAN, f64::NAN, f64::NAN],
+    )
+    .unwrap();
+    let tr_s3 = macd(&trailing_nan, Some(2), Some(4), Some(3)).unwrap();
+    assert!((tr_s3.values()[5] - 1.166666666666666).abs() < 1e-12);
+
+    // All missing (all NaN, all ±Inf, mixed) -> all NaN
+    let all_nan = Series::try_new(d5[..4].to_vec(), vec![f64::NAN; 4]).unwrap();
+    let all_inf = Series::try_new(
+        d5[..3].to_vec(),
+        vec![f64::INFINITY, f64::NEG_INFINITY, f64::INFINITY],
+    )
+    .unwrap();
+    for s in [&all_nan, &all_inf] {
+        let out = macd(s, Some(2), Some(3), Some(2)).unwrap();
+        assert_eq!(out.dates(), s.dates());
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+
+    // Signed zero: constant -0.0, mixed signed zeros, and leading NaN + -0.0 all emit +0.0
+    let neg_zero = Series::try_new(d5.clone(), vec![-0.0; 5]).unwrap();
+    let mixed_zero = Series::try_new(d5.clone(), vec![-0.0, 0.0, -0.0, 0.0, -0.0]).unwrap();
+    for s in [&neg_zero, &mixed_zero] {
+        let out = macd(s, Some(2), Some(5), Some(3)).unwrap();
+        assert!(out
+            .values()
+            .iter()
+            .all(|v| *v == 0.0 && v.is_sign_positive()));
+    }
+
+    // Large sign-flip without overflow and true a - b overflow to ±Inf entering 3rd EWM
+    let large_flip =
+        Series::try_new(d5.clone(), vec![1e308, -1e308, 1e308, -1e308, 1e308]).unwrap();
+    let true_ovf =
+        Series::try_new(d5, vec![1.7e308, -1.7e308, 1.7e308, -1.7e308, 1.7e308]).unwrap();
+    let ovf_out = macd(&true_ovf, Some(1), Some(20), Some(3)).unwrap();
+    assert!(ovf_out.values()[0] == 0.0 && ovf_out.values()[0].is_sign_positive());
+    assert!(ovf_out.values()[1] == 0.0 && ovf_out.values()[1].is_sign_positive());
+    assert!((ovf_out.values()[2] - 1.9531368102796675e307).abs() <= 1e-10 * 1.9531368102796675e307);
+    assert_eq!(ovf_out.values()[3].to_bits(), ovf_out.values()[2].to_bits());
+    assert!((ovf_out.values()[4] - 4.2030086915088527e307).abs() <= 1e-10 * 4.2030086915088527e307);
+
+    // Back-to-back determinism across all edge cases
+    let edge_cases = [
+        (&lead_nan, Some(2), Some(4), Some(3)),
+        (&lead_inf, Some(2), Some(4), Some(2)),
+        (&internal_nan, Some(2), Some(5), Some(3)),
+        (&trailing_nan, Some(2), Some(4), Some(3)),
+        (&all_nan, Some(2), Some(3), Some(2)),
+        (&all_inf, Some(2), Some(3), Some(2)),
+        (&neg_zero, Some(2), Some(5), Some(3)),
+        (&large_flip, Some(2), Some(10), Some(2)),
+        (&true_ovf, Some(1), Some(20), Some(3)),
+    ];
+    for (series, m, n, s) in edge_cases {
+        let a = macd(series, m, n, s).unwrap();
+        let b = macd(series, m, n, s).unwrap();
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+    }
+}
+
+#[test]
+fn macd_empty_singleton_and_span_errors() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    let sample =
+        Series::try_new(vec![date(2020, 1, 1), date(2020, 1, 2)], vec![10.0, 12.0]).unwrap();
+
+    // Zero spans return Error::Span on both empty and non-empty inputs
+    for series in [&empty, &sample] {
+        assert_eq!(macd(series, Some(0), Some(26), Some(1)), Err(Error::Span));
+        assert_eq!(macd(series, Some(12), Some(0), Some(1)), Err(Error::Span));
+        assert_eq!(macd(series, Some(12), Some(26), Some(0)), Err(Error::Span));
+        assert_eq!(macd(series, Some(0), None, None), Err(Error::Span));
+        assert_eq!(macd(series, None, Some(0), None), Err(Error::Span));
+        assert_eq!(macd(series, None, None, Some(0)), Err(Error::Span));
+    }
+
+    // Valid spans on empty input return empty Series
+    for (m, n, s) in [
+        (None, None, None),
+        (Some(1), Some(1), Some(1)),
+        (Some(2), Some(3), Some(4)),
+    ] {
+        let out = macd(&empty, m, n, s).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+
+    // Length-1 inputs: finite / -0.0 -> [+0.0]; NaN / ±Inf -> [NaN]
+    let d1 = vec![date(2020, 1, 1)];
+    for v in [42.0, -0.0] {
+        let s = Series::try_new(d1.clone(), vec![v]).unwrap();
+        let out = macd(&s, Some(12), Some(26), Some(9)).unwrap();
+        assert_eq!(out.dates(), d1.as_slice());
+        assert!(out.values()[0] == 0.0 && out.values()[0].is_sign_positive());
+    }
+    for v in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let s = Series::try_new(d1.clone(), vec![v]).unwrap();
+        let out = macd(&s, Some(2), Some(3), Some(2)).unwrap();
+        assert_eq!(out.dates(), d1.as_slice());
+        assert!(out.values()[0].is_nan());
+    }
 }

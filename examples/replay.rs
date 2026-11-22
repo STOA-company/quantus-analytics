@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, max_drawdown, moving_average,
+    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average,
     relative_strength_index, returns, smoothed_moving_average, volatility, Date, ReturnKind,
     Series, Window,
 };
@@ -143,6 +143,18 @@ fn main() {
                     Some(parse_window(args[1], args[2], args[3]))
                 };
                 relative_strength_index(&series, window)
+            }
+            "macd" => {
+                let parse_opt_span = |s: &str| match s {
+                    "default" => None,
+                    v => Some(v.parse().unwrap()),
+                };
+                macd(
+                    &series,
+                    parse_opt_span(args[1]),
+                    parse_opt_span(args[2]),
+                    parse_opt_span(args[3]),
+                )
             }
             _ => panic!("unknown operation"),
         }

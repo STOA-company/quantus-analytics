@@ -1,0 +1,2387 @@
+{
+  "schema": "gsquant-macd-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:macd",
+    "gs_quant/timeseries/algebra.py:subtract",
+    "gs_quant/timeseries/datetime.py:align"
+  ],
+  "cases": [
+    {
+      "id": "test-macd-equal-10-10",
+      "source_ref": "test_technicals.py::test_macd",
+      "operation": "macd",
+      "args": [
+        "10",
+        "10",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-macd-10-12-default-s",
+      "source_ref": "test_technicals.py::test_macd",
+      "operation": "macd",
+      "args": [
+        "10",
+        "12",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          -0.027972027972027913,
+          -0.01858281578561316,
+          -0.06750684886535074,
+          -0.04354497389634826,
+          0.05817814161076118
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-macd-10-12-explicit-s1",
+      "source_ref": "test_technicals.py::test_macd",
+      "operation": "macd",
+      "args": [
+        "10",
+        "12",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          -0.027972027972027913,
+          -0.01858281578561316,
+          -0.06750684886535074,
+          -0.04354497389634826,
+          0.05817814161076118
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-macd-2-3",
+      "source_ref": "test_technicals.py::test_macd",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          -0.16666666666666696,
+          0.02777777777777768,
+          -0.28240740740740744,
+          0.09336419753086433,
+          0.6248713991769552
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "defaults-12-26-1",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "default",
+        "default",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          102.0,
+          101.0,
+          105.0,
+          104.0,
+          108.0,
+          107.0,
+          111.0,
+          110.0,
+          115.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          0.0,
+          0.15954415954415424,
+          0.2029528981095723,
+          0.5537380591154317,
+          0.7424872529620075,
+          1.200994601383556,
+          1.4667653774815363,
+          1.9773633886411233,
+          2.275098429992454,
+          2.881299976008549
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signal-smoothing-s9",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "12",
+        "26",
+        "9"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          102.0,
+          101.0,
+          105.0,
+          104.0,
+          108.0,
+          107.0,
+          111.0,
+          110.0,
+          115.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          0.0,
+          0.03190883190883085,
+          0.06611764514897914,
+          0.16364172794226967,
+          0.27941083294621727,
+          0.463727586633685,
+          0.6643351448032553,
+          0.9269407935708289,
+          1.196572320855154,
+          1.533517851885833
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signal-smoothing-2-3-4",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "4"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          -0.06666666666666679,
+          -0.028888888888889,
+          -0.13029629629629638,
+          -0.0408320987654321,
+          0.22544930041152286
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inverted-spans-m-gt-n",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "5",
+        "2",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          0.16666666666666674,
+          0.08333333333333337,
+          0.3379629629629632,
+          0.13194444444444461,
+          -0.5369084362139918
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-span-1",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "1",
+        "1",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "m1-n3-s2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "1",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          -0.3333333333333333,
+          0.05555555555555554,
+          -0.5648148148148148,
+          0.1867283950617284,
+          1.2497427983539096
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-defaults",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "default",
+        "default",
+        "default"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-m0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "0",
+        "26",
+        "1"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "empty-n0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "12",
+        "0",
+        "1"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "empty-s0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "12",
+        "26",
+        "0"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "nonempty-m0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "0",
+        "2",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "nonempty-n0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "0",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "nonempty-s0",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "0"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Span",
+        "upstream_type": "ValueError",
+        "upstream_message": "span must satisfy: span >= 1"
+      }
+    },
+    {
+      "id": "singleton-finite",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "12",
+        "26",
+        "9"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-nan",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-neg-zero",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-inf",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-len4",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nans-s1",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          10.0,
+          20.0,
+          15.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          2.6666666666666643,
+          1.155555555555555,
+          3.2118518518518506
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nans-s3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          10.0,
+          20.0,
+          15.0,
+          25.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          1.3333333333333321,
+          1.2444444444444436,
+          2.228148148148147
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "internal-nans-s1",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "5",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          10.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          20.0,
+          {
+            "special": "NaN"
+          },
+          5.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          4.179566563467494,
+          4.179566563467494,
+          -3.814683768244139,
+          -0.8990122364735349
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "internal-nans-s3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "5",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          10.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          20.0,
+          {
+            "special": "NaN"
+          },
+          5.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          2.089783281733747,
+          3.1346749226006208,
+          -0.34000442282175913,
+          -0.619508329647647
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "trailing-nans-s3",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          10.0,
+          20.0,
+          15.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          1.3333333333333321,
+          1.2444444444444436,
+          1.1999999999999993,
+          1.1777777777777771,
+          1.166666666666666
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-inf-s2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          10.0,
+          20.0,
+          15.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          1.7777777777777761,
+          1.362962962962962
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "internal-inf-s2",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          10.0,
+          {
+            "special": "+Inf"
+          },
+          20.0,
+          {
+            "special": "-Inf"
+          },
+          5.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          2.2055137844611523,
+          2.9406850459482032,
+          -0.9682518744647735,
+          -0.592065516059711
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-inf",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "constant-positive",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "5",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "constant-neg-zero",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "5",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-signed-zeros",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "5",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -0.0,
+          0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irregular-leap-dates",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          0.0,
+          0.2666666666666666,
+          0.24888888888888827,
+          0.712296296296296,
+          0.6150320987654324
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "negative-values",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "3",
+        "6",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          -10.0,
+          -5.0,
+          -8.0,
+          0.0,
+          4.0,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          0.0,
+          0.7142857142857141,
+          0.6768707482993194,
+          1.6461775186264982,
+          2.6884072222993507,
+          2.1298367284501536
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "large-overflow-diff",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "10",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1e+308,
+          -1e+308,
+          1e+308,
+          -1e+308,
+          1e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          -6.464646464646463e+307,
+          -3.134374043464951e+307,
+          -6.87425216350836e+307,
+          -2.272349226185104e+307
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "large-same-sign",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "macd",
+      "args": [
+        "2",
+        "10",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1e+308,
+          1e+308,
+          5e+307,
+          1e+308,
+          5e+307
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          -1.6161616161616148e+307,
+          -7.83593510866237e+306,
+          -1.7185630408770891e+307
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "true-overflow-diff-s1",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "1",
+        "20",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.7e+308,
+          -1.7e+308,
+          1.7e+308,
+          -1.7e+308,
+          1.7e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          2.929705215419501e+307,
+          2.929705215419501e+307,
+          5.327944632123446e+307
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "true-overflow-diff-s3",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "1",
+        "20",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.7e+308,
+          -1.7e+308,
+          1.7e+308,
+          -1.7e+308,
+          1.7e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          1.9531368102796675e+307,
+          1.9531368102796675e+307,
+          4.2030086915088527e+307
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "true-overflow-pos-s2",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "1",
+        "20",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -1.7e+308,
+          1.7e+308,
+          -1.7e+308,
+          1.7e+308,
+          -1.7e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          -2.511175898931001e+307,
+          -2.511175898931001e+307,
+          -4.92554909881024e+307
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nan-true-overflow",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "1",
+        "20",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.7e+308,
+          -1.7e+308,
+          0.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -1.0672497570456752e+308,
+          -1.1067775258251447e+308
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-mixed-nonfinite",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nan-neg-zero-s3",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          2.0,
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.2666666666666666,
+          0.24888888888888888
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "trailing-inf-s3",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "2",
+        "4",
+        "3"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          10.0,
+          20.0,
+          15.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          1.3333333333333321,
+          1.2444444444444436,
+          1.1999999999999993,
+          1.1777777777777771
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "m-gt-n-s1",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "26",
+        "12",
+        "1"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          100.0,
+          102.0,
+          101.0,
+          105.0,
+          104.0,
+          108.0,
+          107.0,
+          111.0,
+          110.0,
+          115.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07",
+          "2020-01-08",
+          "2020-01-09",
+          "2020-01-10"
+        ],
+        "values": [
+          0.0,
+          -0.15954415954415424,
+          -0.2029528981095723,
+          -0.5537380591154317,
+          -0.7424872529620075,
+          -1.200994601383556,
+          -1.4667653774815363,
+          -1.9773633886411233,
+          -2.275098429992454,
+          -2.881299976008549
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "n1-m3-s2",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "3",
+        "1",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          0.0,
+          0.3333333333333333,
+          -0.05555555555555554,
+          0.5648148148148148,
+          -0.1867283950617284,
+          -1.2497427983539096
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-ninf",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "2"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-explicit-valid",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "2",
+        "3",
+        "4"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irregular-leap-default",
+      "source_ref": "boundaries-extra",
+      "operation": "macd",
+      "args": [
+        "default",
+        "default",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          10.0,
+          12.0,
+          11.0,
+          15.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          0.0,
+          0.15954415954415957,
+          0.20295289810959183,
+          0.5537380591154495,
+          0.6627151731899481
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    }
+  ]
+}
