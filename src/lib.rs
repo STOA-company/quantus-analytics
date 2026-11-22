@@ -97,6 +97,7 @@ impl fmt::Display for Date {
 
 /// Invalid date, series or calculation argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     Date,
     Length,
@@ -681,12 +682,17 @@ pub fn correlation(
 ///   `false` for sample Pearson correlation.
 ///
 /// Empty `x` returns an empty [`Series`] before validating `n_days` (matching upstream).
-/// On non-empty `x`, `n_days <= 1` (including empty `y` or singleton inputs with `n_days = None`)
-/// returns `Err(Error::Window)`. Non-positive prices (`<= 0.0`) in `x` or `y` return
-/// `Err(Error::NonPositivePrice)`. When `assume_zero_mean` is `true`, automatic annualization
-/// errors from the underlying zero-mean [`correlation`] pipeline propagate as
-/// `Err(Error::AnnualizationFactor)` (e.g. irregular 3-day spacing, 2-point series with only 1
-/// return, empty `y` with explicit `n_days`, or `n_days == x.len() + 1`).
+/// On non-empty `x` of length `len`, `n_days <= Some(1)` (including empty `y` or singleton inputs
+/// with `n_days = None`) returns `Err(Error::Window)`. Non-positive prices (`<= 0.0`) in `x` or
+/// `y` return `Err(Error::NonPositivePrice)`. Oversize `n_days` boundaries follow upstream
+/// [`correlation`]'s ramp check on the `len - 1` return series: `n_days >= Some(len + 3)` returns
+/// `Err(Error::Ramp)` regardless of `assume_zero_mean`; `n_days == Some(len + 2)` returns
+/// `Err(Error::Ramp)` under `assume_zero_mean = true` and an empty [`Series`] under
+/// `assume_zero_mean = false`; and `n_days == Some(len + 1)` returns
+/// `Err(Error::AnnualizationFactor)` under `assume_zero_mean = true`. Under
+/// `assume_zero_mean = true`, other automatic annualization errors from the underlying zero-mean
+/// [`correlation`] pipeline also propagate as `Err(Error::AnnualizationFactor)` (e.g. irregular
+/// 3-day spacing, 2-point series with only 1 return, or empty `y` with explicit `n_days`).
 ///
 /// Documented parity boundaries:
 /// - Upstream's `Window(w, r)` validation (`r != w - 1` raising `MqTypeError`) is enforced by
@@ -2120,6 +2126,97 @@ fn solve_window_qr(x_win: &[Vec<f64>], y_win: &[f64], k: usize) -> Option<Vec<f6
     Some(beta)
 }
 
+/// Checks whether the all-ones vector `1` lies in the column space of `aligned_x`
+/// (`n x k`) via Householder QR with column pivoting. Handles rank-deficient `aligned_x`
+/// cleanly by projecting `1` onto the `rank` orthonormal basis columns `Q[:, 0..rank]`
+/// and checking the residual norm `||1 - Q_rank (Q_rank^T 1)||_2 = ||(Q^T 1)[rank..n]||_2`.
+fn has_implicit_constant(aligned_x: &[Vec<f64>], k: usize) -> bool {
+    let n = aligned_x.len();
+    if n == 0 || k == 0 {
+        return false;
+    }
+    let mut cols: Vec<Vec<f64>> = (0..k)
+        .map(|c| aligned_x.iter().map(|row| row[c]).collect())
+        .collect();
+    let mut qtb = vec![1.0_f64; n];
+    let mut v = vec![0.0_f64; n];
+
+    let max_steps = n.min(k);
+    let mut rank = 0usize;
+    let mut r00 = 0.0_f64;
+
+    for j in 0..max_steps {
+        let mut piv = j;
+        let mut best_norm = vec_norm2(&cols[j][j..n]);
+        for (c, col) in cols.iter().enumerate().skip(j + 1) {
+            let norm = vec_norm2(&col[j..n]);
+            if norm > best_norm {
+                best_norm = norm;
+                piv = c;
+            }
+        }
+        if piv != j {
+            cols.swap(j, piv);
+        }
+        if !best_norm.is_finite() || best_norm == 0.0 {
+            break;
+        }
+        if j == 0 {
+            r00 = best_norm;
+        } else {
+            let rank_tol = (n.max(k) as f64) * f64::EPSILON * r00;
+            if best_norm <= rank_tol {
+                break;
+            }
+        }
+
+        let x0 = cols[j][j];
+        let r_jj = if x0 >= 0.0 { -best_norm } else { best_norm };
+        let v0 = x0 - r_jj;
+        let len = n - j;
+        v[0] = 1.0;
+        let mut v_norm_sq = 1.0_f64;
+        for (vm_out, &xj) in v[1..len].iter_mut().zip(&cols[j][j + 1..n]) {
+            let vm = xj / v0;
+            *vm_out = vm;
+            v_norm_sq += vm * vm;
+        }
+        let beta_h = 2.0 / v_norm_sq;
+        cols[j][j] = r_jj;
+
+        for col in cols.iter_mut().skip(j + 1) {
+            let mut dot = col[j];
+            for (&vm, &cm) in v[1..len].iter().zip(&col[j + 1..n]) {
+                dot += vm * cm;
+            }
+            let factor = beta_h * dot;
+            col[j] -= factor;
+            for (&vm, cm) in v[1..len].iter().zip(&mut col[j + 1..n]) {
+                *cm -= factor * vm;
+            }
+        }
+
+        let mut dot_b = qtb[j];
+        for (&vm, &bm) in v[1..len].iter().zip(&qtb[j + 1..n]) {
+            dot_b += vm * bm;
+        }
+        let factor_b = beta_h * dot_b;
+        qtb[j] -= factor_b;
+        for (&vm, bm) in v[1..len].iter().zip(&mut qtb[j + 1..n]) {
+            *bm -= factor_b * vm;
+        }
+
+        rank = j + 1;
+    }
+
+    if rank == 0 {
+        return false;
+    }
+    let resid_norm = vec_norm2(&qtb[rank..n]);
+    let resid_tol = (n.max(k) as f64) * f64::EPSILON * (n as f64).sqrt() * 16.0;
+    resid_norm.is_finite() && resid_norm <= resid_tol
+}
+
 /// Offline multi-factor rolling ordinary least squares regression.
 ///
 /// Mirrors upstream `gs_quant/timeseries/statistics.py:RollingLinearRegression` (lines 1173–1257)
@@ -2148,10 +2245,12 @@ fn solve_window_qr(x_win: &[Vec<f64>], y_win: &[f64], k: usize) -> Option<Vec<f6
 ///     If `|R[0][0]| == 0`, non-finite, or any diagonal `|R[j][j]| <= max(window, k_cols) * f64::EPSILON * |R[0][0]|`
 ///     (or any back-substituted coefficient is non-finite), the window is rank-deficient and emits
 ///     `f64::NAN` across all outputs.
-///   - `r_squared` uses centered `SST` (`sum((y - mean_y)^2)`) when any column of the aligned
-///     design matrix is globally non-zero constant (`has_constant`), and uncentered `SST`
-///     (`sum(y^2)`) otherwise, matching `statsmodels.RollingOLS`. When `SST == 0.0`, `r_squared` is
-///     `f64::NAN`.
+///   - `r_squared` uses centered `SST` (`sum((y - mean_y)^2)`) when the aligned design matrix
+///     contains an explicit globally non-zero constant column or an implicit constant (the
+///     all-ones vector lies in the column space of `aligned_x`, e.g. complementary dummies
+///     `[d, 1 - d]`, detected via pivoted Householder QR projection), and uncentered `SST`
+///     (`sum(y^2)`) otherwise, matching `statsmodels.RollingOLS` (`ModelData._handle_constant`).
+///     When `SST == 0.0`, `r_squared` is `f64::NAN`.
 ///   - `fitted_values` evaluates `dot(X_aligned[idx], beta)` at each window's right endpoint, and
 ///     `standard_deviation_of_errors` evaluates `sqrt(SSE / (window - k_cols))`.
 /// - **Documented upstream parity boundaries:**
@@ -2279,7 +2378,7 @@ impl RollingLinearRegression {
             let v0 = aligned_x[0][c];
             v0 != 0.0 && aligned_x[1..].iter().all(|row| row[c] == v0)
         });
-        let has_constant = const_col_idx.is_some();
+        let has_constant = const_col_idx.is_some() || has_implicit_constant(&aligned_x, k_cols);
 
         let mut coeff_vals: Vec<Vec<f64>> = vec![vec![f64::NAN; n_aligned]; k_cols];
         let mut r_sq_vals = vec![f64::NAN; n_aligned];
@@ -2782,6 +2881,10 @@ pub fn business_day_offset(
 ///   `end` exclusive).
 /// - When `begin > end`: `-count(d in (end, begin] where is_business_day(d))` (`end` exclusive,
 ///   `begin` inclusive).
+///
+/// Note: Reverse-range `business_day_count` (`begin > end` counting `-(end, begin]`) follows the
+/// NumPy `>= 1.25` (gh-23197) convention (pinned `numpy 2.2.6`), whereas NumPy `< 1.25` counted
+/// `-[end, begin)`.
 ///
 /// # Example
 /// ```
@@ -3753,12 +3856,36 @@ fn normalized_point_order(point: &str, ref_date: Date) -> f64 {
     }
 }
 
+#[derive(Clone, Copy)]
+struct OrdF64(f64);
+
+impl PartialEq for OrdF64 {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.total_cmp(&other.0).is_eq()
+    }
+}
+
+impl Eq for OrdF64 {}
+
+impl PartialOrd for OrdF64 {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OrdF64 {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.total_cmp(&other.0)
+    }
+}
+
 /// Stable-sort bucketed risk rows in upstream `__risk_columns` order:
 /// `(date, time, mkt_type, mkt_asset, mkt_class, point_sort_order(mkt_point, ref_date).unwrap_or(0.0))`.
 ///
 /// Mirrors upstream `gs_quant/risk/core.py:sort_risk` (lines 651–682). When all six sort keys
 /// tie (for example `"30d"` and `"1m"`, both `30.0` days), Rust's stable sort preserves the
-/// input row order, matching Python's Timsort.
+/// input row order, matching Python's Timsort. `point_sort_order` is evaluated once per row
+/// (`O(n)` calls).
 ///
 /// # Example
 /// ```
@@ -3783,19 +3910,24 @@ fn normalized_point_order(point: &str, ref_date: Date) -> f64 {
 /// assert_eq!(sorted.rows[1].mkt_point, "5y");
 /// ```
 pub fn sort_risk(table: &RiskTable, ref_date: Date) -> RiskTable {
-    let mut rows = table.rows.clone();
-    rows.sort_by(|a, b| {
+    let orders: Vec<OrdF64> = table
+        .rows
+        .iter()
+        .map(|row| OrdF64(normalized_point_order(&row.mkt_point, ref_date)))
+        .collect();
+    let mut indices: Vec<usize> = (0..table.rows.len()).collect();
+    indices.sort_by(|&ia, &ib| {
+        let a = &table.rows[ia];
+        let b = &table.rows[ib];
         a.date
             .cmp(&b.date)
             .then_with(|| a.time.cmp(&b.time))
             .then_with(|| a.mkt_type.cmp(&b.mkt_type))
             .then_with(|| a.mkt_asset.cmp(&b.mkt_asset))
             .then_with(|| a.mkt_class.cmp(&b.mkt_class))
-            .then_with(|| {
-                normalized_point_order(&a.mkt_point, ref_date)
-                    .total_cmp(&normalized_point_order(&b.mkt_point, ref_date))
-            })
+            .then_with(|| orders[ia].cmp(&orders[ib]))
     });
+    let rows = indices.into_iter().map(|i| table.rows[i].clone()).collect();
     RiskTable {
         unit: table.unit.clone(),
         rows,
@@ -3817,9 +3949,15 @@ pub fn sort_risk(table: &RiskTable, ref_date: Date) -> RiskTable {
 ///   `threshold = 0.0`, and all buckets at `threshold = NaN` or `+Inf` are dropped).
 /// - Returns the final [`RiskTable`] sorted via [`sort_risk`].
 ///
-/// Documented parity boundaries: only already-resolved bucketed risk tables/rows are supported
-/// (remote `PricingContext`, `Future`, server pricing, and `ErrorValue` are out of scope), and
-/// `ref_date: Date` is passed explicitly instead of reading `datetime.date.today()`.
+/// Documented parity boundaries:
+/// - Only already-resolved bucketed risk tables/rows are supported (remote `PricingContext`,
+///   `Future`, server pricing, and `ErrorValue` are out of scope), and `ref_date: Date` is passed
+///   explicitly instead of reading `datetime.date.today()`.
+/// - `aggregate_risk` allows optional `date`/`time` per row (`None` sorts before `Some`), whereas
+///   upstream pandas concatenates DataFrames and fills missing columns with `0`.
+/// - Bucket summation uses standard IEEE-754 left-to-right `f64` addition (`+=`), whereas pandas
+///   `groupby().sum()` uses compensated (Kahan) summation on extreme cancellation inputs such as
+///   `[1e16, 1.0, -1e16]`.
 ///
 /// # Example
 /// ```
@@ -3901,9 +4039,11 @@ pub fn aggregate_risk(
 
 /// Subtract bucketed risk (`left - right`).
 ///
-/// Validates unit compatibility (`Err(Error::UnitMismatch)`) and optional `date`/`time` presence
-/// compatibility when both tables are non-empty (`Err(Error::Length)`), negates `right`'s values,
-/// and delegates to [`aggregate_risk`].
+/// Validates unit compatibility (`Err(Error::UnitMismatch)`), checks consistent `date`/`time`
+/// presence across all rows within each non-empty table (`Err(Error::Length)` if a single table
+/// mixes `Some` and `None` for `date` or `time`), and checks matching `date`/`time` presence
+/// between `left` and `right` when both are non-empty (`Err(Error::Length)`), before negating
+/// `right`'s values and delegating to [`aggregate_risk`].
 ///
 /// Documented parity boundary: upstream `gs_quant/risk/core.py:642-643` asserts
 /// `'value' in left.columns.names`, which inspects pandas `Index.names` (`[None]`) instead of
@@ -3939,12 +4079,27 @@ pub fn subtract_risk(
         }
     }
 
-    if !left.rows.is_empty() && !right.rows.is_empty() {
-        let left_has_date = left.rows.iter().any(|r| r.date.is_some());
-        let right_has_date = right.rows.iter().any(|r| r.date.is_some());
-        let left_has_time = left.rows.iter().any(|r| r.time.is_some());
-        let right_has_time = right.rows.iter().any(|r| r.time.is_some());
-        if left_has_date != right_has_date || left_has_time != right_has_time {
+    let consistent_presence = |table: &RiskTable| -> Result<Option<(bool, bool)>, Error> {
+        let Some(first) = table.rows.first() else {
+            return Ok(None);
+        };
+        let has_date = first.date.is_some();
+        let has_time = first.time.is_some();
+        if table
+            .rows
+            .iter()
+            .skip(1)
+            .any(|r| r.date.is_some() != has_date || r.time.is_some() != has_time)
+        {
+            return Err(Error::Length);
+        }
+        Ok(Some((has_date, has_time)))
+    };
+
+    let left_schema = consistent_presence(left)?;
+    let right_schema = consistent_presence(right)?;
+    if let (Some(ls), Some(rs)) = (left_schema, right_schema) {
+        if ls != rs {
             return Err(Error::Length);
         }
     }
@@ -4209,9 +4364,22 @@ fn resolve_execution_price(
 ///   [`HolidayCalendar`], daily/intraday price tables, and explicit [`PredefinedOrder`] events;
 ///   remote `GsDataSource`, `GsCalendar`, `PricingContext`, `GenericEngine`, and IANA timezone
 ///   conversions are out of scope (all [`Timestamp`] values are UTC wall-clock).
-/// - Missing or `NaN` execution/valuation prices return typed `Err(Error::Length)` (vs upstream
-///   `KeyError`/`RuntimeError`), invalid date/time ranges return `Err(Error::Date)`, and
-///   unsorted/duplicate intraday timestamps return `Err(Error::UnsortedOrDuplicate)`.
+/// - Unfilled orders (e.g. a [`PredefinedOrderKind::MarketOnClose`] order whose
+///   `execution_end_time` falls after `adjusted_end`, or any order that never fills before backtest
+///   end) are omitted from `trade_ledger` in Rust (leaving an open position open rather than
+///   upstream's `None - float` `TypeError`).
+/// - Missing execution/valuation prices return typed `Err(Error::Length)` (vs upstream
+///   `KeyError`/`RuntimeError`). For `NaN` daily valuation prices, upstream `mark_to_market`
+///   propagates `NaN` into the NAV series without raising an exception, whereas Rust strictly
+///   returns `Err(Error::Length)` on any missing or `NaN` execution/valuation price. Invalid
+///   date/time ranges return `Err(Error::Date)`, and unsorted/duplicate intraday timestamps return
+///   `Err(Error::UnsortedOrDuplicate)`.
+/// - For [`PredefinedOrderKind::Cost`], Rust ignores the order's `instrument` field and books the
+///   cash adjustment directly under `cash_label` (matching upstream NAV valuation where cash is
+///   valued at `1.0`).
+/// - EOD mark-to-market sums positions in canonical `BTreeMap` (lexicographical instrument-name)
+///   order rather than upstream's first-held insertion order (which can differ by 1–2 ULPs on
+///   multi-asset portfolios, well within the `1e-10` relative parity bound).
 ///
 /// # Example
 /// ```

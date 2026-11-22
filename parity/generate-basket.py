@@ -668,7 +668,7 @@ add_case(
     costs_spec=[0.001, 0.001, 0.002],
 )
 
-# 6. Zero NAV, negative NAV, NaN / zero prices IEEE-754 propagation (7 cases)
+# 6. Zero NAV, negative NAV, NaN / zero prices IEEE-754 propagation (9 cases)
 D3 = [dt.date(2024, 4, 1), dt.date(2024, 4, 2), dt.date(2024, 4, 3)]
 add_case(
     "zero-nav-crash-daily",
