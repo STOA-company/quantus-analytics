@@ -1,0 +1,2502 @@
+{
+  "schema": "gsquant-smma-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:smoothed_moving_average",
+    "gs_quant/timeseries/statistics.py:mean",
+    "gs_quant/timeseries/helper.py:normalize_window",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "test-smma-default",
+      "source_ref": "test_technicals.py::test_smoothed_moving_average",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.8333333333333335,
+          2.861111111111111,
+          2.550925925925926,
+          2.6257716049382718,
+          3.188143004115227
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-smma-obs-1",
+      "source_ref": "test_technicals.py::test_smoothed_moving_average",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-smma-obs-2",
+      "source_ref": "test_technicals.py::test_smoothed_moving_average",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.75,
+          1.875,
+          2.4375,
+          4.21875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-smma-2d",
+      "source_ref": "test_technicals.py::test_smoothed_moving_average",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.5,
+          1.75,
+          2.375,
+          4.1875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-smma-1m-empty",
+      "source_ref": "test_technicals.py::test_smoothed_moving_average",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        31,
+        31
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "reg-obs2-r2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.5,
+          1.75,
+          2.375,
+          4.1875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "reg-obs3-r2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        3,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.6666666666666665,
+          2.111111111111111,
+          2.4074074074074074,
+          3.6049382716049383
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "reg-2d-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.75,
+          1.875,
+          2.4375,
+          4.21875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "reg-2d-r1d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.5,
+          2.75,
+          1.875,
+          2.4375,
+          4.21875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.8333333333333335,
+          2.861111111111111,
+          2.550925925925926,
+          2.6257716049382718,
+          3.188143004115227
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-obs2-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.75,
+          1.875,
+          2.4375,
+          4.21875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-obs2-r2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          2.5,
+          1.75,
+          2.375,
+          4.1875
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        4,
+        4
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          2.5,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          2.75,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-2d-gap",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-lead-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-mid-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "NaN"
+          },
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-all-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-mid-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "+Inf"
+          },
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-2d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "empty-2d-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-obs2-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-obs2-r2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "single-2d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-obs10-r0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        10,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "oversize-obs10-r10",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        10,
+        10
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "oversize-100d",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        100,
+        100
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "zero-obs",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "neg-zero-obs2",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "reg-4d-r2d",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        4,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          2.6666666666666665,
+          1.8333333333333333,
+          2.222222222222222,
+          3.1666666666666665
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-2d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.5,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-2d-r1d",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          2.5,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d-r1d",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        4,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          2.5,
+          2.75,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irreg-4d-r2d",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        4,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          2.5,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-in-init-obs3-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        3,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.0,
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          3.0,
+          4.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-all-init-obs2-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          4.0,
+          5.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-lead-obs2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-lead-obs2-r1",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          4.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-lead-2d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-lead-2d-r1d",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        1
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          4.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          4.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-mid-2d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "+Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-neg-mid-obs2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "-Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-then-ninf-obs2-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-obs1-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-obs1",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-obs2-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-2d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-expanding",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ramp-eq-len-obs",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        6
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ramp-cuts-all-days",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        10
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "single-2d-r0",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-obs2-r2",
+      "source_ref": "boundaries-extra",
+      "operation": "smoothed_moving_average",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    }
+  ]
+}

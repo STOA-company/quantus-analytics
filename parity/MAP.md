@@ -81,3 +81,24 @@ Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timese
 - Excluded from scope: `DatetimeIndex` / time zones, duplicate or unsorted indices, and pandas nullable extension dtypes distinct from `NaN`.
 
 `python3 parity/check-ema.py --replay` verifies all 41 cases (28 strict value outputs, 7 typed errors, and 6 documented `NaN`-beta `Error::Beta` vs upstream pandas bypass cases) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN` positions, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-ema.py /path/to/gs-quant` regenerates `parity/ema-vectors.json` directly from the pinned upstream checkout.
+
+## Smoothed moving average parity (`parity/smma-vectors.json`)
+
+Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timeseries/technicals.py:smoothed_moving_average` (lines 146–202); `gs_quant/timeseries/statistics.py:mean`; `gs_quant/timeseries/helper.py:normalize_window`, `apply_ramp`. Upstream `test_technicals.py::test_smoothed_moving_average` (5 assertions passed in the pinned Python environment). All vectors use a Python `datetime.date` index because upstream's calendar-day branch compares `(x.index[i] - window_size).date()`, which raises `TypeError` on a pandas `DatetimeIndex`.
+
+- Upstream `test_smoothed_moving_average` suite (5 of 5 assertions retained): `test-smma-default` (`Window::Expanding`), `test-smma-obs-1` (`Window(1, 0)`), `test-smma-obs-2` (`Window(2, 0)`), `test-smma-2d` (`"2d"`), and `test-smma-1m-empty` (`"1m"` starting `2019-01-01`, mapped to `Window::Days { size: 31, ramp: 31 }` because January 2019 spans 31 calendar days to `2019-02-01`; general calendar-month windows remain out of scope).
+- Bundled synthetic boundary suite (`pinned-boundaries-1.txt`, 27 cases — 23 value outputs + 4 typed errors):
+  - Regular-date observation & calendar ramps: `reg-obs2-r2`, `reg-obs3-r2`, `reg-2d-r0`, `reg-2d-r1d`.
+  - Irregular leap-year dates crossing `2020-02-29`: `irreg-default`, `irreg-obs2-r0`, `irreg-obs2-r2`, `irreg-4d`, `irreg-4d-r0`, `irreg-2d-gap`.
+  - Missing (`NaN`) and `+Inf` propagation: `nan-lead-obs2`, `nan-mid-obs2`, `nan-all-obs2`, `inf-mid-obs2`.
+  - Empty series: `empty-default`, `empty-obs2`, `empty-2d` (`IndexError` → `Error::Ramp`), `empty-2d-r0`.
+  - Singleton series: `single-default`, `single-obs2-r0`, `single-obs2-r2` (`MqValueError` → `Error::Ramp`), `single-2d`.
+  - Oversize, zero-window, and signed-zero boundaries: `oversize-obs10-r0`, `oversize-obs10-r10` (`MqValueError` → `Error::Ramp`), `oversize-100d`, `zero-obs` (`MqValueError` → `Error::Window`), and `neg-zero-obs2` (`[-0.0, 0.0, -0.0, -0.0]` → `[-0.0, +0.0, +0.0, +0.0]`).
+- Additional boundary probes (`boundaries-extra`, 23 cases):
+  - Post-ramp `x` slicing before calendar `window_num_elem` counting: `reg-4d-r2d`, `irreg-2d-r0`, `irreg-2d-r1d`, `irreg-4d-r1d`, `irreg-4d-r2d`.
+  - `NaN` and `±Inf` skipped in the initial `mean(x, Window(size, 0))` window (matching pandas `rolling().mean()`) plus recurrence propagation (`-Inf`, `Inf + (-Inf) → NaN`, `0 * Inf → NaN`): `nan-in-init-obs3-r2`, `nan-all-init-obs2-r2`, `inf-lead-obs2-r0`, `inf-lead-obs2-r1`, `inf-lead-2d-r0`, `inf-lead-2d-r1d`, `inf-mid-2d-r0`, `inf-neg-mid-obs2-r0`, `inf-then-ninf-obs2-r0`, `inf-obs1-r0`.
+  - Signed-zero preservation across windows: `neg-zero-obs1`, `neg-zero-obs2-r2`, `neg-zero-2d-r0`, `neg-zero-expanding`.
+  - Ramp & empty boundaries: `ramp-eq-len-obs`, `ramp-cuts-all-days`, `single-2d-r0`, `empty-obs2-r2`.
+- Excluded from scope: general calendar week/month windows (`1w`, `1m`, `3m`), mixed-unit ramps, `DatetimeIndex` / time zones (upstream calendar-day branch raises `TypeError`), duplicate or unsorted indices, and calendar windows/ramps outside pinned pandas `DateOffset` range (documented in `README.md`). Zero calendar-day windows (`Window::Days { size: 0, .. }`) are rejected with `Err(Error::Window)` in Rust (verified in `tests/contracts.rs`), whereas upstream with a `datetime.date` index divides by zero (`window_num_elem = 0`).
+
+`python3 parity/check-smma.py --replay` verifies all 55 cases (51 value outputs and 4 typed errors) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN`/`±Inf` classification, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-smma.py /path/to/gs-quant` regenerates `parity/smma-vectors.json` directly from the pinned upstream checkout.
