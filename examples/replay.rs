@@ -1,11 +1,11 @@
 use quantus_math::{
     aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
-    business_day_offset, correlation, cov, day_count_fraction, exponential_moving_average,
-    has_feb_29, is_business_day, macd, max_drawdown, moving_average, point_sort_order, prices,
-    relative_strength_index, returns, smoothed_moving_average, sort_risk, std as series_std,
-    subtract_risk, volatility, BasketParam, Date, DayCountConvention, HolidayCalendar,
-    PaymentFrequency, RebalFreq, ReturnKind, RiskRow, RiskTable, Roll, RollingLinearRegression,
-    Series, Window,
+    business_day_offset, corr_swap_correlation, correlation, cov, day_count_fraction,
+    exponential_moving_average, has_feb_29, is_business_day, macd, max_drawdown, moving_average,
+    point_sort_order, prices, relative_strength_index, returns, smoothed_moving_average, sort_risk,
+    std as series_std, subtract_risk, vol_swap_volatility, volatility, BasketParam, Date,
+    DayCountConvention, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, RiskRow,
+    RiskTable, Roll, RollingLinearRegression, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -493,6 +493,21 @@ fn main() {
         let x = parse_rows(remaining[..len_x].iter().copied());
         let y = parse_rows(remaining[len_x..].iter().copied());
         correlation(&x, &y, window, returns_kind, assume_zero_mean)
+    } else if args[0] == "corr_swap_correlation" {
+        let n_days = match args[1] {
+            "default" => None,
+            v => Some(v.parse().unwrap()),
+        };
+        let assume_zero_mean = match args[2] {
+            "false" => false,
+            "true" => true,
+            _ => panic!("unknown zero-mean flag"),
+        };
+        let len_x: usize = args[3].parse().unwrap();
+        let remaining: Vec<_> = lines.collect();
+        let x = parse_rows(remaining[..len_x].iter().copied());
+        let y = parse_rows(remaining[len_x..].iter().copied());
+        corr_swap_correlation(&x, &y, n_days, assume_zero_mean)
     } else if args[0] == "beta" {
         let window = parse_window(args[1], args[2], args[3]);
         let prices = match args[4] {
@@ -568,6 +583,22 @@ fn main() {
                     annualization_factor,
                     assume_zero_mean,
                 )
+            }
+            "vol_swap_volatility" => {
+                let n_days = match args[1] {
+                    "default" => None,
+                    v => Some(v.parse().unwrap()),
+                };
+                let annualization_factor = match args[2] {
+                    "default" => None,
+                    v => Some(v.parse().unwrap()),
+                };
+                let assume_zero_mean = match args[3] {
+                    "false" => false,
+                    "true" => true,
+                    _ => panic!("unknown zero-mean flag"),
+                };
+                vol_swap_volatility(&series, n_days, annualization_factor, assume_zero_mean)
             }
             "max_drawdown" => max_drawdown(&series, parse_window(args[1], args[2], args[3])),
             "exponential_moving_average" => {

@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), and offline bucketed risk aggregation, subtraction, sorting, and market-point sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`).
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility (`volatility`, `vol_swap_volatility`), correlation (`correlation`, `corr_swap_correlation`), beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), and offline bucketed risk aggregation, subtraction, sorting, and market-point sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`).
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,backtesting,helper}.py,
 //! gs_quant/datetime/{date,point}.py (with explicit-holiday `np.busdaycalendar` semantics), and
 //! gs_quant/risk/core.py at 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and
@@ -431,6 +431,74 @@ pub fn volatility(
     Series::try_new(dates, values)
 }
 
+/// Rolling realized volatility of a price series for volatility swap pricing (in percent),
+/// using logarithmic returns.
+///
+/// Mirrors upstream `gs_quant/timeseries/econometrics.py:vol_swap_volatility` (lines 695–765):
+///
+/// - `n_days`: number of price observations in the window (`None` defaults to `prices.dates().len()`).
+///   Maps to `Window::Observations { size: n, ramp: n - 1 }` matching upstream `Window(n_days, n_days - 1)`.
+/// - `annualization_factor`: periods per year (`None` defaults to `252`).
+/// - `assume_zero_mean`: `true` for volatility-swap zero-mean RMS (`N` divisor), `false` for
+///   unbiased sample standard deviation (`N - 1` divisor).
+///
+/// Empty `prices` returns an empty [`Series`] before validating `n_days` (matching upstream).
+/// On non-empty `prices`, `n_days == Some(0)` returns `Err(Error::Window)`, `n_days == Some(len + 1)`
+/// returns an empty [`Series`] (with valid ramp `len` and explicit annualization factor),
+/// `n_days >= Some(len + 2)` returns `Err(Error::Ramp)`, and non-positive prices (`<= 0.0`) return
+/// `Err(Error::NonPositivePrice)`.
+///
+/// Documented parity boundary: upstream's `Window(w, r)` validation (`r != w - 1` raising
+/// `MqTypeError`) is enforced by construction via Rust's typed `Option<usize>` parameter.
+///
+/// # Example
+/// ```
+/// use quantus_math::{vol_swap_volatility, Date, Series};
+///
+/// let dates = vec![
+///     Date::new(2024, 1, 1).unwrap(),
+///     Date::new(2024, 1, 2).unwrap(),
+///     Date::new(2024, 1, 3).unwrap(),
+///     Date::new(2024, 1, 4).unwrap(),
+/// ];
+/// let prices = Series::try_new(dates, vec![100.0, 102.0, 101.0, 104.0]).unwrap();
+///
+/// // Zero-mean volatility swap convention (default annualization_factor = 252)
+/// let v_zm = vol_swap_volatility(&prices, Some(3), None, true).unwrap();
+/// assert_eq!(v_zm.dates().len(), 2);
+/// assert!(v_zm.values().iter().all(|v| v.is_finite() && *v > 0.0));
+///
+/// // Full-series sample volatility with 365-day annualization
+/// let v_sample = vol_swap_volatility(&prices, None, Some(365), false).unwrap();
+/// assert_eq!(v_sample.dates().len(), 1);
+/// assert!(v_sample.values()[0].is_finite());
+/// ```
+pub fn vol_swap_volatility(
+    prices: &Series,
+    n_days: Option<usize>,
+    annualization_factor: Option<u32>,
+    assume_zero_mean: bool,
+) -> Result<Series, Error> {
+    if prices.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    let n = n_days.unwrap_or(prices.dates.len());
+    if n == 0 {
+        return Err(Error::Window);
+    }
+    let window = Window::Observations {
+        size: n,
+        ramp: n - 1,
+    };
+    volatility(
+        prices,
+        window,
+        Some(ReturnKind::Logarithmic),
+        Some(annualization_factor.unwrap_or(252)),
+        assume_zero_mean,
+    )
+}
+
 /// Rolling or expanding correlation between two date-indexed series.
 ///
 /// Returns a dimensionless ratio (not percent) indexed by `x`'s dates after applying the outer
@@ -598,6 +666,82 @@ pub fn correlation(
         }
     }
     Series::try_new(out_dates, out_values)
+}
+
+/// Rolling realized correlation of two price series for correlation swap pricing
+/// (dimensionless ratio in `[-1, 1]`), using logarithmic returns.
+///
+/// Mirrors upstream `gs_quant/timeseries/econometrics.py:corr_swap_correlation` (lines 891–964):
+///
+/// - `n_days`: number of price observations in the window (`None` defaults to
+///   `x.dates().len().min(y.dates().len())`). The return window size is `n_days - 1` with ramp
+///   `n_days - 2`, matching upstream `Window(n_days - 1, n_days - 2)`.
+/// - `assume_zero_mean`: `true` for correlation-swap zero-mean normalized inner product,
+///   `false` for sample Pearson correlation.
+///
+/// Empty `x` returns an empty [`Series`] before validating `n_days` (matching upstream).
+/// On non-empty `x`, `n_days <= 1` (including empty `y` or singleton inputs with `n_days = None`)
+/// returns `Err(Error::Window)`. Non-positive prices (`<= 0.0`) in `x` or `y` return
+/// `Err(Error::NonPositivePrice)`. When `assume_zero_mean` is `true`, automatic annualization
+/// errors from the underlying zero-mean [`correlation`] pipeline propagate as
+/// `Err(Error::AnnualizationFactor)` (e.g. irregular 3-day spacing, 2-point series with only 1
+/// return, empty `y` with explicit `n_days`, or `n_days == x.len() + 1`).
+///
+/// Documented parity boundaries:
+/// - Upstream's `Window(w, r)` validation (`r != w - 1` raising `MqTypeError`) is enforced by
+///   construction via Rust's typed `Option<usize>` parameter.
+/// - Constant zero-variance price/log-return series with `assume_zero_mean = false` inherit
+///   [`correlation`]'s `NaN` contract (vs upstream pandas `±Inf` rounding residue).
+///
+/// # Example
+/// ```
+/// use quantus_math::{corr_swap_correlation, Date, Series};
+///
+/// let dates = vec![
+///     Date::new(2024, 1, 1).unwrap(),
+///     Date::new(2024, 1, 2).unwrap(),
+///     Date::new(2024, 1, 3).unwrap(),
+///     Date::new(2024, 1, 4).unwrap(),
+///     Date::new(2024, 1, 5).unwrap(),
+/// ];
+/// let x = Series::try_new(dates.clone(), vec![100.0, 102.0, 101.0, 104.0, 103.0]).unwrap();
+/// let y = Series::try_new(dates, vec![50.0, 51.5, 50.2, 52.0, 52.5]).unwrap();
+///
+/// // Correlation-swap zero-mean mode (4 price days => 3-return window, ramp 2)
+/// let c_zm = corr_swap_correlation(&x, &y, Some(4), true).unwrap();
+/// assert_eq!(c_zm.dates().len(), 3);
+/// assert!(c_zm.values()[0].is_nan()); // masked by inner ramp on aligned returns
+/// assert!((-1.0..=1.0).contains(&c_zm.values()[1]));
+/// assert!((-1.0..=1.0).contains(&c_zm.values()[2]));
+///
+/// // Sample Pearson correlation over the same 4-day price window
+/// let c_pearson = corr_swap_correlation(&x, &y, Some(4), false).unwrap();
+/// assert!(c_pearson.values().iter().all(|v| v.is_finite() && (-1.0..=1.0).contains(v)));
+/// ```
+pub fn corr_swap_correlation(
+    x: &Series,
+    y: &Series,
+    n_days: Option<usize>,
+    assume_zero_mean: bool,
+) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    let n = n_days.unwrap_or_else(|| x.dates.len().min(y.dates.len()));
+    if n <= 1 {
+        return Err(Error::Window);
+    }
+    let window = Window::Observations {
+        size: n - 1,
+        ramp: n - 2,
+    };
+    correlation(
+        x,
+        y,
+        window,
+        Some((ReturnKind::Logarithmic, ReturnKind::Logarithmic)),
+        assume_zero_mean,
+    )
 }
 
 /// Rolling or expanding beta of `x` against `benchmark`.
