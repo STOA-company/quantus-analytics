@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average,
+    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
     relative_strength_index, returns, smoothed_moving_average, volatility, Date, Error, ReturnKind,
     Series, Window,
 };
@@ -2426,4 +2426,280 @@ fn macd_empty_singleton_and_span_errors() {
         assert_eq!(out.dates(), d1.as_slice());
         assert!(out.values()[0].is_nan());
     }
+}
+
+#[test]
+fn prices_upstream_test_prices_and_defaults() {
+    let dates: Vec<_> = (1..=6).map(|d| date(2019, 1, d)).collect();
+    let simple_r =
+        Series::try_new(dates.clone(), vec![f64::NAN, 0.01, 0.02, -0.02, 0.0, 0.02]).unwrap();
+
+    // Default initial (1.0) and default kind (Simple)
+    let def = prices(&simple_r, None, None).unwrap();
+    let expected_def = [1.0, 1.01, 1.0302, 1.009596, 1.009596, 1.02978792];
+    assert_eq!(def.dates(), dates.as_slice());
+    for (&a, &e) in def.values().iter().zip(&expected_def) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+
+    // Explicit initial=100.0 with default kind vs explicit Simple
+    let init100_def = prices(&simple_r, Some(100.0), None).unwrap();
+    let init100_exp = prices(&simple_r, Some(100.0), Some(ReturnKind::Simple)).unwrap();
+    let expected_100 = [100.0, 101.0, 103.02, 100.9596, 100.9596, 102.978792];
+    assert_eq!(init100_def.dates(), dates.as_slice());
+    assert_eq!(init100_exp.dates(), dates.as_slice());
+    for (i, &e) in expected_100.iter().enumerate() {
+        assert_eq!(
+            init100_def.values()[i].to_bits(),
+            init100_exp.values()[i].to_bits()
+        );
+        assert!((init100_exp.values()[i] - e).abs() <= 1e-12 + 1e-10 * e.abs());
+    }
+
+    // Logarithmic and Absolute modes from upstream test_prices
+    let log_r = Series::try_new(
+        dates.clone(),
+        vec![f64::NAN, 0.009950, 0.019803, -0.020203, 0.0, 0.019803],
+    )
+    .unwrap();
+    let log_p = prices(&log_r, Some(100.0), Some(ReturnKind::Logarithmic)).unwrap();
+    assert_eq!(log_p.dates(), dates.as_slice());
+    for (&a, &e) in log_p.values().iter().zip(&expected_100) {
+        assert!((a - e).abs() < 1e-3, "{a} vs {e}");
+    }
+
+    let abs_r = Series::try_new(
+        dates.clone(),
+        vec![f64::NAN, 1.0, 2.02, -2.0604, 0.0, 2.019192],
+    )
+    .unwrap();
+    let abs_p = prices(&abs_r, Some(100.0), Some(ReturnKind::Absolute)).unwrap();
+    assert_eq!(abs_p.dates(), dates.as_slice());
+    for (&a, &e) in abs_p.values().iter().zip(&expected_100) {
+        assert!((a - e).abs() <= 1e-12 + 1e-10 * e.abs(), "{a} vs {e}");
+    }
+}
+
+#[test]
+fn prices_roundtrip_and_leap_dates() {
+    let leap_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 2),
+        date(2020, 3, 10),
+    ];
+    let px = Series::try_new(leap_dates.clone(), vec![100.0, 105.0, 102.9, 108.0, 99.5]).unwrap();
+
+    for kind in [
+        ReturnKind::Simple,
+        ReturnKind::Logarithmic,
+        ReturnKind::Absolute,
+    ] {
+        let r = returns(&px, 1, kind).unwrap();
+        let restored = prices(&r, Some(px.values()[0]), Some(kind)).unwrap();
+        assert_eq!(restored.dates(), leap_dates.as_slice());
+        for (&actual, &expected) in restored.values().iter().zip(px.values()) {
+            assert!(
+                (actual - expected).abs() <= 1e-12 + 1e-10 * expected.abs(),
+                "{kind:?}: {actual} vs {expected}"
+            );
+        }
+    }
+}
+
+#[test]
+fn prices_missing_infinities_collapse_and_signed_zeros() {
+    let d5: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let d4 = d5[..4].to_vec();
+    let d3 = d5[..3].to_vec();
+    let d2 = d5[..2].to_vec();
+
+    // Leading, internal, and all-missing NaNs
+    let lead_nan =
+        Series::try_new(d5.clone(), vec![f64::NAN, f64::NAN, 0.1, f64::NAN, -0.2]).unwrap();
+    let lead_s = prices(&lead_nan, Some(100.0), Some(ReturnKind::Simple)).unwrap();
+    assert_eq!(lead_s.dates(), d5.as_slice());
+    assert_eq!(lead_s.values()[0], 100.0);
+    assert_eq!(lead_s.values()[1], 100.0);
+    assert!((lead_s.values()[2] - 110.0).abs() < 1e-12);
+    assert!((lead_s.values()[3] - 110.0).abs() < 1e-12);
+    assert!((lead_s.values()[4] - 88.0).abs() < 1e-12);
+
+    let all_nan = Series::try_new(d4.clone(), vec![f64::NAN; 4]).unwrap();
+    for kind in [
+        ReturnKind::Simple,
+        ReturnKind::Logarithmic,
+        ReturnKind::Absolute,
+    ] {
+        let out = prices(&all_nan, Some(10.0), Some(kind)).unwrap();
+        assert_eq!(out.dates(), d4.as_slice());
+        assert_eq!(out.values(), &[10.0; 4]);
+    }
+
+    // -1.0 collapse and -0.0 sign flip on subsequent negative factor (1 + (-2.0) = -1.0)
+    let collapse = Series::try_new(d4.clone(), vec![0.1, -1.0, 0.5, -2.0]).unwrap();
+    let col_out = prices(&collapse, Some(100.0), Some(ReturnKind::Simple)).unwrap();
+    assert!((col_out.values()[0] - 110.0).abs() < 1e-12);
+    assert!(col_out.values()[1] == 0.0 && col_out.values()[1].is_sign_positive());
+    assert!(col_out.values()[2] == 0.0 && col_out.values()[2].is_sign_positive());
+    assert!(col_out.values()[3] == 0.0 && col_out.values()[3].is_sign_negative());
+
+    // ±Inf skipping across Simple, Logarithmic (+Inf skipped, -Inf -> exp(-Inf) = 0.0), Absolute
+    let s_inf_pos = Series::try_new(d4.clone(), vec![0.1, f64::INFINITY, 0.2, -1.0]).unwrap();
+    let s_inf_out = prices(&s_inf_pos, Some(10.0), Some(ReturnKind::Simple)).unwrap();
+    assert!((s_inf_out.values()[1] - 11.0).abs() < 1e-12);
+    assert!((s_inf_out.values()[2] - 13.2).abs() < 1e-12);
+    assert!(s_inf_out.values()[3] == 0.0 && s_inf_out.values()[3].is_sign_positive());
+
+    let log_inf =
+        Series::try_new(d4.clone(), vec![0.1, f64::INFINITY, 0.2, f64::NEG_INFINITY]).unwrap();
+    let log_inf_out = prices(&log_inf, Some(10.0), Some(ReturnKind::Logarithmic)).unwrap();
+    assert!((log_inf_out.values()[1] - 10.0 * 0.1_f64.exp()).abs() < 1e-12);
+    assert!((log_inf_out.values()[2] - 10.0 * 0.1_f64.exp() * 0.2_f64.exp()).abs() < 1e-12);
+    assert!(log_inf_out.values()[3] == 0.0 && log_inf_out.values()[3].is_sign_positive());
+
+    let abs_inf = Series::try_new(d4, vec![1.0, f64::INFINITY, 2.0, f64::NEG_INFINITY]).unwrap();
+    let abs_inf_out = prices(&abs_inf, Some(10.0), Some(ReturnKind::Absolute)).unwrap();
+    assert_eq!(abs_inf_out.values(), &[11.0, 11.0, 13.0, 13.0]);
+
+    // initial boundaries: +0.0, -0.0, negative, NaN, +Inf, -Inf
+    let sample3 = Series::try_new(d3.clone(), vec![0.1, -0.2, 0.5]).unwrap();
+    let z_pos = prices(&sample3, Some(0.0), Some(ReturnKind::Simple)).unwrap();
+    assert!(z_pos
+        .values()
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_positive()));
+    let z_neg = prices(&sample3, Some(-0.0), Some(ReturnKind::Simple)).unwrap();
+    assert!(z_neg
+        .values()
+        .iter()
+        .all(|v| *v == 0.0 && v.is_sign_negative()));
+    let init_neg = prices(&sample3, Some(-10.0), Some(ReturnKind::Simple)).unwrap();
+    assert!((init_neg.values()[0] - (-11.0)).abs() < 1e-12);
+    assert!((init_neg.values()[1] - (-8.8)).abs() < 1e-12);
+    assert!((init_neg.values()[2] - (-13.2)).abs() < 1e-12);
+    let init_nan = prices(&sample3, Some(f64::NAN), Some(ReturnKind::Simple)).unwrap();
+    assert!(init_nan.values().iter().all(|v| v.is_nan()));
+    let collapse3 = Series::try_new(d3.clone(), vec![0.1, -1.0, 0.2]).unwrap();
+    let init_inf = prices(&collapse3, Some(f64::INFINITY), Some(ReturnKind::Simple)).unwrap();
+    assert!(init_inf.values()[0].is_infinite() && init_inf.values()[0].is_sign_positive());
+    assert!(init_inf.values()[1].is_nan() && init_inf.values()[2].is_nan());
+
+    // Absolute signed zero: empty prefix emits +0.0 + (-0.0) = +0.0; finite -0.0 preserves -0.0
+    let abs_nz = Series::try_new(d3.clone(), vec![-0.0, -0.0, 0.0]).unwrap();
+    let abs_nz_out = prices(&abs_nz, Some(-0.0), Some(ReturnKind::Absolute)).unwrap();
+    assert!(abs_nz_out.values()[0] == 0.0 && abs_nz_out.values()[0].is_sign_negative());
+    assert!(abs_nz_out.values()[1] == 0.0 && abs_nz_out.values()[1].is_sign_negative());
+    assert!(abs_nz_out.values()[2] == 0.0 && abs_nz_out.values()[2].is_sign_positive());
+
+    let abs_lead_nan_nz = Series::try_new(d3.clone(), vec![f64::NAN, -0.0, 0.0]).unwrap();
+    let abs_lead_out = prices(&abs_lead_nan_nz, Some(-0.0), Some(ReturnKind::Absolute)).unwrap();
+    assert!(abs_lead_out.values()[0] == 0.0 && abs_lead_out.values()[0].is_sign_positive());
+    assert!(abs_lead_out.values()[1] == 0.0 && abs_lead_out.values()[1].is_sign_negative());
+    assert!(abs_lead_out.values()[2] == 0.0 && abs_lead_out.values()[2].is_sign_positive());
+
+    // Log underflow (-800.0 -> 0.0) and cumulative product overflow ([709.0, 709.0] -> +Inf)
+    let log_under = Series::try_new(d3, vec![0.1, -800.0, 0.2]).unwrap();
+    let log_under_out = prices(&log_under, Some(10.0), Some(ReturnKind::Logarithmic)).unwrap();
+    assert!((log_under_out.values()[0] - 10.0 * 0.1_f64.exp()).abs() < 1e-12);
+    assert!(log_under_out.values()[1] == 0.0 && log_under_out.values()[1].is_sign_positive());
+    assert!(log_under_out.values()[2] == 0.0 && log_under_out.values()[2].is_sign_positive());
+
+    let log_cumprod = Series::try_new(d2, vec![709.0, 709.0]).unwrap();
+    let log_cumprod_out = prices(&log_cumprod, Some(1.0), Some(ReturnKind::Logarithmic)).unwrap();
+    assert!(log_cumprod_out.values()[0].is_finite());
+    assert!(
+        log_cumprod_out.values()[1].is_infinite() && log_cumprod_out.values()[1].is_sign_positive()
+    );
+
+    let simple_cumprod =
+        Series::try_new(d5, vec![1e200, 1e200, f64::NAN, f64::INFINITY, -1.0]).unwrap();
+    let sc_out = prices(&simple_cumprod, Some(1.0), Some(ReturnKind::Simple)).unwrap();
+    assert!(sc_out.values()[1].is_infinite() && sc_out.values()[1].is_sign_positive());
+    assert!(sc_out.values()[2].is_infinite() && sc_out.values()[3].is_infinite());
+    assert!(sc_out.values()[4].is_nan());
+
+    // Back-to-back determinism across all edge cases
+    let edge_cases = [
+        (&lead_nan, Some(100.0), Some(ReturnKind::Simple)),
+        (&all_nan, Some(10.0), Some(ReturnKind::Logarithmic)),
+        (&collapse, Some(100.0), Some(ReturnKind::Simple)),
+        (&s_inf_pos, Some(10.0), Some(ReturnKind::Simple)),
+        (&log_inf, Some(10.0), Some(ReturnKind::Logarithmic)),
+        (&abs_inf, Some(10.0), Some(ReturnKind::Absolute)),
+        (&sample3, Some(-0.0), Some(ReturnKind::Simple)),
+        (&sample3, Some(f64::NAN), Some(ReturnKind::Simple)),
+        (&collapse3, Some(f64::INFINITY), Some(ReturnKind::Simple)),
+        (&abs_nz, Some(-0.0), Some(ReturnKind::Absolute)),
+        (&abs_lead_nan_nz, Some(-0.0), Some(ReturnKind::Absolute)),
+        (&log_under, Some(10.0), Some(ReturnKind::Logarithmic)),
+        (&log_cumprod, Some(1.0), Some(ReturnKind::Logarithmic)),
+        (&simple_cumprod, Some(1.0), Some(ReturnKind::Simple)),
+    ];
+    for (series, initial, kind) in edge_cases {
+        let a = prices(series, initial, kind).unwrap();
+        let b = prices(series, initial, kind).unwrap();
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+    }
+}
+
+#[test]
+fn prices_empty_and_logarithmic_overflow_error() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for kind in [
+        None,
+        Some(ReturnKind::Simple),
+        Some(ReturnKind::Logarithmic),
+        Some(ReturnKind::Absolute),
+    ] {
+        for initial in [
+            None,
+            Some(100.0),
+            Some(-0.0),
+            Some(f64::NAN),
+            Some(f64::INFINITY),
+            Some(f64::NEG_INFINITY),
+        ] {
+            let out = prices(&empty, initial, kind).unwrap();
+            assert!(out.dates().is_empty() && out.values().is_empty());
+        }
+    }
+
+    let d3: Vec<_> = (1..=3).map(|d| date(2020, 1, d)).collect();
+    let ovf_mid = Series::try_new(d3, vec![0.1, 800.0, 0.2]).unwrap();
+    assert_eq!(
+        prices(&ovf_mid, Some(10.0), Some(ReturnKind::Logarithmic)),
+        Err(Error::Overflow)
+    );
+    // Overflow check runs before multiplying by initial (even NaN) and even after +Inf
+    let ovf_after_inf = Series::try_new(
+        vec![date(2020, 1, 1), date(2020, 1, 2)],
+        vec![f64::INFINITY, 800.0],
+    )
+    .unwrap();
+    assert_eq!(
+        prices(
+            &ovf_after_inf,
+            Some(f64::NAN),
+            Some(ReturnKind::Logarithmic)
+        ),
+        Err(Error::Overflow)
+    );
+    // Tight boundary around f64::MAX.ln() (~709.782712893384)
+    let near_max = Series::try_new(vec![date(2020, 1, 1)], vec![709.782_712_893_384]).unwrap();
+    assert!(prices(&near_max, Some(1.0), Some(ReturnKind::Logarithmic))
+        .unwrap()
+        .values()[0]
+        .is_finite());
+    let just_over = Series::try_new(vec![date(2020, 1, 1)], vec![709.7827128933841]).unwrap();
+    assert_eq!(
+        prices(&just_over, Some(1.0), Some(ReturnKind::Logarithmic)),
+        Err(Error::Overflow)
+    );
 }

@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average,
+    beta, correlation, exponential_moving_average, macd, max_drawdown, moving_average, prices,
     relative_strength_index, returns, smoothed_moving_average, volatility, Date, ReturnKind,
     Series, Window,
 };
@@ -102,6 +102,17 @@ fn main() {
                 args[1].parse().unwrap(),
                 parse_return_kind(args[2]),
             ),
+            "prices" => {
+                let initial = match args[1] {
+                    "default" => None,
+                    v => Some(v.parse().unwrap()),
+                };
+                let kind = match args[2] {
+                    "default" => None,
+                    k => Some(parse_return_kind(k)),
+                };
+                prices(&series, initial, kind)
+            }
             "volatility" => {
                 let window = parse_window(args[1], args[2], args[3]);
                 let returns_kind = match args[4] {

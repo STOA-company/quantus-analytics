@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -62,6 +62,7 @@ pub enum Error {
     AnnualizationFactor,
     Beta,
     Span,
+    Overflow,
 }
 
 /// Strictly increasing calendar dates and floating point values. NaN represents missing data.
@@ -184,6 +185,73 @@ pub fn returns(x: &Series, lag: usize, kind: ReturnKind) -> Result<Series, Error
             }
         })
         .collect();
+    Series::try_new(x.dates.clone(), values)
+}
+
+/// Reconstruct price levels from a returns series.
+///
+/// Mirrors upstream `gs_quant/timeseries/econometrics.py:prices` (lines 353–421) and
+/// `gs_quant/timeseries/statistics.py:{product,sum_}`:
+///
+/// - Defaults `initial = 1.0` when `None` and `kind = ReturnKind::Simple` when `None`.
+/// - Empty input returns an empty `Series` immediately, regardless of `initial` or `kind`.
+/// - [`ReturnKind::Simple`]: multiplies finite factors `1.0 + v` cumulatively starting from
+///   `1.0` (skipping `NaN` and `±Inf`), and emits `prod * initial` at each date.
+/// - [`ReturnKind::Logarithmic`]: rejects any finite element `v` where `v.exp().is_infinite()`
+///   with `Err(Error::Overflow)` (matching Python `math.exp` `OverflowError`). `+Inf` is skipped
+///   without error (`exp(+Inf)` is non-finite), `-Inf` and large negative values underflow to
+///   `0.0` (collapsing the product to `0.0`), and cumulative product overflow of finite
+///   exponentials (e.g. `[709.0, 709.0]`) produces `+Inf` without error. Emits `prod * initial`.
+/// - [`ReturnKind::Absolute`]: sums finite elements (`v.is_finite()`, skipping `NaN` and
+///   `±Inf`). Before any finite observation, emits `+0.0 + initial`; once a finite observation is
+///   seen, accumulates from `-0.0` (preserving `-0.0` when all finite values are `-0.0`) and emits
+///   `sum + initial`.
+pub fn prices(x: &Series, initial: Option<f64>, kind: Option<ReturnKind>) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    let initial = initial.unwrap_or(1.0);
+    let kind = kind.unwrap_or(ReturnKind::Simple);
+    let mut values = Vec::with_capacity(x.values.len());
+    match kind {
+        ReturnKind::Simple => {
+            let mut prod = 1.0_f64;
+            for &v in &x.values {
+                let factor = 1.0 + v;
+                if factor.is_finite() {
+                    prod *= factor;
+                }
+                values.push(prod * initial);
+            }
+        }
+        ReturnKind::Logarithmic => {
+            for &v in &x.values {
+                if v.is_finite() && v.exp().is_infinite() {
+                    return Err(Error::Overflow);
+                }
+            }
+            let mut prod = 1.0_f64;
+            for &v in &x.values {
+                let factor = v.exp();
+                if factor.is_finite() {
+                    prod *= factor;
+                }
+                values.push(prod * initial);
+            }
+        }
+        ReturnKind::Absolute => {
+            let mut has_obs = false;
+            let mut sum = -0.0_f64;
+            for &v in &x.values {
+                if v.is_finite() {
+                    sum += v;
+                    has_obs = true;
+                }
+                let acc = if has_obs { sum } else { 0.0 };
+                values.push(acc + initial);
+            }
+        }
+    }
     Series::try_new(x.dates.clone(), values)
 }
 

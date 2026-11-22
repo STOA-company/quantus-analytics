@@ -1,0 +1,2344 @@
+{
+  "schema": "gsquant-prices-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/econometrics.py:prices",
+    "gs_quant/timeseries/statistics.py:product",
+    "gs_quant/timeseries/statistics.py:sum_"
+  ],
+  "cases": [
+    {
+      "id": "test-prices-empty-default",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "default",
+        "default"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-prices-simple-default",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "default",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.01,
+          0.02,
+          -0.02,
+          0.0,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          1.0,
+          1.01,
+          1.0302,
+          1.009596,
+          1.009596,
+          1.02978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-prices-simple-init100-default-kind",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "default"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.01,
+          0.02,
+          -0.02,
+          0.0,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-prices-simple-init100-explicit",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.01,
+          0.02,
+          -0.02,
+          0.0,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-prices-log-init100",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.00995,
+          0.019803,
+          -0.020203,
+          0.0,
+          0.019803
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          100.99996658383554,
+          103.02000431145429,
+          100.95957467612213,
+          100.95957467612213,
+          102.9788045502313
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-prices-abs-init100",
+      "source_ref": "test_econometrics.py::test_prices",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.0,
+          2.02,
+          -2.0604,
+          0.0,
+          2.019192
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.02,
+          100.9596,
+          100.9596,
+          102.978792
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-init100-pinned",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.01,
+          0.02,
+          -0.02,
+          0.0,
+          0.02
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.00501670841679,
+          103.04545339535167,
+          101.00501670841679,
+          101.00501670841679,
+          103.04545339535167
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "abs-init100-pinned",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.0,
+          2.0,
+          -2.0,
+          0.0,
+          2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          100.0,
+          101.0,
+          103.0,
+          101.0,
+          101.0,
+          103.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-no-nan",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          -0.1,
+          0.05,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.0,
+          9.9,
+          10.395000000000001,
+          10.395000000000001
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-no-nan",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          -0.1,
+          0.05,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.051709180756477,
+          10.0,
+          10.512710963760242,
+          10.512710963760242
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "abs-no-nan",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.5,
+          -0.5,
+          2.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.5,
+          11.0,
+          13.0,
+          13.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-log",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-abs",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-nan-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "50.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          50.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-nan-log",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "50.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          50.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-nan-abs",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "50.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          50.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-log",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-abs",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nans-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.1,
+          {
+            "special": "NaN"
+          },
+          -0.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          110.00000000000001,
+          110.00000000000001,
+          88.00000000000001
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nans-log",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.1,
+          {
+            "special": "NaN"
+          },
+          -0.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          110.51709180756477,
+          110.51709180756477,
+          90.48374180359596
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nans-abs",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          {
+            "special": "NaN"
+          },
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          100.0,
+          100.0,
+          101.0,
+          101.0,
+          99.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-minus-one-collapse",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          -1.0,
+          0.5,
+          -2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          110.00000000000001,
+          0.0,
+          0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-neg-lt-minus-one",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          -1.5,
+          -1.5,
+          0.2,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          -5.0,
+          2.5,
+          3.0,
+          3.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-inf-pos",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          {
+            "special": "+Inf"
+          },
+          0.2,
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.0,
+          11.0,
+          13.200000000000001,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-inf-neg",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          {
+            "special": "-Inf"
+          },
+          0.2,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.0,
+          11.0,
+          13.200000000000001,
+          13.200000000000001
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-inf-pos",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          0.1,
+          {
+            "special": "+Inf"
+          },
+          0.2,
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.051709180756477,
+          11.051709180756477,
+          13.498588075760033,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-overflow-800",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          800.0,
+          0.2
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Overflow",
+        "upstream_type": "OverflowError",
+        "upstream_message": "math range error"
+      }
+    },
+    {
+      "id": "log-underflow-neg800",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -800.0,
+          0.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          11.051709180756477,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "abs-inf",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "10.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          2.0,
+          {
+            "special": "-Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          11.0,
+          11.0,
+          13.0,
+          13.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-zero-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "0.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -0.2,
+          0.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-neg-zero-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "-0.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -0.2,
+          0.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-neg-zero-abs",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "-0.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-negative-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "-10.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -0.2,
+          0.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          -11.0,
+          -8.8,
+          -13.200000000000003
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-nan-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "NaN",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -0.2,
+          0.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-inf-simple",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "inf",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -1.0,
+          0.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "init-nan-empty",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "NaN",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "irregular-leap",
+      "source_ref": "pinned-boundaries-1.json",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.05,
+          -0.02,
+          0.03
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02"
+        ],
+        "values": [
+          100.0,
+          105.0,
+          102.89999999999999,
+          105.98699999999998
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-cumprod-overflow",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          709.0,
+          709.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          8.218407461554972e+307,
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-cumprod-overflow-then-underflow",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          709.0,
+          709.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          -800.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          8.218407461554972e+307,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "simple-cumprod-overflow",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1e+200,
+          1e+200,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          },
+          -1.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1e+200,
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-overflow-after-pos-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          800.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Overflow",
+        "upstream_type": "OverflowError",
+        "upstream_message": "math range error"
+      }
+    },
+    {
+      "id": "log-overflow-nan-initial",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "NaN",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          800.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Overflow",
+        "upstream_type": "OverflowError",
+        "upstream_message": "math range error"
+      }
+    },
+    {
+      "id": "log-near-max-finite",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          709.782712893384
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          1.7976931348622732e+308
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-just-over-max-overflow",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "1.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          709.7827128933841
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Overflow",
+        "upstream_type": "OverflowError",
+        "upstream_message": "math range error"
+      }
+    },
+    {
+      "id": "abs-all-nan-init-neg-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "-0.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "abs-leading-nan-neg-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "-0.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          -0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "abs-init-neg-inf",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "-inf",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          1.0,
+          -2.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-init-neg-zero",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "-0.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -0.2,
+          0.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "log-init-neg-inf-underflow",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "-inf",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          0.1,
+          -800.0,
+          0.2
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "roundtrip-leap-simple",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "simple"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.050000000000000044,
+          -0.019999999999999907,
+          0.04956268221574334,
+          -0.07870370370370372
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          100.0,
+          105.0,
+          102.90000000000002,
+          108.0,
+          99.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "roundtrip-leap-logarithmic",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "logarithmic"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.04879016416943127,
+          -0.020202707317519497,
+          0.04837358428421634,
+          -0.08197358295967305
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          100.0,
+          104.99999999999991,
+          102.89999999999992,
+          107.99999999999999,
+          99.49999999999993
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "roundtrip-leap-absolute",
+      "source_ref": "boundaries-extra",
+      "operation": "prices",
+      "args": [
+        "100.0",
+        "absolute"
+      ],
+      "input": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          5.0,
+          -2.0999999999999943,
+          5.099999999999994,
+          -8.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-10"
+        ],
+        "values": [
+          100.0,
+          105.0,
+          102.9,
+          108.0,
+          99.5
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    }
+  ]
+}
