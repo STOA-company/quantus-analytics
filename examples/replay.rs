@@ -1,9 +1,10 @@
 use quantus_math::{
-    beta, bollinger_bands, business_day_count, business_day_offset, correlation, cov,
-    day_count_fraction, exponential_moving_average, has_feb_29, is_business_day, macd,
-    max_drawdown, moving_average, prices, relative_strength_index, returns,
-    smoothed_moving_average, std as series_std, volatility, Date, DayCountConvention,
-    HolidayCalendar, PaymentFrequency, ReturnKind, Roll, RollingLinearRegression, Series, Window,
+    backtest_basket, basket_series, beta, bollinger_bands, business_day_count, business_day_offset,
+    correlation, cov, day_count_fraction, exponential_moving_average, has_feb_29, is_business_day,
+    macd, max_drawdown, moving_average, prices, relative_strength_index, returns,
+    smoothed_moving_average, std as series_std, volatility, BasketParam, Date, DayCountConvention,
+    HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, Roll, RollingLinearRegression,
+    Series, Window,
 };
 use std::io::{self, Read};
 
@@ -113,11 +114,128 @@ fn parse_return_kind(kind: &str) -> ReturnKind {
     }
 }
 
+fn parse_rebal_freq(s: &str) -> RebalFreq {
+    match s {
+        "daily" => RebalFreq::Daily,
+        "weekly" => RebalFreq::Weekly,
+        "monthly" => RebalFreq::Monthly,
+        _ => panic!("unknown rebal_freq"),
+    }
+}
+
+enum OwnedBasketParam {
+    Fixed(f64),
+    Series(Series),
+}
+
+fn parse_basket_series_block(lines: &[&str], offset: &mut usize) -> Series {
+    let header: Vec<_> = lines[*offset].split_whitespace().collect();
+    assert_eq!(header[0], "SERIES");
+    let len: usize = header[1].parse().unwrap();
+    *offset += 1;
+    let s = parse_rows(lines[*offset..*offset + len].iter().copied());
+    *offset += len;
+    s
+}
+
+fn parse_basket_param(lines: &[&str], offset: &mut usize) -> OwnedBasketParam {
+    let header: Vec<_> = lines[*offset].split_whitespace().collect();
+    match header[0] {
+        "FIXED" => {
+            *offset += 1;
+            OwnedBasketParam::Fixed(header[1].parse::<f64>().unwrap())
+        }
+        "SERIES" => OwnedBasketParam::Series(parse_basket_series_block(lines, offset)),
+        _ => panic!("unknown basket param tag"),
+    }
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "backtest_basket" || args[0] == "basket_series" {
+        let rebal_freq = parse_rebal_freq(args[1]);
+        let num_assets: usize = args[2].parse().unwrap();
+        let weights_count: Option<usize> = match args[3] {
+            "none" => None,
+            n => Some(n.parse().unwrap()),
+        };
+        let costs_count: Option<usize> = match args[4] {
+            "none" => None,
+            n => Some(n.parse().unwrap()),
+        };
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let mut price_series = Vec::with_capacity(num_assets);
+        for _ in 0..num_assets {
+            price_series.push(parse_basket_series_block(&remaining, &mut offset));
+        }
+        let owned_weights: Option<Vec<OwnedBasketParam>> = weights_count.map(|nw| {
+            (0..nw)
+                .map(|_| parse_basket_param(&remaining, &mut offset))
+                .collect()
+        });
+        let owned_costs: Option<Vec<OwnedBasketParam>> = costs_count.map(|nc| {
+            (0..nc)
+                .map(|_| parse_basket_param(&remaining, &mut offset))
+                .collect()
+        });
+        let borrowed_weights: Option<Vec<BasketParam<'_>>> = owned_weights.as_ref().map(|ws| {
+            ws.iter()
+                .map(|p| match p {
+                    OwnedBasketParam::Fixed(v) => BasketParam::Fixed(*v),
+                    OwnedBasketParam::Series(s) => BasketParam::Series(s),
+                })
+                .collect()
+        });
+        let borrowed_costs: Option<Vec<BasketParam<'_>>> = owned_costs.as_ref().map(|cs| {
+            cs.iter()
+                .map(|p| match p {
+                    OwnedBasketParam::Fixed(v) => BasketParam::Fixed(*v),
+                    OwnedBasketParam::Series(s) => BasketParam::Series(s),
+                })
+                .collect()
+        });
+        if args[0] == "backtest_basket" {
+            match backtest_basket(
+                &price_series,
+                borrowed_weights.as_deref(),
+                borrowed_costs.as_deref(),
+                rebal_freq,
+            ) {
+                Ok(res) => {
+                    println!("NAV");
+                    for (date, value) in res.nav.dates().iter().zip(res.nav.values()) {
+                        println!("{date} {value:?}");
+                    }
+                    for (a, ws) in res.actual_weights.iter().enumerate() {
+                        println!("WEIGHT {a}");
+                        for (date, value) in ws.dates().iter().zip(ws.values()) {
+                            println!("{date} {value:?}");
+                        }
+                    }
+                }
+                Err(err) => println!("ERROR {err:?}"),
+            }
+        } else {
+            match basket_series(
+                &price_series,
+                borrowed_weights.as_deref(),
+                borrowed_costs.as_deref(),
+                rebal_freq,
+            ) {
+                Ok(nav) => {
+                    for (date, value) in nav.dates().iter().zip(nav.values()) {
+                        println!("{date} {value:?}");
+                    }
+                }
+                Err(err) => println!("ERROR {err:?}"),
+            }
+        }
+        return;
+    }
     if args[0] == "has_feb_29" {
         let start = parse_date(args[1]);
         let end = parse_date(args[2]);
