@@ -1,9 +1,10 @@
 use quantus_math::{
-    backtest_basket, basket_series, beta, bollinger_bands, business_day_count, business_day_offset,
-    correlation, cov, day_count_fraction, exponential_moving_average, has_feb_29, is_business_day,
-    macd, max_drawdown, moving_average, prices, relative_strength_index, returns,
-    smoothed_moving_average, std as series_std, volatility, BasketParam, Date, DayCountConvention,
-    HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, Roll, RollingLinearRegression,
+    aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
+    business_day_offset, correlation, cov, day_count_fraction, exponential_moving_average,
+    has_feb_29, is_business_day, macd, max_drawdown, moving_average, point_sort_order, prices,
+    relative_strength_index, returns, smoothed_moving_average, sort_risk, std as series_std,
+    subtract_risk, volatility, BasketParam, Date, DayCountConvention, HolidayCalendar,
+    PaymentFrequency, RebalFreq, ReturnKind, RiskRow, RiskTable, Roll, RollingLinearRegression,
     Series, Window,
 };
 use std::io::{self, Read};
@@ -150,11 +151,119 @@ fn parse_basket_param(lines: &[&str], offset: &mut usize) -> OwnedBasketParam {
     }
 }
 
+fn parse_risk_table_block(lines: &[&str], offset: &mut usize) -> RiskTable {
+    let header: Vec<_> = lines[*offset].split('\t').collect();
+    assert_eq!(header[0], "TABLE");
+    let nrows: usize = header[1].parse().unwrap();
+    let unit = match header[2] {
+        "NONE" => None,
+        "SOME" => Some(header.get(3).copied().unwrap_or("").to_string()),
+        _ => panic!("unknown unit tag"),
+    };
+    *offset += 1;
+    let mut rows = Vec::with_capacity(nrows);
+    for _ in 0..nrows {
+        let fields: Vec<_> = lines[*offset].split('\t').collect();
+        assert_eq!(fields.len(), 7, "risk row must have 7 tab-separated fields");
+        let date = if fields[0] == "-" {
+            None
+        } else {
+            Some(parse_date(fields[0]))
+        };
+        let time = if fields[1] == "-" {
+            None
+        } else {
+            Some(fields[1].strip_prefix("T:").unwrap().to_string())
+        };
+        rows.push(RiskRow {
+            date,
+            time,
+            mkt_type: fields[2].to_string(),
+            mkt_asset: fields[3].to_string(),
+            mkt_class: fields[4].to_string(),
+            mkt_point: fields[5].to_string(),
+            value: fields[6].parse::<f64>().unwrap(),
+        });
+        *offset += 1;
+    }
+    RiskTable { unit, rows }
+}
+
+fn print_risk_table(table: &RiskTable) {
+    match &table.unit {
+        None => println!("UNIT\tNONE"),
+        Some(u) => println!("UNIT\tSOME\t{u}"),
+    }
+    for row in &table.rows {
+        let date_s = match row.date {
+            None => "-".to_string(),
+            Some(d) => d.to_string(),
+        };
+        let time_s = match &row.time {
+            None => "-".to_string(),
+            Some(t) => format!("T:{t}"),
+        };
+        println!(
+            "{date_s}\t{time_s}\t{}\t{}\t{}\t{}\t{:?}",
+            row.mkt_type, row.mkt_asset, row.mkt_class, row.mkt_point, row.value
+        );
+    }
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "point_sort_order" {
+        let ref_date = parse_date(args[1]);
+        let point = lines.next().unwrap_or("");
+        match point_sort_order(point, ref_date) {
+            None => println!("NONE"),
+            Some(v) => println!("{v:?}"),
+        }
+        return;
+    }
+    if args[0] == "sort_risk" {
+        let ref_date = parse_date(args[1]);
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let table = parse_risk_table_block(&remaining, &mut offset);
+        let sorted = sort_risk(&table, ref_date);
+        print_risk_table(&sorted);
+        return;
+    }
+    if args[0] == "aggregate_risk" {
+        let ref_date = parse_date(args[1]);
+        let threshold = match args[2] {
+            "none" => None,
+            v => Some(v.parse::<f64>().unwrap()),
+        };
+        let ntables: usize = args[3].parse().unwrap();
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let mut tables = Vec::with_capacity(ntables);
+        for _ in 0..ntables {
+            tables.push(parse_risk_table_block(&remaining, &mut offset));
+        }
+        match aggregate_risk(&tables, threshold, ref_date) {
+            Ok(table) => print_risk_table(&table),
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
+    if args[0] == "subtract_risk" {
+        let ref_date = parse_date(args[1]);
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let left = parse_risk_table_block(&remaining, &mut offset);
+        let right = parse_risk_table_block(&remaining, &mut offset);
+        match subtract_risk(&left, &right, ref_date) {
+            Ok(table) => print_risk_table(&table),
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
     if args[0] == "backtest_basket" || args[0] == "basket_series" {
         let rebal_freq = parse_rebal_freq(args[1]);
         let num_assets: usize = args[2].parse().unwrap();

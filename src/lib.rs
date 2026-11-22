@@ -1,10 +1,12 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), and offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`).
-//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,backtesting,helper}.py and
-//! gs_quant/datetime/date.py (with explicit-holiday `np.busdaycalendar` semantics) at
-//! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), and offline bucketed risk aggregation, subtraction, sorting, and market-point sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`).
+//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,backtesting,helper}.py,
+//! gs_quant/datetime/{date,point}.py (with explicit-holiday `np.busdaycalendar` semantics), and
+//! gs_quant/risk/core.py at 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and
+//! modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
 //! Licensed under Apache-2.0; see LICENSE and both NOTICE files.
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 const MIN_ORDINAL: i64 = 1; // 0001-01-01 (Monday)
@@ -106,6 +108,7 @@ pub enum Error {
     Beta,
     Span,
     Overflow,
+    UnitMismatch,
 }
 
 /// Strictly increasing calendar dates and floating point values. NaN represents missing data.
@@ -2981,4 +2984,842 @@ pub fn basket_series(
     rebal_freq: RebalFreq,
 ) -> Result<Series, Error> {
     Ok(backtest_basket(series, weights, costs, rebal_freq)?.nav)
+}
+
+/// One resolved bucketed risk observation matching upstream `gs_quant.risk.core`
+/// (`__risk_columns = ("date", "time", "mkt_type", "mkt_asset", "mkt_class", "mkt_point")`
+/// plus numeric `value`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RiskRow {
+    pub date: Option<Date>,
+    pub time: Option<String>,
+    pub mkt_type: String,
+    pub mkt_asset: String,
+    pub mkt_class: String,
+    pub mkt_point: String,
+    pub value: f64,
+}
+
+/// A resolved bucketed risk table with an optional unit/currency label (e.g. `Some("USD")`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RiskTable {
+    pub unit: Option<String>,
+    pub rows: Vec<RiskRow>,
+}
+
+fn posix_yy(yy: i32) -> i32 {
+    if yy <= 68 {
+        2000 + yy
+    } else {
+        1900 + yy
+    }
+}
+
+fn days_from_ref(target: Date, ref_date: Date) -> f64 {
+    (target.ordinal() - ref_date.ordinal()) as f64
+}
+
+fn parse_month_title(s: &str) -> Option<u8> {
+    match s {
+        "Jan" => Some(1),
+        "Feb" => Some(2),
+        "Mar" => Some(3),
+        "Apr" => Some(4),
+        "May" => Some(5),
+        "Jun" => Some(6),
+        "Jul" => Some(7),
+        "Aug" => Some(8),
+        "Sep" => Some(9),
+        "Oct" => Some(10),
+        "Nov" => Some(11),
+        "Dec" => Some(12),
+        _ => None,
+    }
+}
+
+fn parse_month_upper(s: &str) -> Option<u8> {
+    match s {
+        "JAN" => Some(1),
+        "FEB" => Some(2),
+        "MAR" => Some(3),
+        "APR" => Some(4),
+        "MAY" => Some(5),
+        "JUN" => Some(6),
+        "JUL" => Some(7),
+        "AUG" => Some(8),
+        "SEP" => Some(9),
+        "OCT" => Some(10),
+        "NOV" => Some(11),
+        "DEC" => Some(12),
+        _ => None,
+    }
+}
+
+fn parse_month_title_or_upper(s: &str) -> Option<u8> {
+    parse_month_title(s).or_else(|| parse_month_upper(s))
+}
+
+fn parse_month_ci(s: &str) -> Option<u8> {
+    if s.len() != 3 || !s.is_ascii() {
+        return None;
+    }
+    parse_month_upper(&s.to_ascii_uppercase())
+}
+
+fn fut_month_code(b: u8) -> Option<u8> {
+    match b {
+        b'F' => Some(1),
+        b'G' => Some(2),
+        b'H' => Some(3),
+        b'J' => Some(4),
+        b'K' => Some(5),
+        b'M' => Some(6),
+        b'N' => Some(7),
+        b'Q' => Some(8),
+        b'U' => Some(9),
+        b'V' => Some(10),
+        b'X' => Some(11),
+        b'Z' => Some(12),
+        _ => None,
+    }
+}
+
+fn parse_rdate_part(s: &str) -> Option<(f64, &str)> {
+    let bytes = s.as_bytes();
+    let mut i = 0usize;
+    let mut neg_count = 0usize;
+    while i < bytes.len() && bytes[i] == b'-' {
+        neg_count += 1;
+        i += 1;
+    }
+    if neg_count > 1 {
+        return None;
+    }
+    let digit_start = i;
+    while i < bytes.len() && bytes[i].is_ascii_digit() {
+        i += 1;
+    }
+    if i == digit_start || i >= bytes.len() {
+        return None;
+    }
+    let scale = match bytes[i] {
+        b'd' | b'D' | b'b' | b'B' => 1.0,
+        b'w' | b'W' => 7.0,
+        b'm' | b'M' | b'f' | b'F' => 30.0,
+        b'y' | b'Y' => 365.0,
+        _ => return None,
+    };
+    let num: f64 = s[digit_start..i].parse().ok()?;
+    let days = if neg_count == 1 {
+        -(num * scale)
+    } else {
+        num * scale
+    };
+    Some((days, &s[i + 1..]))
+}
+
+fn match_rdate_n(s: &str, min_parts: usize, max_parts: usize) -> Option<f64> {
+    let mut rest = s;
+    let mut first = 0.0;
+    let mut count = 0usize;
+    while !rest.is_empty() && count < max_parts {
+        let (d, next) = parse_rdate_part(rest)?;
+        if count == 0 {
+            first = d;
+        }
+        rest = next;
+        count += 1;
+    }
+    if rest.is_empty() && count >= min_parts {
+        Some(first)
+    } else {
+        None
+    }
+}
+
+fn parse_two_digits(s: &str) -> Option<u8> {
+    let b = s.as_bytes();
+    if b.len() == 2 && b[0].is_ascii_digit() && b[1].is_ascii_digit() {
+        Some((b[0] - b'0') * 10 + (b[1] - b'0'))
+    } else {
+        None
+    }
+}
+
+fn parse_four_digits(s: &str) -> Option<i32> {
+    if s.len() == 4 && s.bytes().all(|b| b.is_ascii_digit()) {
+        s.parse::<i32>().ok()
+    } else {
+        None
+    }
+}
+
+fn parse_ddmmmyyyy(s: &str) -> Option<Date> {
+    if !s.is_ascii() || (s.len() != 8 && s.len() != 9) {
+        return None;
+    }
+    let b = s.as_bytes();
+    let day_len = s.len() - 7;
+    let day = if day_len == 1 {
+        if !b[0].is_ascii_digit() {
+            return None;
+        }
+        b[0] - b'0'
+    } else {
+        // Matches upstream DDMMMYYYYReg = r"^([1-3]*[0-9]{1}[a-zA-Z]{3}[0-9]{4})$":
+        // no leading '0' on two-digit days.
+        if !matches!(b[0], b'1'..=b'3') || !b[1].is_ascii_digit() {
+            return None;
+        }
+        (b[0] - b'0') * 10 + (b[1] - b'0')
+    };
+    let month = parse_month_ci(&s[day_len..day_len + 3])?;
+    let year = parse_four_digits(&s[day_len + 3..])?;
+    Date::new(year, month, day).ok()
+}
+
+fn parse_ddmmmyy(s: &str) -> Option<Date> {
+    if !s.is_ascii() || (s.len() != 6 && s.len() != 7) {
+        return None;
+    }
+    let b = s.as_bytes();
+    let day_len = s.len() - 5;
+    let day = if day_len == 1 {
+        if !b[0].is_ascii_digit() {
+            return None;
+        }
+        b[0] - b'0'
+    } else {
+        // Matches upstream DDMMMYYReg = r"^([0-3]*[0-9]{1}[a-zA-Z]{3}[0-9]{2})$":
+        // allows leading '0' (e.g. "05Feb25").
+        if !matches!(b[0], b'0'..=b'3') || !b[1].is_ascii_digit() {
+            return None;
+        }
+        (b[0] - b'0') * 10 + (b[1] - b'0')
+    };
+    let month = parse_month_ci(&s[day_len..day_len + 3])?;
+    let yy = i32::from(parse_two_digits(&s[day_len + 3..])?);
+    Date::new(posix_yy(yy), month, day).ok()
+}
+
+fn parse_bond_coord(s: &str) -> Option<Date> {
+    let mut parts = s.split(' ');
+    let p0 = parts.next()?;
+    let p1 = parts.next()?;
+    let p2 = parts.next()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    if !p0.bytes().all(|b| b.is_ascii_digit())
+        || !p1.bytes().all(|b| b.is_ascii_digit() || b == b'.')
+    {
+        return None;
+    }
+    let b = p2.as_bytes();
+    if b.len() != 10 || b[2] != b'/' || b[5] != b'/' {
+        return None;
+    }
+    // Upstream point.py:285 uses format_str = '%d/%m/%Y'.
+    let day = parse_two_digits(&p2[0..2])?;
+    let month = parse_two_digits(&p2[3..5])?;
+    let year = parse_four_digits(&p2[6..10])?;
+    Date::new(year, month, day).ok()
+}
+
+/// Numeric sort order (approximate days from `ref_date`) for a market data point label,
+/// matching upstream `gs_quant.datetime.point.point_sort_order(point, ref_date)`
+/// (`gs_quant/datetime/point.py` lines 25–325).
+///
+/// Returns `None` for patterns where upstream leaves `days = None` (e.g. copula, bond spread,
+/// or FX vol addon parameters); [`sort_risk`] treats `None` as `0.0`.
+///
+/// Unlike upstream Python, Rust requires an explicit `ref_date: Date` instead of reading the
+/// system clock via `datetime.date.today()`, ensuring deterministic offline evaluation across
+/// dates and hosts (including for the first part of compound `;`-delimited points).
+///
+/// # Example
+/// ```
+/// use quantus_math::{point_sort_order, Date};
+///
+/// let ref_date = Date::new(2024, 1, 15).unwrap();
+/// assert_eq!(point_sort_order("O/N", ref_date), Some(0.0));
+/// assert_eq!(point_sort_order("3x6", ref_date), Some(90.0));
+/// assert_eq!(point_sort_order("1y;5y", ref_date), Some(365.5));
+/// assert_eq!(point_sort_order("USD Rho", ref_date), None);
+/// ```
+pub fn point_sort_order(point: &str, ref_date: Date) -> Option<f64> {
+    if point.is_empty() {
+        return Some(0.0);
+    }
+
+    match point.to_ascii_uppercase().as_str() {
+        "O/N" | "DEFAULT" => return Some(0.0),
+        "T/N" | "IN" => return Some(0.1),
+        "OUT" => return Some(0.2),
+        "OIS FIX" => return Some(1.0),
+        "CASH STUB" | "CASHSTUB" => return Some(1.1),
+        _ => {}
+    }
+
+    if point.contains(';') {
+        let mut parts = point.split(';').map(str::trim);
+        let first_part = parts.next().unwrap_or("");
+        let first = match point_sort_order(first_part, ref_date) {
+            Some(v) if v != 0.0 => v,
+            _ => return Some(0.0),
+        };
+        let sum_tail: f64 = parts
+            .map(|p| point_sort_order(p, ref_date).unwrap_or(0.0))
+            .sum();
+        return Some(first + (0.1 * sum_tail / first));
+    }
+
+    // 1. infl_volReg: (Caplet|ZCCap|Swaption|ZCSwo)
+    if let Some((_, val)) = [
+        ("Caplet", 0.0),
+        ("ZCCap", 1.0),
+        ("Swaption", 2.0),
+        ("ZCSwo", 3.0),
+    ]
+    .iter()
+    .filter_map(|&(pat, val)| point.find(pat).map(|pos| (pos, val)))
+    .min_by_key(|&(pos, _)| pos)
+    {
+        return Some(val);
+    }
+
+    // 2. CopulaReg
+    if point.ends_with("Rho")
+        || point.ends_with("KO")
+        || [
+            "Rho Rate", "Rho Vol", "RR", "BF", "Alpha", "Beta", "K0=L", "K0=S",
+        ]
+        .iter()
+        .any(|pat| point.contains(pat))
+    {
+        return None;
+    }
+
+    // 3. SeasonalFrontReg: (Front|Back)
+    if let Some((_, val)) = [("Front", 0.0), ("Back", 1.0)]
+        .iter()
+        .filter_map(|&(pat, val)| point.find(pat).map(|pos| (pos, val)))
+        .min_by_key(|&(pos, _)| pos)
+    {
+        return Some(val);
+    }
+
+    // 4. MMMReg: ^(Jan|...|Dec)$
+    if let Some(month) = parse_month_title(point) {
+        if let Ok(d) = Date::new(2000, month, 1) {
+            return Some(days_from_ref(d, ref_date));
+        }
+    }
+
+    // 5. EuroOrFraReg: ^(Jan|...|Dec|JAN|...|DEC)+([0-9]{2})$
+    if point.is_ascii() && point.len() >= 5 && (point.len() - 2).is_multiple_of(3) {
+        let prefix = &point[..point.len() - 2];
+        if let Some(yy) = parse_two_digits(&point[point.len() - 2..]) {
+            let mut last_month = None;
+            let mut all_valid = true;
+            for chunk in prefix.as_bytes().chunks_exact(3) {
+                let s = std::str::from_utf8(chunk).unwrap_or("");
+                if let Some(m) = parse_month_title_or_upper(s) {
+                    last_month = Some(m);
+                } else {
+                    all_valid = false;
+                    break;
+                }
+            }
+            if all_valid {
+                if let Some(m) = last_month {
+                    if let Ok(d) = Date::new(posix_yy(i32::from(yy)), m, 15) {
+                        return Some(days_from_ref(d, ref_date));
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. RDatePartReg: 1 or 2 relative date parts
+    if let Some(days) = match_rdate_n(point, 1, 2) {
+        return Some(days);
+    }
+
+    // 7. CashFXReg: 1 or 2 relative date parts followed by " XC"
+    if let Some(prefix) = point.strip_suffix(" XC") {
+        if let Some(days) = match_rdate_n(prefix, 1, 2) {
+            return Some(days);
+        }
+    }
+
+    // 8. PricerBFReg: 2 or 3 relative date parts
+    if let Some(days) = match_rdate_n(point, 2, 3) {
+        return Some(days);
+    }
+
+    // 9. FRAxReg: ^([0-9]+)x([0-9]+)$
+    if let Some((lhs, rhs)) = point.split_once('x') {
+        if !lhs.is_empty()
+            && !rhs.is_empty()
+            && lhs.bytes().all(|b| b.is_ascii_digit())
+            && rhs.bytes().all(|b| b.is_ascii_digit())
+        {
+            if let Ok(num) = lhs.parse::<f64>() {
+                return Some(num * 30.0);
+            }
+        }
+    }
+
+    // 10. SpikeQEReg: ^(QE[0-9])-([0-9]{4})$
+    if point.is_ascii() && point.len() == 8 && point.starts_with("QE") {
+        let b = point.as_bytes();
+        if b[2].is_ascii_digit() && b[3] == b'-' {
+            if let Some(year) = parse_four_digits(&point[4..8]) {
+                let month = match b[2] {
+                    b'1' => 3,
+                    b'2' => 6,
+                    b'3' => 9,
+                    _ => 12,
+                };
+                if let Ok(d) = Date::new(year, month, 1) {
+                    return Some(days_from_ref(d, ref_date));
+                }
+            }
+        }
+    }
+
+    // 11. MMMYYYYReg: ^([a-zA-Z]{3}[0-9]{4})$
+    if point.is_ascii() && point.len() == 7 {
+        if let (Some(month), Some(year)) = (
+            parse_month_ci(&point[0..3]),
+            parse_four_digits(&point[3..7]),
+        ) {
+            if let Ok(d) = Date::new(year, month, 1) {
+                return Some(days_from_ref(d, ref_date));
+            }
+        }
+    }
+
+    // 12. DDMMMYYYYReg
+    if let Some(d) = parse_ddmmmyyyy(point) {
+        return Some(days_from_ref(d, ref_date));
+    }
+
+    // 13. NumberReg: ^([0-9]*)$ (empty already handled above)
+    if point.bytes().all(|b| b.is_ascii_digit()) {
+        if let Ok(v) = point.parse::<f64>() {
+            return Some(v);
+        }
+    }
+
+    // 14. FloatingYear: ^([0-9]*\.[0-9])[yY]$
+    if point.is_ascii() && point.len() >= 3 {
+        let b = point.as_bytes();
+        let n = b.len();
+        if matches!(b[n - 1], b'y' | b'Y')
+            && b[n - 2].is_ascii_digit()
+            && b[n - 3] == b'.'
+            && b[..n - 3].iter().all(u8::is_ascii_digit)
+        {
+            if let Ok(year_val) = point[..n - 1].parse::<f64>() {
+                return Some(365.0 * year_val);
+            }
+        }
+    }
+
+    // 15. PricerCoordRegI & PricerCoordRegII
+    if let Some(rest) = point
+        .strip_prefix("No ")
+        .or_else(|| point.strip_prefix("Pricer "))
+    {
+        if !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()) {
+            if let Ok(v) = rest.parse::<f64>() {
+                return Some(v);
+            }
+        }
+    }
+
+    // 16. PricerBondSpreadReg: ^[0-9][SQHT]([0-9]{2})[/][0-9][SQHT]([0-9]{2})
+    if point.is_ascii() && point.len() >= 9 {
+        let b = point.as_bytes();
+        if b[0].is_ascii_digit()
+            && matches!(b[1], b'S' | b'Q' | b'H' | b'T')
+            && b[2].is_ascii_digit()
+            && b[3].is_ascii_digit()
+            && b[4] == b'/'
+            && b[5].is_ascii_digit()
+            && matches!(b[6], b'S' | b'Q' | b'H' | b'T')
+            && b[7].is_ascii_digit()
+            && b[8].is_ascii_digit()
+        {
+            return None;
+        }
+    }
+
+    // 17. LYYReg: ([FGHJKMNQUVXZ])([0-9]{2})
+    {
+        let b = point.as_bytes();
+        for i in 0..b.len().saturating_sub(2) {
+            if let Some(month) = fut_month_code(b[i]) {
+                if b[i + 1].is_ascii_digit() && b[i + 2].is_ascii_digit() {
+                    let yy = i32::from((b[i + 1] - b'0') * 10 + (b[i + 2] - b'0'));
+                    if let Ok(d) = Date::new(posix_yy(yy), month, 1) {
+                        return Some(days_from_ref(d, ref_date));
+                    }
+                }
+            }
+        }
+    }
+
+    // 18. DatePairReg (YYYYMMDD/YYYYMMDD) & DatePairReg2 (YYYYMMDD YYYYMMDD)
+    if point.is_ascii() && point.len() == 17 {
+        let b = point.as_bytes();
+        if matches!(b[8], b'/' | b' ')
+            && b[0..8].iter().all(u8::is_ascii_digit)
+            && b[9..17].iter().all(u8::is_ascii_digit)
+        {
+            if let (Some(year), Some(month), Some(day)) = (
+                parse_four_digits(&point[9..13]),
+                parse_two_digits(&point[13..15]),
+                parse_two_digits(&point[15..17]),
+            ) {
+                if let Ok(d) = Date::new(year, month, day) {
+                    return Some(days_from_ref(d, ref_date));
+                }
+            }
+        }
+    }
+
+    // 19. MMMYYReg: ^(JAN|...|DEC) ([0-9]{2})
+    if point.is_ascii() && point.len() >= 6 && point.as_bytes()[3] == b' ' {
+        if let (Some(month), Some(yy)) = (
+            parse_month_upper(&point[0..3]),
+            parse_two_digits(&point[4..6]),
+        ) {
+            if let Ok(d) = Date::new(posix_yy(i32::from(yy)), month, 1) {
+                return Some(days_from_ref(d, ref_date));
+            }
+        }
+    }
+
+    // 20. FXVolAddonParmsReg
+    if [
+        "Spread Addon",
+        "Spread Init",
+        "Spread Final",
+        "Rho Addon",
+        "Rho Init",
+        "Rho Final",
+        "Vol Addon",
+        "Vol Init",
+        "Vol Final",
+        "HL",
+        "Addon HL",
+    ]
+    .iter()
+    .any(|pat| point.contains(pat))
+    {
+        return None;
+    }
+
+    // 21. BondCoordReg: ^[0-9]* ([0-9.]*) ([0-9]{2}/[0-9]{2}/[0-9]{4})$
+    if let Some(d) = parse_bond_coord(point) {
+        return Some(days_from_ref(d, ref_date));
+    }
+
+    // 22. BondFutReg (^[A-Z]{3}([FGHJKMNQUVXZ])([0-9])$) & FFFutReg (^FF([FGHJKMNQUVXZ])([0-9])$)
+    if point.is_ascii() {
+        let b = point.as_bytes();
+        if b.len() == 5 && b[0..3].iter().all(u8::is_ascii_uppercase) && b[4].is_ascii_digit() {
+            if let Some(month) = fut_month_code(b[3]) {
+                if let Ok(d) = Date::new(ref_date.year(), month, 1) {
+                    return Some(days_from_ref(d, ref_date));
+                }
+            }
+        }
+        if b.len() == 4 && &b[0..2] == b"FF" && b[3].is_ascii_digit() {
+            if let Some(month) = fut_month_code(b[2]) {
+                if let Ok(d) = Date::new(ref_date.year(), month, 1) {
+                    return Some(days_from_ref(d, ref_date));
+                }
+            }
+        }
+    }
+
+    // 23. RepoGCReg: ^(ON|SN|TN|[0-9]+) (|Month |Week |Year |Day )GC$
+    match point {
+        "ON GC" => return Some(0.0),
+        "TN GC" => return Some(1.0),
+        "SN GC" => return Some(2.0),
+        _ => {}
+    }
+    if let Some(rest) = point.strip_suffix(" GC") {
+        if let Some((num_s, unit_s)) = rest.split_once(' ') {
+            if !num_s.is_empty() && num_s.bytes().all(|b| b.is_ascii_digit()) {
+                let scale = match unit_s {
+                    "Day" => Some(1.0),
+                    "Week" => Some(7.0),
+                    "Month" => Some(30.0),
+                    "Year" => Some(365.0),
+                    _ => None,
+                };
+                if let (Some(scale), Ok(num)) = (scale, num_s.parse::<f64>()) {
+                    return Some(num * scale);
+                }
+            }
+        } else if !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()) {
+            // Upstream RepoGCReg matches e.g. "3 GC" with empty unit -> leaves days = None.
+            return None;
+        }
+    }
+
+    // 24. RelativeReg: ^([0-9]+) (day|week|month|year|DAY|WEEK|MONTH|YEAR)$
+    if let Some((num_s, unit_s)) = point.split_once(' ') {
+        if !num_s.is_empty() && num_s.bytes().all(|b| b.is_ascii_digit()) {
+            let scale = match unit_s {
+                "day" | "DAY" => Some(1.0),
+                "week" | "WEEK" => Some(7.0),
+                "month" | "MONTH" => Some(30.0),
+                "year" | "YEAR" => Some(365.0),
+                _ => None,
+            };
+            if let (Some(scale), Ok(num)) = (scale, num_s.parse::<f64>()) {
+                return Some(num * scale);
+            }
+        }
+    }
+
+    // 25. DDMMMYYReg
+    if let Some(d) = parse_ddmmmyy(point) {
+        return Some(days_from_ref(d, ref_date));
+    }
+
+    // 26. Fallback
+    Some(0.0)
+}
+
+fn normalized_point_order(point: &str, ref_date: Date) -> f64 {
+    let v = point_sort_order(point, ref_date).unwrap_or(0.0);
+    if v == 0.0 {
+        0.0
+    } else {
+        v
+    }
+}
+
+/// Stable-sort bucketed risk rows in upstream `__risk_columns` order:
+/// `(date, time, mkt_type, mkt_asset, mkt_class, point_sort_order(mkt_point, ref_date).unwrap_or(0.0))`.
+///
+/// Mirrors upstream `gs_quant/risk/core.py:sort_risk` (lines 651–682). When all six sort keys
+/// tie (for example `"30d"` and `"1m"`, both `30.0` days), Rust's stable sort preserves the
+/// input row order, matching Python's Timsort.
+///
+/// # Example
+/// ```
+/// use quantus_math::{sort_risk, Date, RiskRow, RiskTable};
+///
+/// let ref_date = Date::new(2024, 1, 15).unwrap();
+/// let table = RiskTable {
+///     unit: Some("USD".into()),
+///     rows: vec![
+///         RiskRow {
+///             date: None, time: None, mkt_type: "IR".into(), mkt_asset: "USD".into(),
+///             mkt_class: "SWAP".into(), mkt_point: "5y".into(), value: 10.0,
+///         },
+///         RiskRow {
+///             date: None, time: None, mkt_type: "IR".into(), mkt_asset: "USD".into(),
+///             mkt_class: "SWAP".into(), mkt_point: "1y".into(), value: 20.0,
+///         },
+///     ],
+/// };
+/// let sorted = sort_risk(&table, ref_date);
+/// assert_eq!(sorted.rows[0].mkt_point, "1y");
+/// assert_eq!(sorted.rows[1].mkt_point, "5y");
+/// ```
+pub fn sort_risk(table: &RiskTable, ref_date: Date) -> RiskTable {
+    let mut rows = table.rows.clone();
+    rows.sort_by(|a, b| {
+        a.date
+            .cmp(&b.date)
+            .then_with(|| a.time.cmp(&b.time))
+            .then_with(|| a.mkt_type.cmp(&b.mkt_type))
+            .then_with(|| a.mkt_asset.cmp(&b.mkt_asset))
+            .then_with(|| a.mkt_class.cmp(&b.mkt_class))
+            .then_with(|| {
+                normalized_point_order(&a.mkt_point, ref_date)
+                    .total_cmp(&normalized_point_order(&b.mkt_point, ref_date))
+            })
+    });
+    RiskTable {
+        unit: table.unit.clone(),
+        rows,
+    }
+}
+
+/// Aggregate one or more resolved bucketed risk tables.
+///
+/// Mirrors upstream `gs_quant/risk/core.py:aggregate_risk` and `aggregate_results` (lines 516–618):
+///
+/// - Empty `tables` slice returns `Err(Error::Length)`.
+/// - Validates unit compatibility across all tables with non-empty `unit` labels, returning
+///   `Err(Error::UnitMismatch)` when two non-empty units differ and inheriting a non-empty unit
+///   when other tables have `None` or `Some("")`.
+/// - Replaces `NaN` values with `0.0` (`fillna(0)`) while propagating `±Inf`.
+/// - Groups and sums by `(date, time, mkt_type, mkt_asset, mkt_class, mkt_point)` in canonical
+///   lexicographical order (matching pandas `groupby(..., sort=True)` before `sort_risk`).
+/// - Optionally filters buckets by strict `value.abs() > threshold` (so `== threshold`, `0.0` at
+///   `threshold = 0.0`, and all buckets at `threshold = NaN` or `+Inf` are dropped).
+/// - Returns the final [`RiskTable`] sorted via [`sort_risk`].
+///
+/// Documented parity boundaries: only already-resolved bucketed risk tables/rows are supported
+/// (remote `PricingContext`, `Future`, server pricing, and `ErrorValue` are out of scope), and
+/// `ref_date: Date` is passed explicitly instead of reading `datetime.date.today()`.
+///
+/// # Example
+/// ```
+/// use quantus_math::{aggregate_risk, Date, RiskRow, RiskTable};
+///
+/// let ref_date = Date::new(2024, 1, 15).unwrap();
+/// let row = |pt: &str, v: f64| RiskRow {
+///     date: None, time: None, mkt_type: "IR".into(), mkt_asset: "USD".into(),
+///     mkt_class: "SWAP".into(), mkt_point: pt.into(), value: v,
+/// };
+/// let t1 = RiskTable { unit: Some("USD".into()), rows: vec![row("5y", 10.0), row("1y", 20.0)] };
+/// let t2 = RiskTable { unit: None, rows: vec![row("5y", -10.0), row("1y", f64::NAN)] };
+/// let agg = aggregate_risk(&[t1, t2], Some(0.0), ref_date).unwrap();
+/// assert_eq!(agg.unit.as_deref(), Some("USD"));
+/// assert_eq!(agg.rows.len(), 1);
+/// assert_eq!(agg.rows[0].mkt_point, "1y");
+/// assert_eq!(agg.rows[0].value, 20.0);
+/// ```
+pub fn aggregate_risk(
+    tables: &[RiskTable],
+    threshold: Option<f64>,
+    ref_date: Date,
+) -> Result<RiskTable, Error> {
+    if tables.is_empty() {
+        return Err(Error::Length);
+    }
+
+    let mut unit: Option<String> = None;
+    for table in tables {
+        if let Some(u) = &table.unit {
+            if !u.is_empty() {
+                match &unit {
+                    Some(existing) if existing != u => return Err(Error::UnitMismatch),
+                    None => unit = Some(u.clone()),
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    type BucketKey = (Option<Date>, Option<String>, String, String, String, String);
+    let mut buckets: BTreeMap<BucketKey, f64> = BTreeMap::new();
+    for table in tables {
+        for row in &table.rows {
+            let val = if row.value.is_nan() { 0.0 } else { row.value };
+            let key = (
+                row.date,
+                row.time.clone(),
+                row.mkt_type.clone(),
+                row.mkt_asset.clone(),
+                row.mkt_class.clone(),
+                row.mkt_point.clone(),
+            );
+            *buckets.entry(key).or_insert(0.0) += val;
+        }
+    }
+
+    let mut rows = Vec::with_capacity(buckets.len());
+    for ((date, time, mkt_type, mkt_asset, mkt_class, mkt_point), value) in buckets {
+        let keep = match threshold {
+            Some(th) => value.abs() > th,
+            None => true,
+        };
+        if keep {
+            rows.push(RiskRow {
+                date,
+                time,
+                mkt_type,
+                mkt_asset,
+                mkt_class,
+                mkt_point,
+                value,
+            });
+        }
+    }
+
+    Ok(sort_risk(&RiskTable { unit, rows }, ref_date))
+}
+
+/// Subtract bucketed risk (`left - right`).
+///
+/// Validates unit compatibility (`Err(Error::UnitMismatch)`) and optional `date`/`time` presence
+/// compatibility when both tables are non-empty (`Err(Error::Length)`), negates `right`'s values,
+/// and delegates to [`aggregate_risk`].
+///
+/// Documented parity boundary: upstream `gs_quant/risk/core.py:642-643` asserts
+/// `'value' in left.columns.names`, which inspects pandas `Index.names` (`[None]`) instead of
+/// column labels and raises `AssertionError` on standard DataFrames. Rust implements the
+/// documented/intended semantics (`aggregate_risk((left, -right))` with unit and dimension
+/// checks).
+///
+/// # Example
+/// ```
+/// use quantus_math::{subtract_risk, Date, RiskRow, RiskTable};
+///
+/// let ref_date = Date::new(2024, 1, 15).unwrap();
+/// let row = |pt: &str, v: f64| RiskRow {
+///     date: None, time: None, mkt_type: "IR".into(), mkt_asset: "USD".into(),
+///     mkt_class: "SWAP".into(), mkt_point: pt.into(), value: v,
+/// };
+/// let left = RiskTable { unit: Some("USD".into()), rows: vec![row("5y", 10.0), row("1y", 25.0)] };
+/// let right = RiskTable { unit: Some("USD".into()), rows: vec![row("5y", 10.0), row("2y", 4.0)] };
+/// let diff = subtract_risk(&left, &right, ref_date).unwrap();
+/// assert_eq!(diff.rows.len(), 3);
+/// assert_eq!(diff.rows[0].value, 25.0);
+/// assert_eq!(diff.rows[1].value, -4.0);
+/// assert_eq!(diff.rows[2].value, 0.0);
+/// ```
+pub fn subtract_risk(
+    left: &RiskTable,
+    right: &RiskTable,
+    ref_date: Date,
+) -> Result<RiskTable, Error> {
+    if let (Some(lu), Some(ru)) = (&left.unit, &right.unit) {
+        if !lu.is_empty() && !ru.is_empty() && lu != ru {
+            return Err(Error::UnitMismatch);
+        }
+    }
+
+    if !left.rows.is_empty() && !right.rows.is_empty() {
+        let left_has_date = left.rows.iter().any(|r| r.date.is_some());
+        let right_has_date = right.rows.iter().any(|r| r.date.is_some());
+        let left_has_time = left.rows.iter().any(|r| r.time.is_some());
+        let right_has_time = right.rows.iter().any(|r| r.time.is_some());
+        if left_has_date != right_has_date || left_has_time != right_has_time {
+            return Err(Error::Length);
+        }
+    }
+
+    let right_negated = RiskTable {
+        unit: right.unit.clone(),
+        rows: right
+            .rows
+            .iter()
+            .map(|r| RiskRow {
+                date: r.date,
+                time: r.time.clone(),
+                mkt_type: r.mkt_type.clone(),
+                mkt_asset: r.mkt_asset.clone(),
+                mkt_class: r.mkt_class.clone(),
+                mkt_point: r.mkt_point.clone(),
+                value: -r.value,
+            })
+            .collect(),
+    };
+
+    aggregate_risk(&[left.clone(), right_negated], None, ref_date)
 }

@@ -1,9 +1,10 @@
 use quantus_math::{
-    backtest_basket, basket_series, beta, bollinger_bands, business_day_count, business_day_offset,
-    correlation, cov, day_count_fraction, exponential_moving_average, has_feb_29, is_business_day,
-    macd, max_drawdown, moving_average, prices, relative_strength_index, returns,
-    smoothed_moving_average, std as series_std, volatility, BasketParam, BollingerBands, Date,
-    DayCountConvention, Error, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, Roll,
+    aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
+    business_day_offset, correlation, cov, day_count_fraction, exponential_moving_average,
+    has_feb_29, is_business_day, macd, max_drawdown, moving_average, point_sort_order, prices,
+    relative_strength_index, returns, smoothed_moving_average, sort_risk, std as series_std,
+    subtract_risk, volatility, BasketParam, BollingerBands, Date, DayCountConvention, Error,
+    HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, RiskRow, RiskTable, Roll,
     RollingLinearRegression, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
@@ -5486,4 +5487,398 @@ fn basket_nonfinite_zero_negative_nav_errors_and_determinism() {
             assert_eq!(u.to_bits(), v.to_bits());
         }
     }
+}
+
+fn risk_row(
+    d: Option<Date>,
+    t: Option<&str>,
+    mkt_type: &str,
+    mkt_asset: &str,
+    mkt_class: &str,
+    mkt_point: &str,
+    value: f64,
+) -> RiskRow {
+    RiskRow {
+        date: d,
+        time: t.map(str::to_string),
+        mkt_type: mkt_type.to_string(),
+        mkt_asset: mkt_asset.to_string(),
+        mkt_class: mkt_class.to_string(),
+        mkt_point: mkt_point.to_string(),
+        value,
+    }
+}
+
+#[test]
+fn risk_point_sort_order_patterns() {
+    let r = date(2024, 1, 15);
+
+    // Empty & ConstPoints (case-insensitive)
+    assert_eq!(point_sort_order("", r), Some(0.0));
+    assert_eq!(point_sort_order("O/N", r), Some(0.0));
+    assert_eq!(point_sort_order("o/n", r), Some(0.0));
+    assert_eq!(point_sort_order("T/N", r), Some(0.1));
+    assert_eq!(point_sort_order("OIS FIX", r), Some(1.0));
+    assert_eq!(point_sort_order("Cash Stub", r), Some(1.1));
+    assert_eq!(point_sort_order("CashStub", r), Some(1.1));
+    assert_eq!(point_sort_order("DEFAULT", r), Some(0.0));
+    assert_eq!(point_sort_order("In", r), Some(0.1));
+    assert_eq!(point_sort_order("Out", r), Some(0.2));
+
+    // Compound semicolon points
+    assert_eq!(point_sort_order("1y;5y", r), Some(365.5));
+    assert_eq!(point_sort_order(" 1y ; 2y ; 3y ", r), Some(365.5));
+    assert!((point_sort_order("6m;2y;10y", r).unwrap() - 182.433_333_333_333_34).abs() < 1e-12);
+    assert_eq!(point_sort_order("O/N;5y", r), Some(0.0));
+    assert_eq!(point_sort_order("USD Rho;5y", r), Some(0.0));
+
+    // infl_vol, Copula (None), SeasonalFront
+    assert_eq!(point_sort_order("USD Caplet 1y", r), Some(0.0));
+    assert_eq!(point_sort_order("ZCCap 5y", r), Some(1.0));
+    assert_eq!(point_sort_order("Swaption 10y", r), Some(2.0));
+    assert_eq!(point_sort_order("ZCSwo Caplet", r), Some(3.0));
+    for cop in [
+        "USD Rho",
+        "EUR KO",
+        "Rho Rate 1y",
+        "Rho Vol 5y",
+        "1y RR",
+        "BF 2y",
+        "Alpha",
+        "Beta",
+        "K0=L",
+        "K0=S",
+    ] {
+        assert_eq!(point_sort_order(cop, r), None, "copula {cop}");
+    }
+    assert_eq!(point_sort_order("Front", r), Some(0.0));
+    assert_eq!(point_sort_order("Back", r), Some(1.0));
+    assert_eq!(point_sort_order("Back Front", r), Some(1.0));
+    assert_eq!(point_sort_order("Front Back", r), Some(0.0));
+
+    // MMM & EuroOrFra with POSIX %y 68/69 pivot
+    assert_eq!(point_sort_order("Jan", r), Some(-8780.0));
+    assert_eq!(point_sort_order("Dec", r), Some(-8445.0));
+    assert_eq!(point_sort_order("JAN25", r), Some(366.0));
+    assert_eq!(point_sort_order("Dec68", r), Some(16406.0)); // 2068-12-15
+    assert_eq!(point_sort_order("Dec69", r), Some(-19754.0)); // 1969-12-15
+
+    // RDatePart, CashFX, PricerBF, FRAx
+    assert_eq!(point_sort_order("1d", r), Some(1.0));
+    assert_eq!(point_sort_order("10B", r), Some(10.0));
+    assert_eq!(point_sort_order("-2w", r), Some(-14.0));
+    assert_eq!(point_sort_order("2F", r), Some(60.0));
+    assert_eq!(point_sort_order("1y5y", r), Some(365.0));
+    assert_eq!(point_sort_order("1y5y XC", r), Some(365.0));
+    assert_eq!(point_sort_order("1y5y10y", r), Some(365.0));
+    assert_eq!(point_sort_order("3x6", r), Some(90.0));
+
+    // SpikeQE, MMMYYYY, DDMMMYYYY (including leap 29Feb2024 and invalid calendar fallback)
+    assert_eq!(point_sort_order("QE1-2025", r), Some(411.0));
+    assert_eq!(point_sort_order("QE2-2025", r), Some(503.0));
+    assert_eq!(point_sort_order("QE3-2025", r), Some(595.0));
+    assert_eq!(point_sort_order("QE4-2025", r), Some(686.0));
+    assert_eq!(point_sort_order("Jun2025", r), Some(503.0));
+    assert_eq!(point_sort_order("15Mar2026", r), Some(790.0));
+    assert_eq!(point_sort_order("29Feb2024", r), Some(45.0));
+    assert_eq!(point_sort_order("1Jan2024", r), Some(-14.0));
+    assert_eq!(point_sort_order("31Feb2024", r), Some(0.0)); // invalid date -> safe fallback
+
+    // Number, FloatingYear, PricerCoordI/II, PricerBondSpread
+    assert_eq!(point_sort_order("42", r), Some(42.0));
+    assert_eq!(point_sort_order("0.5y", r), Some(182.5));
+    assert_eq!(point_sort_order("1.5Y", r), Some(547.5));
+    assert_eq!(point_sort_order(".5y", r), Some(182.5));
+    assert_eq!(point_sort_order("No 5", r), Some(5.0));
+    assert_eq!(point_sort_order("Pricer 12", r), Some(12.0));
+    assert_eq!(point_sort_order("5S25/5Q25", r), None);
+
+    // LYY, DatePair, DatePair2, MMMYY, FXVolAddonParms
+    assert_eq!(point_sort_order("H25", r), Some(411.0));
+    assert_eq!(point_sort_order("M26", r), Some(868.0));
+    assert_eq!(point_sort_order("Z68", r), Some(16392.0));
+    assert_eq!(point_sort_order("Z69", r), Some(-19768.0));
+    assert_eq!(point_sort_order("20240101/20250615", r), Some(517.0));
+    assert_eq!(point_sort_order("20240101 20250615", r), Some(517.0));
+    assert_eq!(point_sort_order("JAN 25", r), Some(352.0));
+    assert_eq!(point_sort_order("Spread Addon", r), None);
+    assert_eq!(point_sort_order("HL", r), None);
+
+    // BondCoord, BondFut, FFFut, RepoGC, Relative, DDMMMYY, fallback
+    assert_eq!(point_sort_order("1 2.5 15/03/2026", r), Some(790.0));
+    assert_eq!(point_sort_order("USTH4", r), Some(46.0));
+    assert_eq!(point_sort_order("FFZ5", r), Some(321.0));
+    assert_eq!(point_sort_order("FFH4", r), Some(46.0));
+    assert_eq!(point_sort_order("ON GC", r), Some(0.0));
+    assert_eq!(point_sort_order("TN GC", r), Some(1.0));
+    assert_eq!(point_sort_order("SN GC", r), Some(2.0));
+    assert_eq!(point_sort_order("3 Month GC", r), Some(90.0));
+    assert_eq!(point_sort_order("2 Week GC", r), Some(14.0));
+    assert_eq!(point_sort_order("1 Year GC", r), Some(365.0));
+    assert_eq!(point_sort_order("5 Day GC", r), Some(5.0));
+    assert_eq!(point_sort_order("10 day", r), Some(10.0));
+    assert_eq!(point_sort_order("3 week", r), Some(21.0));
+    assert_eq!(point_sort_order("6 month", r), Some(180.0));
+    assert_eq!(point_sort_order("2 YEAR", r), Some(730.0));
+    assert_eq!(point_sort_order("05Feb25", r), Some(387.0));
+    assert_eq!(point_sort_order("29Feb24", r), Some(45.0));
+    assert_eq!(point_sort_order("unknown_point", r), Some(0.0));
+}
+
+#[test]
+fn risk_sort_risk_multi_column_stability_and_none() {
+    let r = date(2024, 1, 15);
+
+    // Multi-column ordering: date -> time -> mkt_type -> mkt_asset -> mkt_class -> mkt_point
+    let table = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(
+                Some(date(2024, 1, 2)),
+                Some("10:00"),
+                "IR",
+                "USD",
+                "SWAP",
+                "1y",
+                1.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("14:00"),
+                "IR",
+                "USD",
+                "SWAP",
+                "5y",
+                2.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("09:00"),
+                "IR",
+                "USD",
+                "SWAP",
+                "10y",
+                3.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("09:00"),
+                "FX",
+                "USD",
+                "FWD",
+                "5y",
+                4.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("09:00"),
+                "IR",
+                "EUR",
+                "SWAP",
+                "5y",
+                5.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("09:00"),
+                "IR",
+                "USD",
+                "CASH",
+                "5y",
+                6.0,
+            ),
+            risk_row(
+                Some(date(2024, 1, 1)),
+                Some("09:00"),
+                "IR",
+                "USD",
+                "SWAP",
+                "3m",
+                7.0,
+            ),
+        ],
+    };
+    let sorted = sort_risk(&table, r);
+    assert_eq!(sorted.unit.as_deref(), Some("USD"));
+    let values: Vec<f64> = sorted.rows.iter().map(|x| x.value).collect();
+    assert_eq!(values, vec![4.0, 5.0, 6.0, 7.0, 3.0, 2.0, 1.0]);
+
+    // Stability on tied sort orders ("30d" and "1m" both 30.0) and None -> 0.0 handling
+    let tied = RiskTable {
+        unit: None,
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "1y", 10.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "30d", 20.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1m", 30.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "USD Rho", 40.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "O/N", 50.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "-1w", 60.0),
+        ],
+    };
+    let sorted_tied = sort_risk(&tied, r);
+    let pts: Vec<&str> = sorted_tied
+        .rows
+        .iter()
+        .map(|x| x.mkt_point.as_str())
+        .collect();
+    assert_eq!(pts, vec!["-1w", "USD Rho", "O/N", "30d", "1m", "1y"]);
+}
+
+#[test]
+fn risk_aggregate_risk_grouping_thresholds_units_and_errors() {
+    let r = date(2024, 1, 15);
+
+    // Multi-table grouping, duplicates within single table, fillna(0) on NaN, ±Inf propagation
+    let t1 = RiskTable {
+        unit: None,
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 10.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 15.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "30d", 5.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1m", 7.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1y", f64::NAN),
+            risk_row(None, None, "IR", "USD", "SWAP", "2y", -10.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "10y", f64::INFINITY),
+        ],
+    };
+    let t2 = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", -25.0), // exact cancellation to 0.0
+            risk_row(None, None, "IR", "USD", "SWAP", "1y", 12.5),
+            risk_row(None, None, "IR", "USD", "SWAP", "2y", -0.5), // -10.5
+        ],
+    };
+
+    let agg_all = aggregate_risk(&[t1.clone(), t2.clone()], None, r).unwrap();
+    // Unit inherited from t2 despite t1 having None
+    assert_eq!(agg_all.unit.as_deref(), Some("USD"));
+    // groupby pre-orders lexicographically before sort_risk -> "1m" precedes "30d"!
+    let pts: Vec<&str> = agg_all.rows.iter().map(|x| x.mkt_point.as_str()).collect();
+    assert_eq!(pts, vec!["1m", "30d", "1y", "2y", "5y", "10y"]);
+    assert_eq!(agg_all.rows[0].value, 7.0);
+    assert_eq!(agg_all.rows[1].value, 5.0);
+    assert_eq!(agg_all.rows[2].value, 12.5);
+    assert_eq!(agg_all.rows[3].value, -10.5);
+    assert_eq!(agg_all.rows[4].value, 0.0);
+    assert!(agg_all.rows[5].value.is_infinite() && agg_all.rows[5].value.is_sign_positive());
+
+    // Strict abs(value) > threshold boundaries
+    let th0 = aggregate_risk(&[t1.clone(), t2.clone()], Some(0.0), r).unwrap();
+    assert_eq!(th0.rows.len(), 5); // 5y (0.0) dropped
+    let th105 = aggregate_risk(&[t1.clone(), t2.clone()], Some(10.5), r).unwrap();
+    // |-10.5| == 10.5 is NOT strictly greater -> dropped! Only 1y (12.5) and 10y (+Inf) survive.
+    let th105_pts: Vec<&str> = th105.rows.iter().map(|x| x.mkt_point.as_str()).collect();
+    assert_eq!(th105_pts, vec!["1y", "10y"]);
+    let th_neg = aggregate_risk(&[t1.clone(), t2.clone()], Some(-1.0), r).unwrap();
+    assert_eq!(th_neg.rows.len(), 6); // 0.0 kept when threshold is negative
+    let th_nan = aggregate_risk(&[t1.clone(), t2.clone()], Some(f64::NAN), r).unwrap();
+    assert!(th_nan.rows.is_empty());
+    let th_inf = aggregate_risk(&[t1.clone(), t2.clone()], Some(f64::INFINITY), r).unwrap();
+    assert!(th_inf.rows.is_empty());
+
+    // Empty unit string treated as unset; mismatched non-empty units return Error::UnitMismatch
+    let t_empty_unit = RiskTable {
+        unit: Some(String::new()),
+        rows: vec![risk_row(None, None, "IR", "USD", "SWAP", "1y", 1.0)],
+    };
+    let ok_inherit = aggregate_risk(&[t_empty_unit, t2.clone()], None, r).unwrap();
+    assert_eq!(ok_inherit.unit.as_deref(), Some("USD"));
+
+    let t_eur = RiskTable {
+        unit: Some("EUR".into()),
+        rows: vec![risk_row(None, None, "IR", "EUR", "SWAP", "1y", 1.0)],
+    };
+    assert_eq!(
+        aggregate_risk(&[t2, t_eur], None, r),
+        Err(Error::UnitMismatch)
+    );
+
+    // Empty slice -> Error::Length
+    assert_eq!(aggregate_risk(&[], None, r), Err(Error::Length));
+}
+
+#[test]
+fn risk_subtract_risk_cancellation_schema_and_determinism() {
+    let r = date(2024, 1, 15);
+
+    let left = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 10.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1y", 25.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "3m", 4.0),
+        ],
+    };
+    let right = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 10.0), // exact cancel -> 0.0
+            risk_row(None, None, "IR", "USD", "SWAP", "2y", 6.0),  // asymmetric -> -6.0
+            risk_row(None, None, "IR", "USD", "SWAP", "1y", f64::NAN), // NaN -> 0.0 -> 25.0
+        ],
+    };
+
+    let diff1 = subtract_risk(&left, &right, r).unwrap();
+    let diff2 = subtract_risk(&left, &right, r).unwrap();
+    assert_eq!(diff1, diff2);
+    assert_eq!(diff1.unit.as_deref(), Some("USD"));
+    let summary: Vec<(&str, f64)> = diff1
+        .rows
+        .iter()
+        .map(|x| (x.mkt_point.as_str(), x.value))
+        .collect();
+    assert_eq!(
+        summary,
+        vec![("3m", 4.0), ("1y", 25.0), ("2y", -6.0), ("5y", 0.0)]
+    );
+
+    // Unit mismatch -> Error::UnitMismatch
+    let right_eur = RiskTable {
+        unit: Some("EUR".into()),
+        rows: right.rows.clone(),
+    };
+    assert_eq!(
+        subtract_risk(&left, &right_eur, r),
+        Err(Error::UnitMismatch)
+    );
+
+    // Date presence mismatch -> Error::Length
+    let dated = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![risk_row(
+            Some(date(2024, 1, 15)),
+            None,
+            "IR",
+            "USD",
+            "SWAP",
+            "5y",
+            1.0,
+        )],
+    };
+    assert_eq!(subtract_risk(&left, &dated, r), Err(Error::Length));
+
+    // Time presence mismatch -> Error::Length
+    let timed = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![risk_row(
+            None,
+            Some("09:30"),
+            "IR",
+            "USD",
+            "SWAP",
+            "5y",
+            1.0,
+        )],
+    };
+    assert_eq!(subtract_risk(&left, &timed, r), Err(Error::Length));
+
+    // Empty right table succeeds and preserves left rows sorted
+    let empty_right = RiskTable {
+        unit: None,
+        rows: vec![],
+    };
+    let diff_empty = subtract_risk(&left, &empty_right, r).unwrap();
+    assert_eq!(diff_empty.rows.len(), 3);
+    assert_eq!(diff_empty.rows[0].mkt_point, "3m");
 }
