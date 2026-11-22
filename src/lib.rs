@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, relative strength index, returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -61,6 +61,7 @@ pub enum Error {
     NonPositivePrice,
     AnnualizationFactor,
     Beta,
+    Span,
 }
 
 /// Strictly increasing calendar dates and floating point values. NaN represents missing data.
@@ -851,6 +852,65 @@ pub fn max_drawdown(x: &Series, window: Window) -> Result<Series, Error> {
     Series::try_new(out_dates, out_values)
 }
 
+fn ewm_mean_com(values: &[f64], com: f64) -> Vec<f64> {
+    let alpha = 1.0 / (1.0 + com);
+    let old_wt_factor = 1.0 - alpha;
+    let new_wt = alpha;
+
+    let n = values.len();
+    let mut out = Vec::with_capacity(n);
+    if n == 0 {
+        return out;
+    }
+
+    let mut weighted_avg = values[0];
+    let mut has_obs = weighted_avg.is_finite();
+    out.push(if has_obs { weighted_avg } else { f64::NAN });
+    let mut old_wt = 1.0;
+
+    for &cur in &values[1..] {
+        let is_obs = cur.is_finite();
+        if has_obs {
+            old_wt *= old_wt_factor;
+            if is_obs {
+                if weighted_avg != cur {
+                    weighted_avg = ((old_wt * weighted_avg) + (new_wt * cur)) / (old_wt + new_wt);
+                }
+                old_wt = 1.0;
+            }
+        } else if is_obs {
+            weighted_avg = cur;
+            has_obs = true;
+        }
+        out.push(if has_obs { weighted_avg } else { f64::NAN });
+    }
+
+    out
+}
+
+fn step_fill(values: &mut [f64]) {
+    let mut last: Option<f64> = None;
+    for v in values.iter_mut() {
+        if v.is_nan() {
+            if let Some(prev) = last {
+                *v = prev;
+            }
+        } else {
+            last = Some(*v);
+        }
+    }
+    let mut next: Option<f64> = None;
+    for v in values.iter_mut().rev() {
+        if v.is_nan() {
+            if let Some(after) = next {
+                *v = after;
+            }
+        } else {
+            next = Some(*v);
+        }
+    }
+}
+
 /// Exponentially weighted moving average over observation order.
 ///
 /// When `beta` is `None`, uses the upstream default `0.75`. Valid `beta` values satisfy
@@ -872,39 +932,50 @@ pub fn exponential_moving_average(x: &Series, beta: Option<f64>) -> Result<Serie
     }
     let alpha_in = 1.0 - beta;
     let com = (1.0 - alpha_in) / alpha_in;
-    let alpha = 1.0 / (1.0 + com);
-    let old_wt_factor = 1.0 - alpha;
-    let new_wt = alpha;
-
-    let n = x.dates.len();
-    let mut values = Vec::with_capacity(n);
-    if n == 0 {
-        return Series::try_new(vec![], values);
-    }
-
-    let mut weighted_avg = x.values[0];
-    let mut has_obs = weighted_avg.is_finite();
-    values.push(if has_obs { weighted_avg } else { f64::NAN });
-    let mut old_wt = 1.0;
-
-    for &cur in &x.values[1..] {
-        let is_obs = cur.is_finite();
-        if has_obs {
-            old_wt *= old_wt_factor;
-            if is_obs {
-                if weighted_avg != cur {
-                    weighted_avg = ((old_wt * weighted_avg) + (new_wt * cur)) / (old_wt + new_wt);
-                }
-                old_wt = 1.0;
-            }
-        } else if is_obs {
-            weighted_avg = cur;
-            has_obs = true;
-        }
-        values.push(if has_obs { weighted_avg } else { f64::NAN });
-    }
-
+    let values = ewm_mean_com(&x.values, com);
     Series::try_new(x.dates.clone(), values)
+}
+
+/// Moving Average Convergence Divergence (MACD) over observation order.
+///
+/// Mirrors upstream `gs_quant/timeseries/technicals.py:macd` (lines 299–344) and
+/// `gs_quant/timeseries/algebra.py:subtract` (default `Interpolate.STEP` = `ffill().bfill()`):
+///
+/// 1. Defaults `m = 12`, `n = 26`, `s = 1` when `None`, and validates `m >= 1`, `n >= 1`,
+///    `s >= 1` first—returning `Err(Error::Span)` if any span is `0`, even on empty input.
+/// 2. Computes observation-order EWMs `a = ewm(x, com = (m - 1) / 2)` and
+///    `b = ewm(x, com = (n - 1) / 2)` with `adjust = false`.
+/// 3. Applies `ffill().bfill()` independently to `a` and `b` (matching `subtract(..., Interpolate.STEP)`).
+///    When `x` has leading `NaN` or `±Inf` followed by a finite observation, both `a` and `b`
+///    backfill those leading rows with that first finite value, so `diff = a_filled - b_filled`
+///    starts with `+0.0` (which enters the third EWM when `s > 1`). If `x` has no finite values,
+///    `a`, `b`, `diff`, and the result remain all `NaN`.
+/// 4. Applies the third EWM `ewm(diff, com = (s - 1) / 2)` with `adjust = false` (treating any
+///    `a - b` overflow to `±Inf` as missing in that EWM) and returns the result on `x.dates()`.
+pub fn macd(
+    x: &Series,
+    m: Option<usize>,
+    n: Option<usize>,
+    s: Option<usize>,
+) -> Result<Series, Error> {
+    let m = m.unwrap_or(12);
+    let n = n.unwrap_or(26);
+    let s = s.unwrap_or(1);
+    if m == 0 || n == 0 || s == 0 {
+        return Err(Error::Span);
+    }
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+
+    let mut a = ewm_mean_com(&x.values, (m - 1) as f64 / 2.0);
+    let mut b = ewm_mean_com(&x.values, (n - 1) as f64 / 2.0);
+    step_fill(&mut a);
+    step_fill(&mut b);
+
+    let diff: Vec<f64> = a.iter().zip(&b).map(|(&av, &bv)| av - bv).collect();
+    let out = ewm_mean_com(&diff, (s - 1) as f64 / 2.0);
+    Series::try_new(x.dates.clone(), out)
 }
 
 /// Smoothed (modified / running) moving average over a rolling or expanding window.
