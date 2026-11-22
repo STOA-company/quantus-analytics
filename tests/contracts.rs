@@ -1,6 +1,6 @@
 use quantus_math::{
-    beta, correlation, max_drawdown, moving_average, returns, volatility, Date, Error, ReturnKind,
-    Series, Window,
+    beta, correlation, exponential_moving_average, max_drawdown, moving_average, returns,
+    volatility, Date, Error, ReturnKind, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -1264,4 +1264,217 @@ fn max_drawdown_signed_zero_calendar_ties() {
         nnp_4d.values()[0].is_nan() && nnp_4d.values()[1].is_nan() && nnp_4d.values()[2].is_nan()
     );
     assert_eq!(nnp_4d.values()[3], f64::NEG_INFINITY);
+}
+
+#[test]
+fn ema_irregular_dates_default_and_custom_betas() {
+    let daily_dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 5),
+        date(2019, 1, 6),
+    ];
+    let irregular_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 3, 2),
+        date(2020, 3, 7),
+        date(2020, 3, 14),
+        date(2020, 3, 23),
+    ];
+    let raw = vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0];
+    let daily = Series::try_new(daily_dates, raw.clone()).unwrap();
+    let irregular = Series::try_new(irregular_dates.clone(), raw.clone()).unwrap();
+
+    // Default beta = 0.75; row spacing yields identical values across daily and irregular dates
+    let def_daily = exponential_moving_average(&daily, None).unwrap();
+    let def_irreg = exponential_moving_average(&irregular, None).unwrap();
+    let def_explicit = exponential_moving_average(&irregular, Some(0.75)).unwrap();
+    assert_eq!(def_irreg.dates(), irregular_dates.as_slice());
+    assert_eq!(def_irreg.values(), def_daily.values());
+    assert_eq!(def_irreg.values(), def_explicit.values());
+    let expected_default = [3.0, 2.75, 2.8125, 2.359375, 2.51953125, 3.3896484375];
+    for (&actual, &expected) in def_irreg.values().iter().zip(&expected_default) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // beta = 0.6 preserves dates and matches pinned Python values
+    let b06 = exponential_moving_average(&irregular, Some(0.6)).unwrap();
+    assert_eq!(b06.dates(), irregular_dates.as_slice());
+    let expected_06 = [3.0, 2.6, 2.76, 2.056, 2.4336, 3.86016];
+    for (&actual, &expected) in b06.values().iter().zip(&expected_06) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // beta = 0.0 and -0.0 return the input values unchanged on finite series
+    for zero_beta in [0.0, -0.0] {
+        let b0 = exponential_moving_average(&irregular, Some(zero_beta)).unwrap();
+        assert_eq!(b0.dates(), irregular_dates.as_slice());
+        assert_eq!(b0.values(), raw.as_slice());
+    }
+
+    // Valid upper boundary near 1.0 (1.0 - 2^-53)
+    let gap_dates = irregular_dates[..5].to_vec();
+    let gaps = Series::try_new(
+        gap_dates.clone(),
+        vec![1.0, f64::NAN, f64::NAN, 4.0, f64::NAN],
+    )
+    .unwrap();
+    let near_one = exponential_moving_average(&gaps, Some(0.9999999999999999)).unwrap();
+    assert_eq!(near_one.dates(), gap_dates.as_slice());
+    assert_eq!(near_one.values()[0], 1.0);
+    assert_eq!(near_one.values()[2], 1.0);
+    assert!((near_one.values()[3] - (1.0 + f64::EPSILON)).abs() <= 1e-15);
+    assert_eq!(
+        near_one.values()[4].to_bits(),
+        near_one.values()[3].to_bits()
+    );
+}
+
+#[test]
+fn ema_missing_infinities_signed_zero_and_determinism() {
+    let dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 3, 2),
+        date(2020, 3, 7),
+        date(2020, 3, 14),
+    ];
+
+    // Leading NaNs stay NaN until the first finite observation
+    let leading = Series::try_new(dates[..4].to_vec(), vec![f64::NAN, f64::NAN, 2.0, 6.0]).unwrap();
+    let lead_def = exponential_moving_average(&leading, None).unwrap();
+    assert!(lead_def.values()[0].is_nan() && lead_def.values()[1].is_nan());
+    assert_eq!(&lead_def.values()[2..], &[2.0, 3.0]);
+    let lead_0 = exponential_moving_average(&leading, Some(0.0)).unwrap();
+    assert!(lead_0.values()[0].is_nan() && lead_0.values()[1].is_nan());
+    assert_eq!(&lead_0.values()[2..], &[2.0, 6.0]);
+
+    // Missing rows (NaN and ±Inf) carry forward prior EMA while decaying old weight across gaps,
+    // and consecutive runs produce bit-exact identical outputs
+    let mixed = Series::try_new(
+        dates.clone(),
+        vec![f64::INFINITY, 3.0, f64::NEG_INFINITY, 6.0, f64::NAN],
+    )
+    .unwrap();
+    let run1 = exponential_moving_average(&mixed, None).unwrap();
+    let run2 = exponential_moving_average(&mixed, None).unwrap();
+    assert_eq!(run1.dates(), run2.dates());
+    assert_eq!(run1.dates(), dates.as_slice());
+    for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+    assert!(run1.values()[0].is_nan());
+    assert_eq!(run1.values()[1], 3.0);
+    assert_eq!(run1.values()[2], 3.0);
+    assert!((run1.values()[3] - (51.0 / 13.0)).abs() < 1e-12);
+    assert_eq!(run1.values()[4].to_bits(), run1.values()[3].to_bits());
+
+    let mixed_b0 = exponential_moving_average(&mixed, Some(0.0)).unwrap();
+    assert!(mixed_b0.values()[0].is_nan());
+    assert_eq!(&mixed_b0.values()[1..], &[3.0, 3.0, 6.0, 6.0]);
+
+    // Signed-zero preservation when equal to previous average (even with beta = 0.0)
+    let neg_first = Series::try_new(dates[..4].to_vec(), vec![-0.0, 0.0, f64::NAN, -0.0]).unwrap();
+    for b in [None, Some(0.0)] {
+        let out = exponential_moving_average(&neg_first, b).unwrap();
+        assert_eq!(out.dates(), &dates[..4]);
+        assert!(out
+            .values()
+            .iter()
+            .all(|v| *v == 0.0 && v.is_sign_negative()));
+    }
+
+    let pos_first = Series::try_new(dates[..4].to_vec(), vec![0.0, -0.0, f64::NAN, 0.0]).unwrap();
+    for b in [None, Some(0.0)] {
+        let out = exponential_moving_average(&pos_first, b).unwrap();
+        assert!(out
+            .values()
+            .iter()
+            .all(|v| *v == 0.0 && v.is_sign_positive()));
+    }
+
+    // Transition from non-zero to -0.0 at beta = 0.0 follows IEEE-754 weighted sum sign
+    let from_pos = Series::try_new(dates[..2].to_vec(), vec![1.0, -0.0]).unwrap();
+    let out_pos = exponential_moving_average(&from_pos, Some(0.0)).unwrap();
+    assert!(out_pos.values()[1] == 0.0 && out_pos.values()[1].is_sign_positive());
+
+    let from_neg = Series::try_new(dates[..2].to_vec(), vec![-1.0, -0.0]).unwrap();
+    let out_neg = exponential_moving_average(&from_neg, Some(0.0)).unwrap();
+    assert!(out_neg.values()[1] == 0.0 && out_neg.values()[1].is_sign_negative());
+}
+
+#[test]
+fn ema_empty_singleton_all_missing_and_beta_errors() {
+    let d1 = vec![date(2020, 2, 27)];
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+
+    // Valid beta on empty series -> empty series
+    for b in [
+        None,
+        Some(0.0),
+        Some(-0.0),
+        Some(0.6),
+        Some(0.9999999999999999),
+    ] {
+        let out = exponential_moving_average(&empty, b).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+
+    // Singleton finite, -0.0, NaN, ±Inf, and all-missing
+    let one = Series::try_new(d1.clone(), vec![42.0]).unwrap();
+    assert_eq!(
+        exponential_moving_average(&one, None).unwrap().values(),
+        &[42.0]
+    );
+
+    let one_neg0 = Series::try_new(d1.clone(), vec![-0.0]).unwrap();
+    let out_neg0 = exponential_moving_average(&one_neg0, None).unwrap();
+    assert!(out_neg0.values()[0] == 0.0 && out_neg0.values()[0].is_sign_negative());
+
+    for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let one_bad = Series::try_new(d1.clone(), vec![bad]).unwrap();
+        assert!(exponential_moving_average(&one_bad, None).unwrap().values()[0].is_nan());
+    }
+
+    let all_missing = Series::try_new(
+        vec![date(2020, 2, 27), date(2020, 2, 28), date(2020, 3, 2)],
+        vec![f64::NAN, f64::INFINITY, f64::NEG_INFINITY],
+    )
+    .unwrap();
+    let all_out = exponential_moving_average(&all_missing, None).unwrap();
+    assert_eq!(all_out.dates(), all_missing.dates());
+    assert!(all_out.values().iter().all(|v| v.is_nan()));
+
+    // Invalid beta values consistently return Err(Error::Beta) on both non-empty and empty inputs
+    let multi = Series::try_new(
+        vec![date(2020, 2, 27), date(2020, 2, 28), date(2020, 3, 2)],
+        vec![2.0, 3.0, 4.0],
+    )
+    .unwrap();
+    for invalid_beta in [
+        -0.1,
+        -f64::MIN_POSITIVE,
+        -f64::from_bits(1),
+        1.0,
+        1.1,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::NAN,
+    ] {
+        assert_eq!(
+            exponential_moving_average(&one, Some(invalid_beta)),
+            Err(Error::Beta)
+        );
+        assert_eq!(
+            exponential_moving_average(&multi, Some(invalid_beta)),
+            Err(Error::Beta)
+        );
+        assert_eq!(
+            exponential_moving_average(&empty, Some(invalid_beta)),
+            Err(Error::Beta)
+        );
+    }
 }

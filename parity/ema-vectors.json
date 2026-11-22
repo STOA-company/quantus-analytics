@@ -1,0 +1,1680 @@
+{
+  "schema": "gsquant-ema-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/technicals.py:exponential_moving_average"
+  ],
+  "cases": [
+    {
+      "id": "test-ema-default",
+      "source_ref": "test_technicals.py::test_exponential_moving_average",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.75,
+          2.8125,
+          2.359375,
+          2.51953125,
+          3.3896484375
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-ema-beta-0.6",
+      "source_ref": "test_technicals.py::test_exponential_moving_average",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.6"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.5999999999999996,
+          2.76,
+          2.056,
+          2.4336,
+          3.8601600000000005
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "test-ema-beta-0.0",
+      "source_ref": "test_technicals.py::test_exponential_moving_average",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-irregular-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.75,
+          2.8125,
+          2.359375,
+          2.51953125,
+          3.3896484375
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-irregular-beta-0.6",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.6"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.5999999999999996,
+          2.76,
+          2.056,
+          2.4336,
+          3.8601600000000005
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "original-irregular-beta-0.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14",
+          "2020-03-23"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-beta-1.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "1.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "empty-beta-neg-0.1",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "-0.1"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "empty-beta-nan",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nan-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.0,
+          3.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leading-nan-beta-0.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "gaps-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          2.116279069767442,
+          2.116279069767442
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "gaps-beta-0.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          4.0,
+          4.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "gaps-beta-0.6",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.6"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          2.948051948051948,
+          2.948051948051948
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "gaps-beta-near-1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.9999999999999999"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07",
+          "2020-03-14"
+        ],
+        "values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0000000000000002,
+          1.0000000000000002
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "infinities-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          {
+            "special": "-Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          3.0,
+          3.0,
+          3.923076923076923
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "infinities-beta-0.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          {
+            "special": "-Inf"
+          },
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          3.0,
+          3.0,
+          6.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-first-default",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          {
+            "special": "NaN"
+          },
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-neg-first-beta-0.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          {
+            "special": "NaN"
+          },
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-pos-first-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-pos-first-beta-0.0",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          0.0,
+          -0.0,
+          {
+            "special": "NaN"
+          },
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-from-pos-beta-0.0",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28"
+        ],
+        "values": [
+          1.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28"
+        ],
+        "values": [
+          1.0,
+          0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "signed-zero-from-neg-beta-0.0",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28"
+        ],
+        "values": [
+          -1.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28"
+        ],
+        "values": [
+          -1.0,
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-zero-beta",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "-0.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-finite-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          42.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-neg-zero-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          -0.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-nan-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-inf-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-inf-default",
+      "source_ref": "boundaries-extra",
+      "operation": "exponential_moving_average",
+      "args": [
+        "default"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          {
+            "special": "+Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "invalid-beta-neg-0.1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "-0.1"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "invalid-beta-1.0",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "1.0"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "invalid-beta-1.1",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "1.1"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "invalid-beta-pos-inf",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "inf"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "invalid-beta-neg-inf",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "-inf"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Beta",
+        "upstream_type": "ValueError",
+        "upstream_message": "alpha must satisfy: 0 < alpha <= 1"
+      }
+    },
+    {
+      "id": "invalid-beta-nan-singleton",
+      "source_ref": "pinned-boundaries-1.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27"
+        ],
+        "values": [
+          1.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-beta-2-3-4",
+      "source_ref": "pinned-nan-beta.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          4.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "NaN"
+          },
+          4.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-beta-2-2-3",
+      "source_ref": "pinned-nan-beta.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          2.0,
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02"
+        ],
+        "values": [
+          2.0,
+          2.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-beta-nan-2-nan-3",
+      "source_ref": "pinned-nan-beta.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.0,
+          {
+            "special": "NaN"
+          },
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          2.0,
+          2.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-beta-2-3-2-2",
+      "source_ref": "pinned-nan-beta.txt",
+      "operation": "exponential_moving_average",
+      "args": [
+        "NaN"
+      ],
+      "input": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          2.0,
+          3.0,
+          2.0,
+          2.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_nan_beta_domain_bypass",
+      "rust_error": "Beta",
+      "output": {
+        "index_kind": "DatetimeIndex",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-03-02",
+          "2020-03-07"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "NaN"
+          },
+          2.0,
+          2.0
+        ],
+        "unit": "price",
+        "dtype": "float64"
+      }
+    }
+  ]
+}
