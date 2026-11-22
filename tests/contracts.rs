@@ -1,11 +1,11 @@
 use quantus_math::{
     aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
-    business_day_offset, correlation, cov, day_count_fraction, exponential_moving_average,
-    has_feb_29, is_business_day, macd, max_drawdown, moving_average, point_sort_order, prices,
-    relative_strength_index, returns, smoothed_moving_average, sort_risk, std as series_std,
-    subtract_risk, volatility, BasketParam, BollingerBands, Date, DayCountConvention, Error,
-    HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, RiskRow, RiskTable, Roll,
-    RollingLinearRegression, Series, Window,
+    business_day_offset, corr_swap_correlation, correlation, cov, day_count_fraction,
+    exponential_moving_average, has_feb_29, is_business_day, macd, max_drawdown, moving_average,
+    point_sort_order, prices, relative_strength_index, returns, smoothed_moving_average, sort_risk,
+    std as series_std, subtract_risk, vol_swap_volatility, volatility, BasketParam, BollingerBands,
+    Date, DayCountConvention, Error, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind,
+    RiskRow, RiskTable, Roll, RollingLinearRegression, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -5881,4 +5881,503 @@ fn risk_subtract_risk_cancellation_schema_and_determinism() {
     let diff_empty = subtract_risk(&left, &empty_right, r).unwrap();
     assert_eq!(diff_empty.rows.len(), 3);
     assert_eq!(diff_empty.rows[0].mkt_point, "3m");
+}
+
+#[test]
+fn vol_swap_volatility_equivalence_defaults_factors_zero_mean_and_leap_day() {
+    // 50-day synthetic price series (reproducing upstream test_vol_swap_volatility coverage)
+    let mut dates = Vec::with_capacity(50);
+    let mut vals = Vec::with_capacity(50);
+    let mut price = 100.0_f64;
+    for i in 0..50usize {
+        let month = if i < 31 { 1 } else { 2 };
+        let day = if i < 31 { i + 1 } else { i - 30 };
+        dates.push(date(2025, month, day as u8));
+        if i > 0 {
+            let r = 0.008 * ((i as f64) * 1.37).sin() + 0.004 * ((i as f64) * 0.53).cos();
+            price *= r.exp();
+        }
+        vals.push(price);
+    }
+    let px = Series::try_new(dates, vals).unwrap();
+
+    // Exact equivalence with volatility(..., Window(n, n - 1), Log, Some(af), zm)
+    for n_days in [3usize, 22, 25, 49, 50] {
+        let w = Window::Observations {
+            size: n_days,
+            ramp: n_days - 1,
+        };
+        for (af, zm) in [
+            (None, true),
+            (Some(252), true),
+            (Some(365), true),
+            (None, false),
+            (Some(0), true),
+        ] {
+            let wrap = vol_swap_volatility(&px, Some(n_days), af, zm).unwrap();
+            let direct = volatility(
+                &px,
+                w,
+                Some(ReturnKind::Logarithmic),
+                Some(af.unwrap_or(252)),
+                zm,
+            )
+            .unwrap();
+            assert_eq!(wrap.dates(), direct.dates());
+            for (&a, &b) in wrap.values().iter().zip(direct.values()) {
+                assert_eq!(a.to_bits(), b.to_bits());
+            }
+        }
+    }
+
+    // Default n_days = None matches Some(px.len())
+    let def_zm = vol_swap_volatility(&px, None, None, true).unwrap();
+    let full_zm = vol_swap_volatility(&px, Some(50), Some(252), true).unwrap();
+    assert_eq!(def_zm, full_zm);
+    assert_eq!(def_zm.dates().len(), 1);
+    assert_eq!(def_zm.dates()[0], date(2025, 2, 19));
+
+    // Custom annualization_factor 365 scales by sqrt(365/252); factor 0 scales finite values to 0.0
+    let v252 = vol_swap_volatility(&px, Some(22), None, true).unwrap();
+    let v365 = vol_swap_volatility(&px, Some(22), Some(365), true).unwrap();
+    let v0 = vol_swap_volatility(&px, Some(22), Some(0), true).unwrap();
+    let expected_ratio = (365.0_f64 / 252.0_f64).sqrt();
+    for (&a, &b) in v252.values().iter().zip(v365.values()) {
+        assert!(((b / a) - expected_ratio).abs() < 1e-12);
+    }
+    assert!(v0.values().iter().all(|&v| v == 0.0));
+
+    // assume_zero_mean = true vs false differ and match explicit RMS / sample formulas
+    let v_sample = vol_swap_volatility(&px, Some(22), None, false).unwrap();
+    assert!((v252.values()[0] - v_sample.values()[0]).abs() > 1e-6);
+
+    let log_rets: Vec<f64> = px
+        .values()
+        .windows(2)
+        .map(|w| w[1].ln() - w[0].ln())
+        .collect();
+    let win_rets = &log_rets[..21]; // 22 price days -> 21 log returns
+    let rms =
+        (win_rets.iter().map(|r| r * r).sum::<f64>() / 21.0).sqrt() * 252.0_f64.sqrt() * 100.0;
+    let mean = win_rets.iter().sum::<f64>() / 21.0;
+    let sample = (win_rets.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / 20.0).sqrt()
+        * 252.0_f64.sqrt()
+        * 100.0;
+    assert!((v252.values()[0] - rms).abs() < 1e-12);
+    assert!((v_sample.values()[0] - sample).abs() < 1e-12);
+
+    // Leap day 2020-02-29 preserved
+    let leap = Series::try_new(
+        vec![
+            date(2020, 2, 27),
+            date(2020, 2, 28),
+            date(2020, 2, 29),
+            date(2020, 3, 1),
+            date(2020, 3, 2),
+        ],
+        vec![100.0, 102.0, 101.0, 104.0, 103.5],
+    )
+    .unwrap();
+    let leap_vol = vol_swap_volatility(&leap, Some(3), None, true).unwrap();
+    assert_eq!(
+        leap_vol.dates(),
+        &[date(2020, 2, 29), date(2020, 3, 1), date(2020, 3, 2)]
+    );
+    assert!(leap_vol.values().iter().all(|v| v.is_finite() && *v > 0.0));
+}
+
+#[test]
+fn vol_swap_volatility_boundaries_empty_singleton_oversize_nan_and_determinism() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    // Empty input returns empty BEFORE validating n_days (including n_days = Some(0) and Some(5))
+    for n_days in [None, Some(0), Some(5)] {
+        for zm in [true, false] {
+            let res = vol_swap_volatility(&empty, n_days, None, zm).unwrap();
+            assert!(res.dates().is_empty() && res.values().is_empty());
+        }
+    }
+
+    // Singleton -> [NaN] for both zero-mean and sample
+    let single = Series::try_new(vec![date(2024, 1, 1)], vec![100.0]).unwrap();
+    for zm in [true, false] {
+        let res = vol_swap_volatility(&single, None, None, zm).unwrap();
+        assert_eq!(res.dates(), &[date(2024, 1, 1)]);
+        assert!(res.values()[0].is_nan());
+    }
+
+    let dates: Vec<_> = (1..=6).map(|d| date(2024, 1, d)).collect();
+    let px = Series::try_new(
+        dates.clone(),
+        vec![100.0, 102.0, 101.0, 104.0, 103.0, 106.0],
+    )
+    .unwrap();
+
+    // n_days = Some(0) -> Err(Error::Window)
+    assert_eq!(
+        vol_swap_volatility(&px, Some(0), None, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        vol_swap_volatility(&px, Some(0), None, false),
+        Err(Error::Window)
+    );
+
+    // n_days = Some(1) -> Window(1, 0): first NaN, remaining sqrt(af) * |r_i| * 100 for zm=true, all NaN for zm=false
+    let n1_zm = vol_swap_volatility(&px, Some(1), Some(252), true).unwrap();
+    assert_eq!(n1_zm.dates(), px.dates());
+    assert!(n1_zm.values()[0].is_nan());
+    for i in 1..6 {
+        let r = (px.values()[i].ln() - px.values()[i - 1].ln()).abs();
+        let expected = 252.0_f64.sqrt() * r * 100.0;
+        assert!((n1_zm.values()[i] - expected).abs() < 1e-12);
+    }
+    let n1_sample = vol_swap_volatility(&px, Some(1), Some(252), false).unwrap();
+    assert_eq!(n1_sample.dates(), px.dates());
+    assert!(n1_sample.values().iter().all(|v| v.is_nan()));
+
+    // n_days = Some(2) -> Window(2, 1): index 0 of output is finite for zm=true, NaN for zm=false
+    let n2_zm = vol_swap_volatility(&px, Some(2), None, true).unwrap();
+    let n2_sample = vol_swap_volatility(&px, Some(2), None, false).unwrap();
+    assert_eq!(n2_zm.dates(), &dates[1..]);
+    assert!(n2_zm.values().iter().all(|v| v.is_finite()));
+    assert!(n2_sample.values()[0].is_nan());
+    assert!(n2_sample.values()[1..].iter().all(|v| v.is_finite()));
+
+    // Oversize: len + 1 returns empty, len + 2 returns Err(Error::Ramp)
+    let ov1 = vol_swap_volatility(&px, Some(7), None, true).unwrap();
+    assert!(ov1.dates().is_empty() && ov1.values().is_empty());
+    assert_eq!(
+        vol_swap_volatility(&px, Some(8), None, true),
+        Err(Error::Ramp)
+    );
+
+    // Constant prices -> 0.0
+    let const_px = Series::try_new(dates.clone(), vec![100.0; 6]).unwrap();
+    for zm in [true, false] {
+        let res = vol_swap_volatility(&const_px, Some(3), None, zm).unwrap();
+        assert_eq!(res.dates(), &dates[2..]);
+        assert!(res.values().iter().all(|&v| v == 0.0));
+    }
+
+    // NaN propagation: mid-series NaN creates two NaN log returns
+    let nan_px = Series::try_new(
+        dates.clone(),
+        vec![100.0, 102.0, f64::NAN, 104.0, 103.0, 106.0],
+    )
+    .unwrap();
+    let nan_zm = vol_swap_volatility(&nan_px, Some(3), None, true).unwrap();
+    let nan_sample = vol_swap_volatility(&nan_px, Some(3), None, false).unwrap();
+    assert_eq!(nan_zm.dates(), &dates[2..]);
+    assert!(nan_zm.values()[0].is_finite()); // window [NaN, r1, NaN] has 1 return
+    assert!(nan_zm.values()[1].is_finite()); // window [r1, NaN, NaN] has 1 return
+    assert!(nan_sample.values()[0].is_nan()); // count == 1 < 2
+    assert!(nan_sample.values()[1].is_nan()); // count == 1 < 2
+    assert!(nan_sample.values()[2].is_nan()); // window [NaN, NaN, r4] has 1 return
+    assert!(nan_sample.values()[3].is_finite()); // window [NaN, r4, r5] has 2 returns
+
+    // Non-positive prices -> Err(Error::NonPositivePrice)
+    let zero_px = Series::try_new(dates[..3].to_vec(), vec![100.0, 0.0, 102.0]).unwrap();
+    let neg_px = Series::try_new(dates[..3].to_vec(), vec![100.0, -1.0, 102.0]).unwrap();
+    assert_eq!(
+        vol_swap_volatility(&zero_px, Some(2), None, true),
+        Err(Error::NonPositivePrice)
+    );
+    assert_eq!(
+        vol_swap_volatility(&neg_px, Some(2), None, false),
+        Err(Error::NonPositivePrice)
+    );
+
+    // Bit-for-bit determinism across repeated calls
+    let run1 = vol_swap_volatility(&px, Some(4), Some(252), true).unwrap();
+    let run2 = vol_swap_volatility(&px, Some(4), Some(252), true).unwrap();
+    assert_eq!(run1.dates(), run2.dates());
+    for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+}
+
+#[test]
+fn corr_swap_correlation_equivalence_defaults_misaligned_and_leap_day() {
+    let dates: Vec<_> = (1..=10).map(|d| date(2025, 1, d)).collect();
+    let x = Series::try_new(
+        dates.clone(),
+        vec![
+            100.0, 101.8, 100.5, 103.2, 102.9, 105.4, 104.1, 106.7, 108.0, 107.2,
+        ],
+    )
+    .unwrap();
+    let y = Series::try_new(
+        dates.clone(),
+        vec![50.0, 51.2, 50.9, 52.4, 51.8, 53.0, 53.6, 54.1, 55.3, 54.4],
+    )
+    .unwrap();
+
+    // Upstream test_corr_swap_correlation equivalence for assume_zero_mean = false across window sizes
+    for w in [3usize, 5, 9] {
+        let direct = correlation(
+            &x,
+            &y,
+            Window::Observations {
+                size: w,
+                ramp: w - 1,
+            },
+            Some((ReturnKind::Logarithmic, ReturnKind::Logarithmic)),
+            false,
+        )
+        .unwrap();
+        let wrap = corr_swap_correlation(&x, &y, Some(w + 1), false).unwrap();
+        assert_eq!(wrap.dates(), direct.dates());
+        for (&a, &b) in wrap.values().iter().zip(direct.values()) {
+            assert_eq!(a.to_bits(), b.to_bits());
+        }
+
+        // assume_zero_mean = true yields distinct values in [-1, 1] matching manual formula
+        let zm = corr_swap_correlation(&x, &y, Some(w + 1), true).unwrap();
+        assert_eq!(zm.dates(), wrap.dates());
+        assert!(zm.values()[0].is_nan()); // masked by inner ramp on aligned returns
+        for &v in &zm.values()[1..] {
+            assert!(v.is_finite() && (-1.0..=1.0).contains(&v));
+        }
+        assert!((zm.values()[1] - wrap.values()[1]).abs() > 1e-4);
+
+        let rx: Vec<f64> = x
+            .values()
+            .windows(2)
+            .map(|p| p[1].ln() - p[0].ln())
+            .collect();
+        let ry: Vec<f64> = y
+            .values()
+            .windows(2)
+            .map(|p| p[1].ln() - p[0].ln())
+            .collect();
+        let cov: f64 = rx[..w]
+            .iter()
+            .zip(&ry[..w])
+            .map(|(a, b)| a * b)
+            .sum::<f64>()
+            / (w as f64);
+        let vx: f64 = rx[..w].iter().map(|a| a * a).sum::<f64>() / (w as f64);
+        let vy: f64 = ry[..w].iter().map(|b| b * b).sum::<f64>() / (w as f64);
+        let manual = cov / (vx.sqrt() * vy.sqrt());
+        assert!((zm.values()[1] - manual).abs() < 1e-12);
+    }
+
+    // Default n_days = None matches Some(x.len().min(y.len()))
+    let def_eq = corr_swap_correlation(&x, &y, None, true).unwrap();
+    let exp_eq = corr_swap_correlation(&x, &y, Some(10), true).unwrap();
+    assert_eq!(def_eq.dates(), exp_eq.dates());
+    for (&a, &b) in def_eq.values().iter().zip(exp_eq.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+
+    // Unequal lengths: default n_days uses min(x.len(), y.len())
+    let y_short = Series::try_new(dates[..6].to_vec(), y.values()[..6].to_vec()).unwrap();
+    let def_short = corr_swap_correlation(&x, &y_short, None, false).unwrap();
+    let exp_short = corr_swap_correlation(&x, &y_short, Some(6), false).unwrap();
+    assert_eq!(def_short.dates(), exp_short.dates());
+    for (&a, &b) in def_short.values().iter().zip(exp_short.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+
+    // Misaligned calendars: unmatched date in x becomes NaN
+    let mx = Series::try_new(
+        vec![
+            date(2024, 3, 1),
+            date(2024, 3, 2),
+            date(2024, 3, 3),
+            date(2024, 3, 4),
+            date(2024, 3, 5),
+            date(2024, 3, 6),
+        ],
+        vec![100.0, 102.0, 104.0, 103.0, 106.0, 108.0],
+    )
+    .unwrap();
+    let my = Series::try_new(
+        vec![
+            date(2024, 3, 1),
+            date(2024, 3, 3),
+            date(2024, 3, 4),
+            date(2024, 3, 5),
+            date(2024, 3, 6),
+        ],
+        vec![200.0, 206.0, 204.0, 210.0, 215.0],
+    )
+    .unwrap();
+    let mis_f = corr_swap_correlation(&mx, &my, Some(4), false).unwrap();
+    assert_eq!(mis_f.dates(), &mx.dates()[2..]);
+    assert!(mis_f.values()[0].is_nan()); // only 1 aligned non-NaN return pair so far
+    assert!(mis_f.values()[1..].iter().all(|v| v.is_finite()));
+
+    // Leap day 2020-02-29 preserved
+    let leap_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 2, 29),
+        date(2020, 3, 1),
+        date(2020, 3, 2),
+        date(2020, 3, 3),
+    ];
+    let lx = Series::try_new(
+        leap_dates.clone(),
+        vec![100.0, 102.0, 101.0, 104.0, 103.0, 106.0],
+    )
+    .unwrap();
+    let ly = Series::try_new(leap_dates.clone(), vec![50.0, 51.5, 50.2, 52.0, 52.5, 54.0]).unwrap();
+    let leap_zm = corr_swap_correlation(&lx, &ly, Some(4), true).unwrap();
+    assert_eq!(leap_zm.dates(), &leap_dates[2..]);
+    assert_eq!(leap_zm.dates()[0], date(2020, 2, 29));
+    assert!(leap_zm.values()[0].is_nan());
+    assert!(leap_zm.values()[1..]
+        .iter()
+        .all(|v| v.is_finite() && (-1.0..=1.0).contains(v)));
+}
+
+#[test]
+fn corr_swap_correlation_boundaries_empty_singleton_irregular_constant_and_determinism() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    let dates: Vec<_> = (1..=6).map(|d| date(2024, 1, d)).collect();
+    let x = Series::try_new(
+        dates.clone(),
+        vec![100.0, 102.0, 101.0, 104.0, 103.0, 106.0],
+    )
+    .unwrap();
+    let y = Series::try_new(dates.clone(), vec![50.0, 51.5, 50.2, 52.0, 52.5, 54.0]).unwrap();
+
+    // Empty x combinations return empty BEFORE validating n_days
+    for n_days in [None, Some(0), Some(1), Some(5)] {
+        for zm in [true, false] {
+            let ee = corr_swap_correlation(&empty, &empty, n_days, zm).unwrap();
+            assert!(ee.dates().is_empty() && ee.values().is_empty());
+            let ey = corr_swap_correlation(&empty, &y, n_days, zm).unwrap();
+            assert!(ey.dates().is_empty() && ey.values().is_empty());
+        }
+    }
+
+    // Non-empty x, empty y
+    assert_eq!(
+        corr_swap_correlation(&x, &empty, None, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        corr_swap_correlation(&x, &empty, Some(4), true),
+        Err(Error::AnnualizationFactor)
+    );
+    let x_empty_f = corr_swap_correlation(&x, &empty, Some(4), false).unwrap();
+    assert_eq!(x_empty_f.dates(), &dates[2..]);
+    assert!(x_empty_f.values().iter().all(|v| v.is_nan()));
+
+    // Singleton -> Err(Error::Window)
+    let single = Series::try_new(vec![date(2024, 1, 1)], vec![100.0]).unwrap();
+    assert_eq!(
+        corr_swap_correlation(&single, &single, None, true),
+        Err(Error::Window)
+    );
+
+    // n_days = Some(0) and Some(1) -> Err(Error::Window)
+    for bad in [0usize, 1] {
+        assert_eq!(
+            corr_swap_correlation(&x, &y, Some(bad), true),
+            Err(Error::Window)
+        );
+        assert_eq!(
+            corr_swap_correlation(&x, &y, Some(bad), false),
+            Err(Error::Window)
+        );
+    }
+
+    // n_days = Some(2) -> Window(1, 0): zm=true yields NaN then +-1.0; zm=false yields all NaN
+    let n2_zm = corr_swap_correlation(&x, &y, Some(2), true).unwrap();
+    assert_eq!(n2_zm.dates(), x.dates());
+    assert!(n2_zm.values()[0].is_nan());
+    for &v in &n2_zm.values()[1..] {
+        assert!((v.abs() - 1.0).abs() < 1e-12);
+    }
+    let n2_f = corr_swap_correlation(&x, &y, Some(2), false).unwrap();
+    assert!(n2_f.values().iter().all(|v| v.is_nan()));
+
+    // 2-point series with n_days = None: zm=true -> Error::AnnualizationFactor, zm=false -> [NaN, NaN]
+    let two_x = Series::try_new(dates[..2].to_vec(), vec![100.0, 102.0]).unwrap();
+    let two_y = Series::try_new(dates[..2].to_vec(), vec![50.0, 51.0]).unwrap();
+    assert_eq!(
+        corr_swap_correlation(&two_x, &two_y, None, true),
+        Err(Error::AnnualizationFactor)
+    );
+    let two_f = corr_swap_correlation(&two_x, &two_y, None, false).unwrap();
+    assert_eq!(two_f.dates(), &dates[..2]);
+    assert!(two_f.values().iter().all(|v| v.is_nan()));
+
+    // Irregular 3-day spacing: zm=true -> Error::AnnualizationFactor; zm=false -> finite Pearson
+    let irreg_dates = vec![
+        date(2024, 1, 1),
+        date(2024, 1, 4),
+        date(2024, 1, 7),
+        date(2024, 1, 10),
+        date(2024, 1, 13),
+    ];
+    let ix = Series::try_new(irreg_dates.clone(), vec![100.0, 102.0, 101.0, 104.0, 103.0]).unwrap();
+    let iy = Series::try_new(irreg_dates.clone(), vec![50.0, 51.0, 50.5, 52.0, 51.5]).unwrap();
+    assert_eq!(
+        corr_swap_correlation(&ix, &iy, Some(4), true),
+        Err(Error::AnnualizationFactor)
+    );
+    let irreg_f = corr_swap_correlation(&ix, &iy, Some(4), false).unwrap();
+    assert_eq!(irreg_f.dates(), &irreg_dates[2..]);
+    assert!(irreg_f.values().iter().all(|&v| (v - 1.0).abs() < 1e-12));
+
+    // Constant x (both constant price 100.0 and constant log-return 100.0 * 1.25^i) -> NaN for zm=false
+    let const_px = Series::try_new(dates.clone(), vec![100.0; 6]).unwrap();
+    let const_lr = Series::try_new(
+        dates.clone(),
+        vec![100.0, 125.0, 156.25, 195.3125, 244.140625, 305.17578125],
+    )
+    .unwrap();
+    for cx in [&const_px, &const_lr] {
+        let cf = corr_swap_correlation(cx, &y, Some(4), false).unwrap();
+        assert_eq!(cf.dates(), &dates[2..]);
+        assert!(cf.values().iter().all(|v| v.is_nan()));
+    }
+    let const_px_zm = corr_swap_correlation(&const_px, &y, Some(4), true).unwrap();
+    assert!(const_px_zm.values().iter().all(|v| v.is_nan()));
+    let const_lr_zm = corr_swap_correlation(&const_lr, &y, Some(4), true).unwrap();
+    assert!(const_lr_zm.values()[0].is_nan());
+    assert!(const_lr_zm.values()[1..].iter().all(|v| v.is_finite()));
+
+    // Oversize n_days boundaries (x.len() == 6)
+    assert_eq!(
+        corr_swap_correlation(&x, &y, Some(7), true),
+        Err(Error::AnnualizationFactor)
+    );
+    let ov7_f = corr_swap_correlation(&x, &y, Some(7), false).unwrap();
+    assert_eq!(ov7_f.dates(), &[date(2024, 1, 6)]);
+    assert!(ov7_f.values()[0].is_finite());
+    assert_eq!(
+        corr_swap_correlation(&x, &y, Some(8), true),
+        Err(Error::Ramp)
+    );
+    let ov8_f = corr_swap_correlation(&x, &y, Some(8), false).unwrap();
+    assert!(ov8_f.dates().is_empty());
+    assert_eq!(
+        corr_swap_correlation(&x, &y, Some(9), false),
+        Err(Error::Ramp)
+    );
+
+    // Non-positive price in x or y -> Err(Error::NonPositivePrice)
+    let nonpos = Series::try_new(dates[..4].to_vec(), vec![100.0, 0.0, 102.0, 103.0]).unwrap();
+    let ok4 = Series::try_new(dates[..4].to_vec(), vec![50.0, 51.0, 52.0, 53.0]).unwrap();
+    assert_eq!(
+        corr_swap_correlation(&nonpos, &ok4, Some(3), true),
+        Err(Error::NonPositivePrice)
+    );
+    assert_eq!(
+        corr_swap_correlation(&ok4, &nonpos, Some(3), false),
+        Err(Error::NonPositivePrice)
+    );
+
+    // Bit-for-bit determinism across repeated calls
+    let run1 = corr_swap_correlation(&x, &y, Some(4), true).unwrap();
+    let run2 = corr_swap_correlation(&x, &y, Some(4), true).unwrap();
+    assert_eq!(run1.dates(), run2.dates());
+    for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
 }
