@@ -140,3 +140,22 @@ Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timese
 - Excluded from scope: negative integer spans (`Option<usize>` makes them unrepresentable in Rust), `DatetimeIndex` / time zones, duplicate or unsorted indices, and pandas nullable extension dtypes distinct from `NaN`.
 
 `python3 parity/check-macd.py --replay` verifies all 49 cases (43 value outputs and 6 typed errors) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN`/`±Inf` classification, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-macd.py /path/to/gs-quant` regenerates `parity/macd-vectors.json` directly from the pinned upstream checkout.
+
+## Prices parity (`parity/prices-vectors.json`)
+
+Upstream sources at `70220e300524d54bd273be0f4c485d53b3780482`: `gs_quant/timeseries/econometrics.py:prices` (lines 353–421); `gs_quant/timeseries/statistics.py:{product,sum_}` (lines 438–533). Upstream `test_econometrics.py::test_prices` (1 passed, 7 assertions in the pinned Python environment). All vectors use a Python `datetime.date` index.
+
+- Upstream `test_prices` suite (6 of 7 assertions retained): `test-prices-empty-default`, `test-prices-simple-default`, `test-prices-simple-init100-default-kind`, `test-prices-simple-init100-explicit`, `test-prices-log-init100`, and `test-prices-abs-init100`. Excluded: `prices(r, 1, "None")` (`MqValueError`) is unrepresentable in Rust because `kind` is typed as `Option<ReturnKind>` (`Simple`, `Logarithmic`, `Absolute`).
+- Bundled synthetic boundary suite (`pinned-boundaries-1.json`, all 35 cases covered — 2 overlapping with `test_prices` above plus 33 distinct cases: 32 value outputs + 1 typed error):
+  - Mode & non-missing baselines: `log-init100-pinned`, `abs-init100-pinned`, `simple-no-nan`, `log-no-nan`, `abs-no-nan`.
+  - Empty, singleton `NaN`, all-`NaN`, and leading/internal `NaN` across all 3 modes: `empty-{simple,log,abs}`, `singleton-nan-{simple,log,abs}`, `all-nan-{simple,log,abs}`, `leading-nans-{simple,log,abs}`.
+  - Collapse, `< -1.0` returns, `±Inf` skipping, and log overflow/underflow: `simple-minus-one-collapse` (including `-0.0` after `-2.0`), `simple-neg-lt-minus-one`, `simple-inf-pos`, `simple-inf-neg`, `log-inf-pos` (`+Inf` skipped, `-Inf` → `0.0`), `log-overflow-800` (`OverflowError` → `Error::Overflow`), `log-underflow-neg800`, `abs-inf`.
+  - `initial` boundaries & irregular leap-day calendar: `init-zero-simple`, `init-neg-zero-simple`, `init-neg-zero-abs`, `init-negative-simple`, `init-nan-simple`, `init-inf-simple`, `init-nan-empty`, `irregular-leap` (`2020-02-29`).
+- Additional boundary probes (`boundaries-extra`, 15 cases — 12 value outputs + 3 typed errors):
+  - Cumulative product overflow & interaction with underflow / `-1.0`: `log-cumprod-overflow` (`[709.0, 709.0]` → `+Inf`), `log-cumprod-overflow-then-underflow`, `simple-cumprod-overflow`.
+  - Tight `math.exp` overflow boundaries & precedence: `log-overflow-after-pos-inf`, `log-overflow-nan-initial`, `log-near-max-finite`, `log-just-over-max-overflow` (`OverflowError` → `Error::Overflow`).
+  - Signed-zero empty-prefix vs finite-prefix in `Absolute` and negative-`Inf` / negative-zero `initial`: `abs-all-nan-init-neg-zero`, `abs-leading-nan-neg-zero`, `abs-init-neg-inf`, `log-init-neg-zero`, `log-init-neg-inf-underflow`.
+  - `returns` → `prices` round-trip on irregular dates crossing leap day `2020-02-29`: `roundtrip-leap-{simple,logarithmic,absolute}`.
+- Excluded from scope: invalid string return kinds (`Option<ReturnKind>` makes them unrepresentable in Rust), `DatetimeIndex` / time zones, duplicate or unsorted indices, pandas nullable extension dtypes distinct from `NaN`, and extreme `ReturnKind::Absolute` finite-sum overflow/cancellation inputs (e.g. `[1e308, 1e308, -1e308]`) where pandas `rolling().sum()` compensated Kahan summation emits `NaN` while Rust plain `f64` summation stays `+Inf` (documented in `README.md`).
+
+`python3 parity/check-prices.py --replay` verifies all 54 cases (50 value outputs and 4 typed errors) with tolerance `1e-12 + 1e-10 * abs(expected)`, exact dates, exact `NaN`/`±Inf` classification, exact signed zeros, and exact Rust error variants. `PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-prices.py /path/to/gs-quant` regenerates `parity/prices-vectors.json` directly from the pinned upstream checkout.
