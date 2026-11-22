@@ -1,6 +1,7 @@
 use quantus_math::{
-    beta, correlation, exponential_moving_average, max_drawdown, moving_average, returns,
-    smoothed_moving_average, volatility, Date, Error, ReturnKind, Series, Window,
+    beta, correlation, exponential_moving_average, max_drawdown, moving_average,
+    relative_strength_index, returns, smoothed_moving_average, volatility, Date, Error, ReturnKind,
+    Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -1811,5 +1812,344 @@ fn smma_empty_singleton_and_invalid_window_errors() {
     assert_eq!(
         smoothed_moving_average(&multi, Window::Observations { size: 2, ramp: 7 }),
         Err(Error::Ramp)
+    );
+}
+
+#[test]
+fn rsi_default_and_observation_windows() {
+    let spx_dates = vec![
+        date(2020, 1, 2),
+        date(2020, 1, 3),
+        date(2020, 1, 6),
+        date(2020, 1, 7),
+        date(2020, 1, 8),
+        date(2020, 1, 9),
+        date(2020, 1, 10),
+        date(2020, 1, 13),
+        date(2020, 1, 14),
+        date(2020, 1, 15),
+        date(2020, 1, 16),
+        date(2020, 1, 17),
+        date(2020, 1, 21),
+        date(2020, 1, 22),
+        date(2020, 1, 23),
+        date(2020, 1, 24),
+        date(2020, 1, 27),
+        date(2020, 1, 28),
+        date(2020, 1, 29),
+        date(2020, 1, 30),
+        date(2020, 1, 31),
+        date(2020, 2, 3),
+    ];
+    let spx_values = vec![
+        3257.8501, 3234.8501, 3246.28, 3237.1799, 3253.05, 3274.7, 3265.3501, 3288.1299, 3283.1499,
+        3289.29, 3316.8101, 3329.6201, 3320.79, 3321.75, 3325.54, 3295.47, 3243.6299, 3276.24,
+        3273.3999, 3283.6599, 3225.52, 3248.9199,
+    ];
+    let spx = Series::try_new(spx_dates.clone(), spx_values).unwrap();
+
+    // Default None equals explicit Observations { size: 14, ramp: 14 }
+    let def = relative_strength_index(&spx, None).unwrap();
+    let exp14 =
+        relative_strength_index(&spx, Some(Window::Observations { size: 14, ramp: 14 })).unwrap();
+    assert_eq!(def.dates(), &spx_dates[15..]);
+    assert_eq!(def.dates(), exp14.dates());
+    assert!(def
+        .values()
+        .iter()
+        .zip(exp14.values())
+        .all(|(a, b)| a.to_bits() == b.to_bits()));
+    let expected_spx = [
+        66.35898836410378,
+        50.99376669117847,
+        57.63855067827995,
+        56.91474740753822,
+        58.92161739096986,
+        45.88013675902517,
+        50.617629713259795,
+    ];
+    for (&actual, &expected) in def.values().iter().zip(&expected_spx) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Specified observation windows (size 3 ramp 3 vs ramp 0, size 1 ramp 0)
+    let dates10: Vec<_> = (1..=10).map(|d| date(2020, 1, d)).collect();
+    let mixed = Series::try_new(
+        dates10.clone(),
+        vec![10.0, 12.0, 11.0, 13.0, 13.0, 9.0, 10.5, 14.0, 12.0, 15.0],
+    )
+    .unwrap();
+    let obs3_r3 =
+        relative_strength_index(&mixed, Some(Window::Observations { size: 3, ramp: 3 })).unwrap();
+    assert_eq!(obs3_r3.dates(), &dates10[4..]);
+    assert!((obs3_r3.values()[0] - (200.0 / 3.0)).abs() < 1e-12);
+    assert!((obs3_r3.values()[5] - 70.00547345374932).abs() < 1e-12);
+
+    let obs3_r0 =
+        relative_strength_index(&mixed, Some(Window::Observations { size: 3, ramp: 0 })).unwrap();
+    assert_eq!(obs3_r0.dates(), &dates10[1..]);
+    assert_eq!(obs3_r0.values()[0], 100.0);
+    assert_eq!(obs3_r0.values()[1], 80.0);
+    assert_eq!(obs3_r0.values()[2], 87.5);
+    assert_eq!(obs3_r0.values()[3], 87.5);
+
+    let obs1 = relative_strength_index(
+        &Series::try_new(dates10[..5].to_vec(), vec![10.0, 12.0, 11.0, 13.0, 13.0]).unwrap(),
+        Some(Window::Observations { size: 1, ramp: 0 }),
+    )
+    .unwrap();
+    assert_eq!(obs1.dates(), &dates10[1..5]);
+    assert_eq!(obs1.values(), &[100.0, 0.0, 100.0, 100.0]);
+}
+
+#[test]
+fn rsi_calendar_windows_and_leap_day_irregular_dates() {
+    let dates10: Vec<_> = (1..=10).map(|d| date(2020, 1, d)).collect();
+    let inc = Series::try_new(dates10.clone(), (1..=10).map(f64::from).collect()).unwrap();
+    let inc_3d = relative_strength_index(&inc, Some(Window::Days { size: 3, ramp: 3 })).unwrap();
+    assert_eq!(inc_3d.dates(), &dates10[4..]);
+    assert_eq!(inc_3d.values(), &[100.0; 6]);
+
+    let mixed = Series::try_new(
+        dates10.clone(),
+        vec![10.0, 12.0, 11.0, 13.0, 13.0, 9.0, 10.5, 14.0, 12.0, 15.0],
+    )
+    .unwrap();
+    let mix_3d = relative_strength_index(&mixed, Some(Window::Days { size: 3, ramp: 3 })).unwrap();
+    assert_eq!(mix_3d.dates(), &dates10[4..]);
+    assert!((mix_3d.values()[0] - (200.0 / 3.0)).abs() < 1e-12);
+    assert!((mix_3d.values()[5] - 66.5086887835703).abs() < 1e-12);
+
+    // Irregular dates crossing leap day 2020-02-29
+    let irreg_dates = vec![
+        date(2020, 2, 27),
+        date(2020, 2, 28),
+        date(2020, 3, 2),
+        date(2020, 3, 4),
+        date(2020, 3, 7),
+        date(2020, 3, 10),
+        date(2020, 3, 14),
+        date(2020, 3, 20),
+    ];
+    let irreg = Series::try_new(
+        irreg_dates.clone(),
+        vec![10.0, 12.0, 11.0, 14.0, 12.0, 12.0, 15.0, 9.0],
+    )
+    .unwrap();
+
+    let irreg_obs2 =
+        relative_strength_index(&irreg, Some(Window::Observations { size: 2, ramp: 2 })).unwrap();
+    assert_eq!(irreg_obs2.dates(), &irreg_dates[3..]);
+    assert_eq!(irreg_obs2.values(), &[75.0, 37.5, 37.5, 84.375, 21.09375]);
+
+    let irreg_4d =
+        relative_strength_index(&irreg, Some(Window::Days { size: 4, ramp: 4 })).unwrap();
+    assert_eq!(irreg_4d.dates(), &irreg_dates[3..]);
+    assert_eq!(irreg_4d.values(), &[75.0, 37.5, 37.5, 100.0, 0.0]);
+
+    let irreg_4d_r0 =
+        relative_strength_index(&irreg, Some(Window::Days { size: 4, ramp: 0 })).unwrap();
+    assert_eq!(irreg_4d_r0.dates(), &irreg_dates[1..]);
+    let expected_4d_r0 = [
+        100.0,
+        200.0 / 3.0,
+        800.0 / 9.0,
+        800.0 / 17.0,
+        800.0 / 17.0,
+        100.0,
+        0.0,
+    ];
+    for (&actual, &expected) in irreg_4d_r0.values().iter().zip(&expected_4d_r0) {
+        assert!((actual - expected).abs() < 1e-12);
+    }
+
+    // Extreme calendar dates handled via integer ordinals (beyond pandas DateOffset range)
+    let ancient = Series::try_new(
+        vec![date(1677, 9, 22), date(1677, 9, 23), date(1677, 9, 24)],
+        vec![10.0, 12.0, 11.0],
+    )
+    .unwrap();
+    let anc_out =
+        relative_strength_index(&ancient, Some(Window::Days { size: 2, ramp: 0 })).unwrap();
+    assert_eq!(anc_out.dates(), &[date(1677, 9, 23), date(1677, 9, 24)]);
+    assert!((anc_out.values()[0] - 100.0).abs() < 1e-12);
+    assert!((anc_out.values()[1] - (200.0 / 3.0)).abs() < 1e-12);
+    let huge_ramp = relative_strength_index(
+        &mixed,
+        Some(Window::Days {
+            size: 1_000_000,
+            ramp: 1_000_000,
+        }),
+    )
+    .unwrap();
+    assert!(huge_ramp.dates().is_empty() && huge_ramp.values().is_empty());
+}
+
+#[test]
+fn rsi_monotonic_constant_nan_inf_and_determinism() {
+    let dates10: Vec<_> = (1..=10).map(|d| date(2020, 1, d)).collect();
+    let dates6 = dates10[..6].to_vec();
+
+    let inc = Series::try_new(dates10.clone(), (1..=10).map(f64::from).collect()).unwrap();
+    let dec = Series::try_new(dates10.clone(), (1..=10).rev().map(f64::from).collect()).unwrap();
+    let flat = Series::try_new(dates10.clone(), vec![5.0; 10]).unwrap();
+    let nan_mid = Series::try_new(dates6.clone(), vec![1.0, 2.0, f64::NAN, 4.0, 3.0, 5.0]).unwrap();
+    let inf_mid =
+        Series::try_new(dates6.clone(), vec![1.0, 2.0, f64::INFINITY, 4.0, 3.0, 5.0]).unwrap();
+    let ninf_mid = Series::try_new(
+        dates6.clone(),
+        vec![1.0, 2.0, f64::NEG_INFINITY, 4.0, 3.0, 5.0],
+    )
+    .unwrap();
+
+    let cases = [
+        (&inc, Window::Observations { size: 3, ramp: 3 }),
+        (&dec, Window::Observations { size: 3, ramp: 3 }),
+        (&flat, Window::Observations { size: 3, ramp: 3 }),
+        (&nan_mid, Window::Observations { size: 2, ramp: 0 }),
+        (&inf_mid, Window::Observations { size: 2, ramp: 0 }),
+        (&ninf_mid, Window::Observations { size: 2, ramp: 0 }),
+    ];
+    for (series, window) in cases {
+        let a = relative_strength_index(series, Some(window)).unwrap();
+        let b = relative_strength_index(series, Some(window)).unwrap();
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
+            .all(|(x, y)| x.to_bits() == y.to_bits()));
+    }
+
+    let r_inc =
+        relative_strength_index(&inc, Some(Window::Observations { size: 3, ramp: 3 })).unwrap();
+    let r_dec =
+        relative_strength_index(&dec, Some(Window::Observations { size: 3, ramp: 3 })).unwrap();
+    let r_flat =
+        relative_strength_index(&flat, Some(Window::Observations { size: 3, ramp: 3 })).unwrap();
+    assert_eq!(r_inc.values(), &[100.0; 6]);
+    assert_eq!(r_dec.values(), &[0.0; 6]);
+    assert_eq!(r_flat.values(), &[100.0; 6]);
+
+    let r_nan =
+        relative_strength_index(&nan_mid, Some(Window::Observations { size: 2, ramp: 0 })).unwrap();
+    assert_eq!(r_nan.dates(), &dates6[1..]);
+    assert_eq!(r_nan.values()[0], 100.0);
+    assert!(r_nan.values()[1..].iter().all(|v| v.is_nan()));
+
+    let r_inf =
+        relative_strength_index(&inf_mid, Some(Window::Observations { size: 2, ramp: 0 })).unwrap();
+    assert_eq!(r_inf.dates(), &dates6[1..]);
+    assert_eq!(&r_inf.values()[..2], &[100.0, 100.0]);
+    assert!(r_inf.values()[2..].iter().all(|v| v.is_nan()));
+
+    let r_ninf =
+        relative_strength_index(&ninf_mid, Some(Window::Observations { size: 2, ramp: 0 }))
+            .unwrap();
+    assert_eq!(r_ninf.dates(), &dates6[1..]);
+    assert_eq!(&r_ninf.values()[..2], &[100.0, 0.0]);
+    assert!(r_ninf.values()[2..].iter().all(|v| v.is_nan()));
+}
+
+#[test]
+fn rsi_empty_short_expanding_and_error_boundaries() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    for w in [
+        None,
+        Some(Window::Expanding),
+        Some(Window::Observations { size: 3, ramp: 3 }),
+        Some(Window::Observations { size: 0, ramp: 0 }),
+        Some(Window::Days { size: 3, ramp: 0 }),
+    ] {
+        let out = relative_strength_index(&empty, w).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+    assert_eq!(
+        relative_strength_index(&empty, Some(Window::Days { size: 3, ramp: 3 })),
+        Err(Error::Ramp)
+    );
+
+    // Length 1: normalized against x (len 1), then gains is empty
+    let single = Series::try_new(vec![date(2020, 1, 1)], vec![5.0]).unwrap();
+    for w in [
+        Some(Window::Expanding),
+        Some(Window::Observations { size: 1, ramp: 0 }),
+        Some(Window::Observations { size: 1, ramp: 1 }),
+        Some(Window::Observations { size: 2, ramp: 0 }),
+        Some(Window::Days { size: 3, ramp: 0 }),
+    ] {
+        let out = relative_strength_index(&single, w).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+    assert_eq!(relative_strength_index(&single, None), Err(Error::Ramp));
+    assert_eq!(
+        relative_strength_index(&single, Some(Window::Observations { size: 2, ramp: 2 })),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        relative_strength_index(&single, Some(Window::Days { size: 3, ramp: 3 })),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        relative_strength_index(&single, Some(Window::Observations { size: 0, ramp: 0 })),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        relative_strength_index(&single, Some(Window::Days { size: 0, ramp: 0 })),
+        Err(Error::Window)
+    );
+
+    // Length 2: gains has length 1
+    let two = Series::try_new(vec![date(2020, 1, 1), date(2020, 1, 2)], vec![5.0, 6.0]).unwrap();
+    let two_obs1 =
+        relative_strength_index(&two, Some(Window::Observations { size: 1, ramp: 0 })).unwrap();
+    assert_eq!(two_obs1.dates(), &[date(2020, 1, 2)]);
+    assert_eq!(two_obs1.values(), &[100.0]);
+    for w in [
+        Some(Window::Expanding),
+        Some(Window::Observations { size: 1, ramp: 1 }),
+        Some(Window::Observations { size: 2, ramp: 0 }),
+    ] {
+        let out = relative_strength_index(&two, w).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+    assert_eq!(
+        relative_strength_index(&two, Some(Window::Observations { size: 2, ramp: 2 })),
+        Err(Error::Ramp)
+    );
+
+    // Multi-point series: Window::Expanding -> empty; ramp > len(gains) -> Error::Ramp; size == 0 -> Error::Window
+    let dates10: Vec<_> = (1..=10).map(|d| date(2020, 1, d)).collect();
+    let mixed = Series::try_new(
+        dates10,
+        vec![10.0, 12.0, 11.0, 13.0, 13.0, 9.0, 10.5, 14.0, 12.0, 15.0],
+    )
+    .unwrap();
+    assert!(relative_strength_index(&mixed, Some(Window::Expanding))
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(
+        relative_strength_index(&mixed, Some(Window::Observations { size: 3, ramp: 9 }))
+            .unwrap()
+            .values()
+            .is_empty()
+    );
+    assert_eq!(relative_strength_index(&mixed, None), Err(Error::Ramp));
+    assert_eq!(
+        relative_strength_index(&mixed, Some(Window::Observations { size: 3, ramp: 10 })),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        relative_strength_index(&mixed, Some(Window::Observations { size: 0, ramp: 0 })),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        relative_strength_index(&mixed, Some(Window::Days { size: 0, ramp: 0 })),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        relative_strength_index(&mixed, Some(Window::Days { size: 0, ramp: 3 })),
+        Err(Error::Window)
     );
 }

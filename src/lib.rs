@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, moving averages, exponential moving averages, smoothed moving averages, relative strength index, returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -1006,4 +1006,92 @@ pub fn smoothed_moving_average(x: &Series, window: Window) -> Result<Series, Err
     }
 
     Series::try_new(sliced_dates.to_vec(), out_values)
+}
+
+/// Relative Strength Index (RSI) on a `0.0` to `100.0` scale over a rolling window.
+///
+/// Mirrors upstream `gs_quant/timeseries/technicals.py:relative_strength_index` on a
+/// `datetime.date` index:
+///
+/// 1. Defaults `window` to `Window::Observations { size: 14, ramp: 14 }` when `None`, and
+///    normalizes `window` against the original series `x` (`Window::Expanding` becomes
+///    `Window::Observations { size: x.dates().len(), ramp: 0 }`).
+/// 2. Computes one-period price changes `diff(x, 1)[1:]` (length `x.dates().len().saturating_sub(1)`),
+///    splitting positive changes into `gains` and negated negative changes into `losses`.
+/// 3. Applies [`smoothed_moving_average`] with the normalized window to `gains` and `losses`.
+/// 4. At each output date, sets RSI to `100.0` when `avg_losses == 0.0` (including constant-price
+///    series where both `gains` and `losses` are zero), and otherwise computes
+///    `100.0 - 100.0 / (1.0 + avg_gains / avg_losses)`.
+///
+/// Because `Window::Expanding` normalizes to `size = x.dates().len()` while `gains` and `losses`
+/// have length `x.dates().len().saturating_sub(1)`, `Window::Expanding` always yields an empty
+/// `Series`. Empty input returns empty for `None`, `Window::Expanding`, `Window::Observations`,
+/// and `Window::Days { ramp: 0, .. }`, and returns `Err(Error::Ramp)` for `Window::Days` with
+/// `ramp > 0` (mapping upstream's `IndexError`). On non-empty input, `size == 0` returns
+/// `Err(Error::Window)` and observation `ramp > x.dates().len()` (or `ramp > gains.len()` when
+/// `gains` is non-empty) returns `Err(Error::Ramp)`.
+pub fn relative_strength_index(x: &Series, window: Option<Window>) -> Result<Series, Error> {
+    let normalized = match window.unwrap_or(Window::Observations { size: 14, ramp: 14 }) {
+        Window::Expanding => Window::Observations {
+            size: x.dates.len(),
+            ramp: 0,
+        },
+        w => w,
+    };
+    if !x.dates.is_empty() {
+        match normalized {
+            Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+                return Err(Error::Window)
+            }
+            Window::Observations { ramp, .. } if ramp > x.dates.len() => return Err(Error::Ramp),
+            _ => {}
+        }
+    }
+
+    let (gains, losses) = if x.dates.len() <= 1 {
+        (
+            Series::try_new(vec![], vec![])?,
+            Series::try_new(vec![], vec![])?,
+        )
+    } else {
+        let dates = x.dates[1..].to_vec();
+        let mut gain_values = Vec::with_capacity(dates.len());
+        let mut loss_values = Vec::with_capacity(dates.len());
+        for pair in x.values.windows(2) {
+            let change = pair[1] - pair[0];
+            let gain = if change < 0.0 { 0.0 } else { change };
+            let loss = if change > 0.0 {
+                0.0
+            } else if change < 0.0 {
+                -change
+            } else {
+                change
+            };
+            gain_values.push(gain);
+            loss_values.push(loss);
+        }
+        (
+            Series::try_new(dates.clone(), gain_values)?,
+            Series::try_new(dates, loss_values)?,
+        )
+    };
+
+    let moving_avg_gains = smoothed_moving_average(&gains, normalized)?;
+    let moving_avg_losses = smoothed_moving_average(&losses, normalized)?;
+
+    let rsi_values = moving_avg_gains
+        .values
+        .iter()
+        .zip(&moving_avg_losses.values)
+        .map(|(&avg_gain, &avg_loss)| {
+            if avg_loss == 0.0 {
+                100.0
+            } else {
+                let relative_strength = avg_gain / avg_loss;
+                100.0 - (100.0 / (1.0 + relative_strength))
+            }
+        })
+        .collect();
+
+    Series::try_new(moving_avg_gains.dates, rsi_values)
 }
