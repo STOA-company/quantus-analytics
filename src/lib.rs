@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -1809,5 +1809,411 @@ pub fn cov(x: &Series, y: &Series, window: Window) -> Result<Series, Error> {
 
             Series::try_new(out_dates, out_values)
         }
+    }
+}
+
+fn vec_norm2(xs: &[f64]) -> f64 {
+    let mut scale = 0.0_f64;
+    for &x in xs {
+        let a = x.abs();
+        if a > scale {
+            scale = a;
+        }
+    }
+    if scale == 0.0 || !scale.is_finite() {
+        return scale;
+    }
+    let mut sum_sq = 0.0_f64;
+    for &x in xs {
+        let r = x / scale;
+        sum_sq += r * r;
+    }
+    scale * sum_sq.sqrt()
+}
+
+/// Solves `min_beta ||A * beta - b||_2` via Householder QR with column pivoting.
+/// Returns `None` if `A` is rank-deficient or produces non-finite coefficients.
+fn solve_window_qr(x_win: &[Vec<f64>], y_win: &[f64], k: usize) -> Option<Vec<f64>> {
+    let w = y_win.len();
+    let mut cols: Vec<Vec<f64>> = (0..k)
+        .map(|c| x_win.iter().map(|row| row[c]).collect())
+        .collect();
+    let mut qtb = y_win.to_vec();
+    let mut perm: Vec<usize> = (0..k).collect();
+    let mut v = vec![0.0_f64; w];
+
+    for j in 0..k {
+        let mut piv = j;
+        let mut best_norm = vec_norm2(&cols[j][j..w]);
+        for (c, col) in cols.iter().enumerate().skip(j + 1) {
+            let n = vec_norm2(&col[j..w]);
+            if n > best_norm {
+                best_norm = n;
+                piv = c;
+            }
+        }
+        if piv != j {
+            cols.swap(j, piv);
+            perm.swap(j, piv);
+        }
+        if !best_norm.is_finite() || best_norm == 0.0 {
+            return None;
+        }
+
+        let x0 = cols[j][j];
+        let r_jj = if x0 >= 0.0 { -best_norm } else { best_norm };
+        let v0 = x0 - r_jj;
+        let len = w - j;
+        v[0] = 1.0;
+        let mut v_norm_sq = 1.0_f64;
+        for (vm_out, &xj) in v[1..len].iter_mut().zip(&cols[j][j + 1..w]) {
+            let vm = xj / v0;
+            *vm_out = vm;
+            v_norm_sq += vm * vm;
+        }
+        let beta_h = 2.0 / v_norm_sq;
+        cols[j][j] = r_jj;
+
+        for col in cols.iter_mut().skip(j + 1) {
+            let mut dot = col[j];
+            for (&vm, &cm) in v[1..len].iter().zip(&col[j + 1..w]) {
+                dot += vm * cm;
+            }
+            let factor = beta_h * dot;
+            col[j] -= factor;
+            for (&vm, cm) in v[1..len].iter().zip(&mut col[j + 1..w]) {
+                *cm -= factor * vm;
+            }
+        }
+
+        let mut dot_b = qtb[j];
+        for (&vm, &bm) in v[1..len].iter().zip(&qtb[j + 1..w]) {
+            dot_b += vm * bm;
+        }
+        let factor_b = beta_h * dot_b;
+        qtb[j] -= factor_b;
+        for (&vm, bm) in v[1..len].iter().zip(&mut qtb[j + 1..w]) {
+            *bm -= factor_b * vm;
+        }
+    }
+
+    let r00 = cols[0][0].abs();
+    if !r00.is_finite() || r00 == 0.0 {
+        return None;
+    }
+    let tol = (w.max(k) as f64) * f64::EPSILON * r00;
+    for (j, col) in cols.iter().enumerate() {
+        let rjj = col[j].abs();
+        if !rjj.is_finite() || rjj <= tol {
+            return None;
+        }
+    }
+
+    let mut z = vec![0.0_f64; k];
+    for j in (0..k).rev() {
+        let mut rhs = qtb[j];
+        for c in (j + 1)..k {
+            rhs -= cols[c][j] * z[c];
+        }
+        let zj = rhs / cols[j][j];
+        if !zj.is_finite() {
+            return None;
+        }
+        z[j] = zj;
+    }
+
+    let mut beta = vec![0.0_f64; k];
+    for j in 0..k {
+        beta[perm[j]] = z[j];
+    }
+    Some(beta)
+}
+
+/// Offline multi-factor rolling ordinary least squares regression.
+///
+/// Mirrors upstream `gs_quant/timeseries/statistics.py:RollingLinearRegression` (lines 1173–1257)
+/// on a `datetime.date` index, solving each rolling window via pure-Rust Householder QR
+/// decomposition with column pivoting:
+///
+/// - **Predictor alignment and intercept (`sm.add_constant(..., has_constant='skip')`):**
+///   - Rejects an empty `predictors` slice with `Err(Error::Length)`.
+///   - Outer-joins all `predictors` onto the sorted union of their dates (`pred_union_dates`),
+///     filling missing dates with `f64::NAN`.
+///   - When `fit_intercept` is `true`, prepends a constant `1.0` column unless any predictor column
+///     on `pred_union_dates` is already globally non-zero constant without `NaN` or `±Inf`
+///     (`!pred_union_dates.is_empty()`, every entry finite, non-zero, and equal to the first entry).
+///     Output columns are indexed `0..k_cols`.
+///   - When `fit_intercept` is `false`, no constant column is prepended and output columns are
+///     indexed `1..=k_cols`.
+/// - **Window validation and inner alignment with `y`:**
+///   - Requires `window > k_cols` (validated before alignment), returning `Err(Error::Window)`
+///     otherwise.
+///   - Filters out rows where any design-matrix entry or `y` is non-finite (`NaN` or `±Inf`) and
+///     inner-joins with `y`.
+///   - Requires `aligned_dates.len() >= window`, returning `Err(Error::Window)` otherwise.
+/// - **Per-window OLS solve and outputs:**
+///   - The first `window - 1` aligned dates emit `f64::NAN` across all output series.
+///   - Each trailing window of length `window` is factored via Householder QR with column pivoting.
+///     If `|R[0][0]| == 0`, non-finite, or any diagonal `|R[j][j]| <= max(window, k_cols) * f64::EPSILON * |R[0][0]|`
+///     (or any back-substituted coefficient is non-finite), the window is rank-deficient and emits
+///     `f64::NAN` across all outputs.
+///   - `r_squared` uses centered `SST` (`sum((y - mean_y)^2)`) when any column of the aligned
+///     design matrix is globally non-zero constant (`has_constant`), and uncentered `SST`
+///     (`sum(y^2)`) otherwise, matching `statsmodels.RollingOLS`. When `SST == 0.0`, `r_squared` is
+///     `f64::NAN`.
+///   - `fitted_values` evaluates `dot(X_aligned[idx], beta)` at each window's right endpoint, and
+///     `standard_deviation_of_errors` evaluates `sqrt(SSE / (window - k_cols))`.
+/// - **Documented upstream parity boundaries:**
+///   - **Constant `y` with intercept (`SST == 0`):** Rust returns `r_squared = NaN` and exact
+///     `std_err = +0.0` (exact `0 / 0`), whereas pinned `statsmodels 0.15.0` normal-equation
+///     residual noise (`SSE ~ 1e-29`) can yield `r_squared = -Inf` and `std_err ~ 1e-15..1e-14`.
+///   - **Ill-conditioned predictors (e.g. `1e7 + [1..6]` with intercept):** Rust Householder QR
+///     avoids squaring the condition number, recovering accurate coefficients, `r_squared`, and
+///     `std_err`, whereas pinned `statsmodels 0.15.0` normal equations `(X'X)^-1 X'y` lose ~5 digits
+///     (e.g. `-19884102.88` vs true `-19999999.0`).
+///   - **Singular / exact-collinear windows (rank-deficient `X`):** Rust Householder QR with
+///     column pivoting consistently detects rank deficiency
+///     (`|R[j][j]| <= max(window, k_cols) * f64::EPSILON * |R[0][0]|`) and emits `NaN` across
+///     every singular window and output, whereas pinned `statsmodels 0.15.0` incremental `X'X`
+///     normal-equation updates can leak floating-point roundoff on an exact rank-deficient window
+///     and emit a spurious finite solve (e.g. `coef[0] = 16.0`, `r_squared = -1.24295` on
+///     `[1, x_quad, 5]`, or `coef = [1.75, -9.953125, 4.7578125]`, `r_squared = -0.82570` on
+///     `[1, x_quad, 2 * x_quad + 3]`).
+///   - **Short or empty aligned series (`aligned.len() < window`):** Rust returns typed
+///     `Err(Error::Window)` vs upstream `IndexError` / `ValueError`.
+///   - **Empty predictor slice (`predictors.is_empty()`):** Rust returns typed `Err(Error::Length)`
+///     vs upstream `ValueError: No objects to concatenate`.
+///   - **Strictly increasing dates:** [`Series::try_new`] enforces strictly increasing unique dates
+///     on all input series.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RollingLinearRegression {
+    column_indices: Vec<usize>,
+    coefficients: Vec<Series>,
+    r_squared: Series,
+    fitted_values: Series,
+    standard_deviation_of_errors: Series,
+}
+
+impl RollingLinearRegression {
+    /// Fit a multi-factor rolling ordinary least squares regression over aligned finite rows.
+    pub fn fit(
+        predictors: &[Series],
+        y: &Series,
+        window: usize,
+        fit_intercept: bool,
+    ) -> Result<Self, Error> {
+        if predictors.is_empty() {
+            return Err(Error::Length);
+        }
+
+        let total_pred_dates: usize = predictors.iter().map(|s| s.dates.len()).sum();
+        let mut pred_union_dates = Vec::with_capacity(total_pred_dates);
+        for s in predictors {
+            pred_union_dates.extend_from_slice(&s.dates);
+        }
+        pred_union_dates.sort_unstable();
+        pred_union_dates.dedup();
+
+        let n_pred = pred_union_dates.len();
+        let mut pred_cols: Vec<Vec<f64>> = Vec::with_capacity(predictors.len());
+        for s in predictors {
+            let mut col = vec![f64::NAN; n_pred];
+            let mut j = 0usize;
+            for (i, &d) in pred_union_dates.iter().enumerate() {
+                if j < s.dates.len() && s.dates[j] == d {
+                    col[i] = s.values[j];
+                    j += 1;
+                }
+            }
+            pred_cols.push(col);
+        }
+
+        let is_nonzero_const = |col: &[f64]| {
+            !col.is_empty()
+                && col[0].is_finite()
+                && col[0] != 0.0
+                && col[1..].iter().all(|&v| v == col[0])
+        };
+        let prepend_const = fit_intercept && !pred_cols.iter().any(|c| is_nonzero_const(c));
+
+        let mut design_cols = Vec::with_capacity(predictors.len() + usize::from(prepend_const));
+        if prepend_const {
+            design_cols.push(vec![1.0_f64; n_pred]);
+        }
+        design_cols.extend(pred_cols);
+
+        let k_cols = design_cols.len();
+        let column_indices: Vec<usize> = if fit_intercept {
+            (0..k_cols).collect()
+        } else {
+            (1..=k_cols).collect()
+        };
+
+        if window <= k_cols {
+            return Err(Error::Window);
+        }
+
+        let mut aligned_dates = Vec::new();
+        let mut aligned_x: Vec<Vec<f64>> = Vec::new();
+        let mut aligned_y = Vec::new();
+        let mut i = 0usize;
+        let mut j = 0usize;
+        while i < pred_union_dates.len() && j < y.dates.len() {
+            match pred_union_dates[i].cmp(&y.dates[j]) {
+                std::cmp::Ordering::Less => i += 1,
+                std::cmp::Ordering::Greater => j += 1,
+                std::cmp::Ordering::Equal => {
+                    let yv = y.values[j];
+                    if yv.is_finite() && design_cols.iter().all(|col| col[i].is_finite()) {
+                        aligned_dates.push(pred_union_dates[i]);
+                        let mut row = Vec::with_capacity(k_cols);
+                        for col in &design_cols {
+                            row.push(col[i]);
+                        }
+                        aligned_x.push(row);
+                        aligned_y.push(yv);
+                    }
+                    i += 1;
+                    j += 1;
+                }
+            }
+        }
+
+        let n_aligned = aligned_dates.len();
+        if n_aligned < window {
+            return Err(Error::Window);
+        }
+
+        let const_col_idx = (0..k_cols).find(|&c| {
+            let v0 = aligned_x[0][c];
+            v0 != 0.0 && aligned_x[1..].iter().all(|row| row[c] == v0)
+        });
+        let has_constant = const_col_idx.is_some();
+
+        let mut coeff_vals: Vec<Vec<f64>> = vec![vec![f64::NAN; n_aligned]; k_cols];
+        let mut r_sq_vals = vec![f64::NAN; n_aligned];
+        let mut fitted_vals = vec![f64::NAN; n_aligned];
+        let mut std_err_vals = vec![f64::NAN; n_aligned];
+        let dof = (window - k_cols) as f64;
+
+        for idx in (window - 1)..n_aligned {
+            let win_start = idx + 1 - window;
+            let x_win = &aligned_x[win_start..=idx];
+            let y_win = &aligned_y[win_start..=idx];
+
+            if let Some(beta) = solve_window_qr(x_win, y_win, k_cols) {
+                let y_is_const = y_win[1..].iter().all(|&v| v == y_win[0]);
+                if let Some(c_const) = const_col_idx {
+                    if y_is_const {
+                        let y0 = y_win[0];
+                        let v0 = aligned_x[0][c_const];
+                        let b_const = y0 / v0;
+                        if b_const.is_finite() {
+                            for (c, col_out) in coeff_vals.iter_mut().enumerate() {
+                                col_out[idx] = if c == c_const { b_const } else { 0.0 };
+                            }
+                            fitted_vals[idx] = y0;
+                            r_sq_vals[idx] = f64::NAN;
+                            std_err_vals[idx] = 0.0;
+                        }
+                        continue;
+                    }
+                }
+
+                let mut fitted = 0.0_f64;
+                for (c, &b) in beta.iter().enumerate() {
+                    fitted += aligned_x[idx][c] * b;
+                }
+
+                let mut sse = 0.0_f64;
+                for (row, &yv) in x_win.iter().zip(y_win) {
+                    let mut yhat = 0.0_f64;
+                    for (c, &b) in beta.iter().enumerate() {
+                        yhat += row[c] * b;
+                    }
+                    let resid = yv - yhat;
+                    sse += resid * resid;
+                }
+                let std_err = (sse / dof).sqrt();
+
+                let sst = if has_constant {
+                    if y_is_const {
+                        0.0
+                    } else {
+                        let sum_y: f64 = y_win.iter().copied().sum();
+                        let mean_y = if sum_y.is_finite() {
+                            sum_y / window as f64
+                        } else {
+                            y_win.iter().map(|&v| v / window as f64).sum()
+                        };
+                        y_win
+                            .iter()
+                            .map(|&v| {
+                                let d = v - mean_y;
+                                d * d
+                            })
+                            .sum()
+                    }
+                } else {
+                    y_win.iter().map(|&v| v * v).sum()
+                };
+                let r_sq = if sst == 0.0 {
+                    f64::NAN
+                } else {
+                    1.0 - sse / sst
+                };
+
+                for (c, &b) in beta.iter().enumerate() {
+                    coeff_vals[c][idx] = b;
+                }
+                fitted_vals[idx] = fitted;
+                r_sq_vals[idx] = r_sq;
+                std_err_vals[idx] = std_err;
+            }
+        }
+
+        let mut coefficients = Vec::with_capacity(k_cols);
+        for vals in coeff_vals {
+            coefficients.push(Series::try_new(aligned_dates.clone(), vals)?);
+        }
+        let r_squared = Series::try_new(aligned_dates.clone(), r_sq_vals)?;
+        let fitted_values = Series::try_new(aligned_dates.clone(), fitted_vals)?;
+        let standard_deviation_of_errors = Series::try_new(aligned_dates, std_err_vals)?;
+
+        Ok(Self {
+            column_indices,
+            coefficients,
+            r_squared,
+            fitted_values,
+            standard_deviation_of_errors,
+        })
+    }
+
+    /// Column indices of the fitted design matrix (`0..k` with intercept, `1..=k` without).
+    pub fn column_indices(&self) -> &[usize] {
+        &self.column_indices
+    }
+
+    /// Rolling coefficient series for column `index`, or `None` if `index` is out of range.
+    pub fn coefficient(&self, index: usize) -> Option<&Series> {
+        self.column_indices
+            .iter()
+            .position(|&col| col == index)
+            .map(|pos| &self.coefficients[pos])
+    }
+
+    /// Rolling coefficient of determination (`R^2`).
+    pub fn r_squared(&self) -> &Series {
+        &self.r_squared
+    }
+
+    /// Rolling fitted values `dot(X[t], beta[t])` at each aligned date.
+    pub fn fitted_values(&self) -> &Series {
+        &self.fitted_values
+    }
+
+    /// Rolling standard deviation of residuals (`sqrt(SSE / (window - k))`).
+    pub fn standard_deviation_of_errors(&self) -> &Series {
+        &self.standard_deviation_of_errors
     }
 }

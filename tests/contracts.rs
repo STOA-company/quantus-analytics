@@ -1,7 +1,8 @@
 use quantus_math::{
     beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
     moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
-    std as series_std, volatility, BollingerBands, Date, Error, ReturnKind, Series, Window,
+    std as series_std, volatility, BollingerBands, Date, Error, ReturnKind,
+    RollingLinearRegression, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
@@ -3996,6 +3997,556 @@ fn cov_nan_infinities_constants_signed_zeros_large_offset_overflow_and_determini
             .values()
             .iter()
             .zip(r2.values())
+            .all(|(u, v)| u.to_bits() == v.to_bits()));
+    }
+}
+
+#[test]
+fn rolling_linear_regression_upstream_and_multi_factor() {
+    let d_jan = |day| date(2019, 1, day);
+
+    // 1. Upstream test_statistics.py::test_rolling_linear_regression
+    let x1 = Series::try_new(
+        (1..=7).map(d_jan).collect(),
+        vec![0.0, 1.0, 4.0, 9.0, 16.0, 25.0, f64::NAN],
+    )
+    .unwrap();
+    let x2 = Series::try_new(
+        (1..=8).map(d_jan).collect(),
+        vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+    )
+    .unwrap();
+    let y = Series::try_new(
+        (1..=7).map(d_jan).collect(),
+        vec![10.0, 14.0, 20.0, 28.0, 28.0, 40.0, 60.0],
+    )
+    .unwrap();
+
+    let reg = RollingLinearRegression::fit(&[x1.clone(), x2.clone()], &y, 4, true).unwrap();
+    let expected_dates: Vec<_> = (1..=6).map(d_jan).collect();
+    assert_eq!(reg.column_indices(), &[0, 1, 2]);
+    assert_eq!(reg.r_squared().dates(), expected_dates.as_slice());
+    assert_eq!(reg.fitted_values().dates(), expected_dates.as_slice());
+    assert_eq!(
+        reg.standard_deviation_of_errors().dates(),
+        expected_dates.as_slice()
+    );
+
+    let assert_ols_series = |actual: &Series, expected: &[f64]| {
+        assert_eq!(actual.dates(), expected_dates.as_slice());
+        for (&a, &e) in actual.values().iter().zip(expected) {
+            if e.is_nan() {
+                assert!(a.is_nan(), "expected NaN, got {a}");
+            } else {
+                assert!(
+                    (a - e).abs() <= 1e-10 + 1e-8 * e.abs(),
+                    "actual={a}, expected={e}"
+                );
+            }
+        }
+    };
+    assert_ols_series(
+        reg.coefficient(0).unwrap(),
+        &[f64::NAN, f64::NAN, f64::NAN, 10.0, 2.5, 19.0],
+    );
+    assert_ols_series(
+        reg.coefficient(1).unwrap(),
+        &[f64::NAN, f64::NAN, f64::NAN, 1.0, -1.5, 1.0],
+    );
+    assert_ols_series(
+        reg.coefficient(2).unwrap(),
+        &[f64::NAN, f64::NAN, f64::NAN, 3.0, 12.5, -1.0],
+    );
+    assert_ols_series(
+        reg.r_squared(),
+        &[
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            1.0,
+            0.9640287769784173,
+            0.9019607843137254,
+        ],
+    );
+    assert_ols_series(
+        reg.fitted_values(),
+        &[f64::NAN, f64::NAN, f64::NAN, 28.0, 28.5, 39.0],
+    );
+    assert_ols_series(
+        reg.standard_deviation_of_errors(),
+        &[
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            0.0,
+            2.236067977499789,
+            4.4721359549995805,
+        ],
+    );
+
+    // 2. Same upstream data with fit_intercept = false (column_indices = [1, 2], uncentered R^2)
+    let reg_no_int = RollingLinearRegression::fit(&[x1.clone(), x2.clone()], &y, 4, false).unwrap();
+    assert_eq!(reg_no_int.column_indices(), &[1, 2]);
+    assert!(reg_no_int.coefficient(0).is_none());
+    assert!(reg_no_int.coefficient(3).is_none());
+    assert!(reg_no_int.r_squared().values()[..3]
+        .iter()
+        .all(|v| v.is_nan()));
+    // Window [2..6]: x1=[4,9,16,25], x2=[2,3,4,5], y=[20,28,28,40]; uncentered R^2 finite in (0,1)
+    assert!(reg_no_int.r_squared().values()[5] > 0.9 && reg_no_int.r_squared().values()[5] < 1.0);
+    assert!(reg_no_int.standard_deviation_of_errors().values()[5] > 0.0);
+
+    // 3. 1-predictor models (with and without intercept, including minimum window k+1)
+    let d6: Vec<_> = (1..=6).map(|day| date(2020, 1, day)).collect();
+    let p1 = Series::try_new(d6.clone(), vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).unwrap();
+    let y1 = Series::try_new(d6.clone(), vec![3.0, 5.0, 7.0, 11.0, 11.0, 13.0]).unwrap();
+    let one_int = RollingLinearRegression::fit(std::slice::from_ref(&p1), &y1, 3, true).unwrap();
+    assert_eq!(one_int.column_indices(), &[0, 1]);
+    assert!(one_int.coefficient(0).unwrap().values()[..2]
+        .iter()
+        .all(|v| v.is_nan()));
+    // First window [1,2,3] -> [3,5,7]: exact intercept=1, slope=2, R^2=1, std_err=0
+    assert!((one_int.coefficient(0).unwrap().values()[2] - 1.0).abs() < 1e-10);
+    assert!((one_int.coefficient(1).unwrap().values()[2] - 2.0).abs() < 1e-10);
+    assert!((one_int.r_squared().values()[2] - 1.0).abs() < 1e-10);
+    assert!(one_int.standard_deviation_of_errors().values()[2].abs() < 1e-10);
+
+    let one_noint = RollingLinearRegression::fit(std::slice::from_ref(&p1), &y1, 2, false).unwrap();
+    assert_eq!(one_noint.column_indices(), &[1]);
+    assert!(one_noint.coefficient(1).unwrap().values()[0].is_nan());
+    // Window [1, 2] -> [3, 5]: beta = (1*3 + 2*5)/(1 + 4) = 13/5 = 2.6
+    assert!((one_noint.coefficient(1).unwrap().values()[1] - 2.6).abs() < 1e-10);
+    assert!((one_noint.fitted_values().values()[1] - 5.2).abs() < 1e-10);
+
+    // 4. 3-predictor models (with and without intercept, and window == aligned.len())
+    let d7: Vec<_> = (1..=7).map(|day| date(2020, 3, day)).collect();
+    let f1 = Series::try_new(d7.clone(), vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]).unwrap();
+    let f2 = Series::try_new(d7.clone(), vec![1.0, 4.0, 2.0, 5.0, 3.0, 6.0, 1.0]).unwrap();
+    let f3 = Series::try_new(d7.clone(), vec![2.0, 1.0, 5.0, 3.0, 7.0, 2.0, 8.0]).unwrap();
+    let y3 = Series::try_new(d7.clone(), vec![9.0, 11.0, 18.0, 22.0, 29.0, 27.0, 34.0]).unwrap();
+    let three_int =
+        RollingLinearRegression::fit(&[f1.clone(), f2.clone(), f3.clone()], &y3, 5, true).unwrap();
+    assert_eq!(three_int.column_indices(), &[0, 1, 2, 3]);
+    assert!(three_int.r_squared().values()[..4]
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(three_int.r_squared().values()[4..]
+        .iter()
+        .all(|v| v.is_finite()));
+
+    let three_noint =
+        RollingLinearRegression::fit(&[f1.clone(), f2.clone(), f3.clone()], &y3, 4, false).unwrap();
+    assert_eq!(three_noint.column_indices(), &[1, 2, 3]);
+    assert!(three_noint.r_squared().values()[..3]
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(three_noint.r_squared().values()[3..]
+        .iter()
+        .all(|v| v.is_finite()));
+
+    // Exact window == aligned.len(): only the final row is populated
+    let exact_len = RollingLinearRegression::fit(&[f1, f2, f3], &y3, 7, true).unwrap();
+    assert!(exact_len.r_squared().values()[..6]
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(exact_len.r_squared().values()[6].is_finite());
+}
+
+#[test]
+fn rolling_linear_regression_constant_skip_centered_r2_and_rank_deficiency() {
+    let d6: Vec<_> = (1..=6).map(|day| date(2020, 4, day)).collect();
+    let x1 = Series::try_new(d6.clone(), vec![1.0, 2.0, 4.0, 7.0, 11.0, 16.0]).unwrap();
+    let c5 = Series::try_new(d6.clone(), vec![5.0; 6]).unwrap();
+    let c0 = Series::try_new(d6.clone(), vec![0.0; 6]).unwrap();
+    let y = Series::try_new(d6.clone(), vec![12.0, 14.0, 19.0, 24.0, 33.0, 42.0]).unwrap();
+
+    // 1. sm.add_constant skips prepending 1.0 when a predictor is globally non-zero constant
+    let skipped = RollingLinearRegression::fit(&[x1.clone(), c5.clone()], &y, 3, true).unwrap();
+    assert_eq!(skipped.column_indices(), &[0, 1]);
+    let with_auto = RollingLinearRegression::fit(std::slice::from_ref(&x1), &y, 3, true).unwrap();
+    for idx in 2..6 {
+        // Slope matches and constant-5 coefficient equals intercept / 5
+        assert!(
+            (skipped.coefficient(0).unwrap().values()[idx]
+                - with_auto.coefficient(1).unwrap().values()[idx])
+                .abs()
+                < 1e-10
+        );
+        assert!(
+            (skipped.coefficient(1).unwrap().values()[idx] * 5.0
+                - with_auto.coefficient(0).unwrap().values()[idx])
+                .abs()
+                < 1e-10
+        );
+        assert!(
+            (skipped.r_squared().values()[idx] - with_auto.r_squared().values()[idx]).abs() < 1e-10
+        );
+    }
+
+    // 2. All-zero predictor is NOT skipped by sm.add_constant -> prepends 1.0 -> rank-deficient
+    let zero_pred = RollingLinearRegression::fit(&[x1.clone(), c0], &y, 4, true).unwrap();
+    assert_eq!(zero_pred.column_indices(), &[0, 1, 2]);
+    assert!(zero_pred.r_squared().values().iter().all(|v| v.is_nan()));
+    assert!(zero_pred
+        .fitted_values()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+
+    // 3. Constant predictor with NaN or differing outside y is NOT skipped -> prepends 1.0 -> collinear
+    let c5_nan = Series::try_new(d6.clone(), vec![5.0, 5.0, f64::NAN, 5.0, 5.0, 5.0]).unwrap();
+    let nan_no_skip = RollingLinearRegression::fit(&[x1.clone(), c5_nan], &y, 4, true).unwrap();
+    assert_eq!(nan_no_skip.column_indices(), &[0, 1, 2]);
+    assert_eq!(nan_no_skip.r_squared().dates().len(), 5);
+    assert!(nan_no_skip.r_squared().values().iter().all(|v| v.is_nan()));
+
+    let d7: Vec<_> = (1..=7).map(|day| date(2020, 4, day)).collect();
+    let c5_extra = Series::try_new(d7, vec![5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 9.0]).unwrap();
+    let extra_no_skip =
+        RollingLinearRegression::fit(&[x1.clone(), c5_extra.clone()], &y, 4, true).unwrap();
+    assert_eq!(extra_no_skip.column_indices(), &[0, 1, 2]);
+    assert_eq!(extra_no_skip.r_squared().dates().len(), 6);
+    for &col in extra_no_skip.column_indices() {
+        assert!(extra_no_skip
+            .coefficient(col)
+            .unwrap()
+            .values()
+            .iter()
+            .all(|v| v.is_nan()));
+    }
+    assert!(extra_no_skip
+        .r_squared()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(extra_no_skip
+        .fitted_values()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(extra_no_skip
+        .standard_deviation_of_errors()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+
+    // 4. has_constant: fit_intercept = false with globally constant predictor on aligned dates uses centered R^2
+    let noint_const = RollingLinearRegression::fit(&[x1.clone(), c5], &y, 4, false).unwrap();
+    let noint_const_aligned =
+        RollingLinearRegression::fit(&[x1.clone(), c5_extra], &y, 4, false).unwrap();
+    let auto_w4 = RollingLinearRegression::fit(std::slice::from_ref(&x1), &y, 4, true).unwrap();
+    let noint_plain =
+        RollingLinearRegression::fit(std::slice::from_ref(&x1), &y, 4, false).unwrap();
+    assert_eq!(noint_const.column_indices(), &[1, 2]);
+    assert_eq!(noint_const_aligned.column_indices(), &[1, 2]);
+    for idx in 3..6 {
+        // Centered R^2 matches fit_intercept = true
+        assert!(
+            (noint_const.r_squared().values()[idx] - auto_w4.r_squared().values()[idx]).abs()
+                < 1e-10
+        );
+        assert!(
+            (noint_const_aligned.r_squared().values()[idx] - auto_w4.r_squared().values()[idx])
+                .abs()
+                < 1e-10
+        );
+        // Uncentered R^2 without any constant differs from centered R^2
+        assert!(
+            (noint_plain.r_squared().values()[idx] - auto_w4.r_squared().values()[idx]).abs()
+                > 1e-3
+        );
+    }
+
+    // 5. Window-local constant predictor: first window NaN, later windows full-rank
+    let local_const = Series::try_new(d6.clone(), vec![2.0, 2.0, 2.0, 2.0, 5.0, 9.0]).unwrap();
+    let lc = RollingLinearRegression::fit(&[local_const], &y, 4, true).unwrap();
+    assert!(lc.r_squared().values()[..4].iter().all(|v| v.is_nan()));
+    assert!(lc.coefficient(0).unwrap().values()[3].is_nan());
+    assert!(lc.r_squared().values()[4].is_finite());
+    assert!(lc.r_squared().values()[5].is_finite());
+
+    // 6. Collinear predictors: full collinearity -> all NaN; partial collinearity -> early NaN then finite
+    let collin_all = Series::try_new(
+        d6.clone(),
+        x1.values().iter().map(|&v| 2.0 * v + 3.0).collect(),
+    )
+    .unwrap();
+    let col_all_reg = RollingLinearRegression::fit(&[x1.clone(), collin_all], &y, 4, true).unwrap();
+    assert_eq!(col_all_reg.column_indices(), &[0, 1, 2]);
+    for &col in col_all_reg.column_indices() {
+        assert!(col_all_reg
+            .coefficient(col)
+            .unwrap()
+            .values()
+            .iter()
+            .all(|v| v.is_nan()));
+    }
+    assert!(col_all_reg.r_squared().values().iter().all(|v| v.is_nan()));
+    assert!(col_all_reg
+        .fitted_values()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+    assert!(col_all_reg
+        .standard_deviation_of_errors()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+
+    let collin_part = Series::try_new(d6, vec![2.0, 4.0, 8.0, 14.0, 30.0, 50.0]).unwrap();
+    let col_part_reg = RollingLinearRegression::fit(&[x1, collin_part], &y, 4, true).unwrap();
+    assert!(col_part_reg.r_squared().values()[3].is_nan());
+    assert!(col_part_reg.r_squared().values()[4].is_finite());
+    assert!(col_part_reg.r_squared().values()[5].is_finite());
+}
+
+#[test]
+fn rolling_linear_regression_filtering_alignment_leap_day_and_errors() {
+    let d = |m, day| date(2020, m, day);
+
+    // 1. NaN / ±Inf row filtering across predictors and y
+    let dates8: Vec<_> = (1..=8).map(|day| d(5, day)).collect();
+    let x1 = Series::try_new(
+        dates8.clone(),
+        vec![1.0, f64::NAN, 2.0, 3.0, f64::INFINITY, 5.0, 7.0, 9.0],
+    )
+    .unwrap();
+    let x2 = Series::try_new(
+        dates8.clone(),
+        vec![2.0, 1.0, 5.0, f64::NEG_INFINITY, 4.0, 3.0, 8.0, 6.0],
+    )
+    .unwrap();
+    let y = Series::try_new(
+        dates8.clone(),
+        vec![5.0, 6.0, 10.0, 11.0, 12.0, f64::INFINITY, 25.0, 27.0],
+    )
+    .unwrap();
+    // Surviving dates: May 1, May 3, May 7, May 8 (4 rows)
+    let filt = RollingLinearRegression::fit(&[x1, x2], &y, 4, true).unwrap();
+    assert_eq!(
+        filt.r_squared().dates(),
+        &[d(5, 1), d(5, 3), d(5, 7), d(5, 8)]
+    );
+    assert!(filt.r_squared().values()[..3].iter().all(|v| v.is_nan()));
+    assert!(filt.r_squared().values()[3].is_finite());
+
+    // 2. Misaligned dates (outer-join predictors, inner-join with y)
+    let mx1 = Series::try_new(
+        vec![d(6, 1), d(6, 2), d(6, 3), d(6, 4), d(6, 5), d(6, 6)],
+        vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    )
+    .unwrap();
+    let mx2 = Series::try_new(
+        vec![d(6, 1), d(6, 3), d(6, 4), d(6, 5), d(6, 6), d(6, 7)],
+        vec![2.0, 1.0, 4.0, 2.0, 5.0, 9.0],
+    )
+    .unwrap();
+    let my = Series::try_new(
+        vec![d(6, 1), d(6, 2), d(6, 3), d(6, 4), d(6, 5), d(6, 7)],
+        vec![4.0, 99.0, 8.0, 13.0, 14.0, 88.0],
+    )
+    .unwrap();
+    // Complete finite aligned dates: Jun 1, Jun 3, Jun 4, Jun 5
+    let aligned = RollingLinearRegression::fit(&[mx1.clone(), mx2], &my, 4, true).unwrap();
+    assert_eq!(
+        aligned.r_squared().dates(),
+        &[d(6, 1), d(6, 3), d(6, 4), d(6, 5)]
+    );
+    assert!(aligned.r_squared().values()[3].is_finite());
+
+    // 3. Irregular dates crossing leap day 2020-02-29
+    let leap_dates = vec![d(2, 26), d(2, 28), d(2, 29), d(3, 2), d(3, 5), d(3, 9)];
+    let lx = Series::try_new(leap_dates.clone(), vec![1.0, 2.0, 4.0, 5.0, 8.0, 10.0]).unwrap();
+    let ly = Series::try_new(leap_dates.clone(), vec![2.0, 5.0, 8.0, 11.0, 15.0, 21.0]).unwrap();
+    let leap_reg = RollingLinearRegression::fit(std::slice::from_ref(&lx), &ly, 3, true).unwrap();
+    assert_eq!(leap_reg.r_squared().dates(), leap_dates.as_slice());
+    assert!(leap_reg.r_squared().values()[2..]
+        .iter()
+        .all(|v| v.is_finite()));
+
+    // 4. Error boundaries
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    // Empty predictors -> Error::Length (even when window == 0)
+    assert_eq!(
+        RollingLinearRegression::fit(&[], &ly, 4, true),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        RollingLinearRegression::fit(&[], &ly, 0, false),
+        Err(Error::Length)
+    );
+    // window <= k_cols -> Error::Window
+    assert_eq!(
+        RollingLinearRegression::fit(std::slice::from_ref(&lx), &ly, 0, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        RollingLinearRegression::fit(std::slice::from_ref(&lx), &ly, 2, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        RollingLinearRegression::fit(std::slice::from_ref(&lx), &ly, 1, false),
+        Err(Error::Window)
+    );
+    let c5 = Series::try_new(leap_dates, vec![5.0; 6]).unwrap();
+    // With const skip, k_cols = 2, so window = 2 fails while window = 3 succeeds
+    assert_eq!(
+        RollingLinearRegression::fit(&[lx.clone(), c5.clone()], &ly, 2, true),
+        Err(Error::Window)
+    );
+    assert!(RollingLinearRegression::fit(&[lx.clone(), c5], &ly, 3, true).is_ok());
+
+    // Short aligned series, empty series, and disjoint dates -> Error::Window
+    assert_eq!(
+        RollingLinearRegression::fit(std::slice::from_ref(&lx), &ly, 7, true),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        RollingLinearRegression::fit(std::slice::from_ref(&empty), &empty, 3, true),
+        Err(Error::Window)
+    );
+    let disj_y = Series::try_new(
+        vec![d(8, 1), d(8, 2), d(8, 3), d(8, 4)],
+        vec![1.0, 2.0, 3.0, 4.0],
+    )
+    .unwrap();
+    assert_eq!(
+        RollingLinearRegression::fit(&[mx1], &disj_y, 3, true),
+        Err(Error::Window)
+    );
+    // Short after NaN filtering
+    let short_y = Series::try_new(
+        vec![d(2, 26), d(2, 28), d(2, 29), d(3, 2), d(3, 5), d(3, 9)],
+        vec![1.0, f64::NAN, f64::INFINITY, 4.0, f64::NEG_INFINITY, 6.0],
+    )
+    .unwrap();
+    assert_eq!(
+        RollingLinearRegression::fit(&[lx], &short_y, 4, true),
+        Err(Error::Window)
+    );
+}
+
+#[test]
+fn rolling_linear_regression_const_zero_y_perfect_fit_ill_conditioned_and_determinism() {
+    let d6: Vec<_> = (1..=6).map(|day| date(2020, 7, day)).collect();
+    let x = Series::try_new(d6.clone(), vec![0.1, 0.3, 0.7, 1.3, 2.1, 3.1]).unwrap();
+
+    // 1. Constant y with intercept: exact beta=[5.3, 0.0], fitted=5.3, r_squared=NaN, std_err=+0.0
+    let y_const = Series::try_new(d6.clone(), vec![5.3; 6]).unwrap();
+    let const_reg =
+        RollingLinearRegression::fit(std::slice::from_ref(&x), &y_const, 4, true).unwrap();
+    for idx in 3..6 {
+        assert_eq!(const_reg.coefficient(0).unwrap().values()[idx], 5.3);
+        assert_eq!(const_reg.coefficient(1).unwrap().values()[idx], 0.0);
+        assert_eq!(const_reg.fitted_values().values()[idx], 5.3);
+        assert!(const_reg.r_squared().values()[idx].is_nan());
+        let se = const_reg.standard_deviation_of_errors().values()[idx];
+        assert!(se == 0.0 && se.is_sign_positive());
+    }
+    // Constant y on a rank-deficient window must still yield all NaN
+    let x_local_const = Series::try_new(d6.clone(), vec![2.0, 2.0, 2.0, 2.0, 5.0, 9.0]).unwrap();
+    let const_rank_def = RollingLinearRegression::fit(&[x_local_const], &y_const, 4, true).unwrap();
+    assert!(const_rank_def.coefficient(0).unwrap().values()[3].is_nan());
+    assert!(const_rank_def.fitted_values().values()[3].is_nan());
+    assert!(const_rank_def.standard_deviation_of_errors().values()[3].is_nan());
+    assert_eq!(const_rank_def.coefficient(0).unwrap().values()[4], 5.3);
+    assert_eq!(
+        const_rank_def.standard_deviation_of_errors().values()[4],
+        0.0
+    );
+
+    // 2. Zero y (with and without intercept) -> beta=0, fitted=0, std_err=+0.0, r_squared=NaN
+    let y_zero = Series::try_new(d6.clone(), vec![0.0; 6]).unwrap();
+    for fit_intercept in [true, false] {
+        let zreg =
+            RollingLinearRegression::fit(std::slice::from_ref(&x), &y_zero, 4, fit_intercept)
+                .unwrap();
+        for idx in 3..6 {
+            for &col in zreg.column_indices() {
+                assert_eq!(zreg.coefficient(col).unwrap().values()[idx], 0.0);
+            }
+            assert_eq!(zreg.fitted_values().values()[idx], 0.0);
+            assert!(zreg.r_squared().values()[idx].is_nan());
+            let se = zreg.standard_deviation_of_errors().values()[idx];
+            assert!(se == 0.0 && se.is_sign_positive());
+        }
+    }
+
+    // 3. Perfect fit (with and without intercept)
+    let x2 = Series::try_new(d6.clone(), vec![2.0, 1.0, 4.0, 2.0, 5.0, 3.0]).unwrap();
+    let y_perf = Series::try_new(
+        d6.clone(),
+        x.values()
+            .iter()
+            .zip(x2.values())
+            .map(|(&a, &b)| 3.0 + 2.0 * a - 0.5 * b)
+            .collect(),
+    )
+    .unwrap();
+    let perf = RollingLinearRegression::fit(&[x.clone(), x2.clone()], &y_perf, 4, true).unwrap();
+    for idx in 3..6 {
+        assert!((perf.coefficient(0).unwrap().values()[idx] - 3.0).abs() < 1e-10);
+        assert!((perf.coefficient(1).unwrap().values()[idx] - 2.0).abs() < 1e-10);
+        assert!((perf.coefficient(2).unwrap().values()[idx] - (-0.5)).abs() < 1e-10);
+        assert!((perf.r_squared().values()[idx] - 1.0).abs() < 1e-10);
+        assert!((perf.fitted_values().values()[idx] - y_perf.values()[idx]).abs() < 1e-10);
+        assert!(perf.standard_deviation_of_errors().values()[idx] < 1e-10);
+    }
+
+    // 4. Ill-conditioned predictor (1e7 + [1..6]) with intercept: Householder QR preserves accuracy
+    let x_ill = Series::try_new(d6.clone(), (1..=6).map(|k| 1e7 + k as f64).collect()).unwrap();
+    let y_ill = Series::try_new(d6, (1..=6).map(|k| 1.0 + 2.0 * k as f64).collect()).unwrap();
+    let ill = RollingLinearRegression::fit(std::slice::from_ref(&x_ill), &y_ill, 4, true).unwrap();
+    for idx in 3..6 {
+        let intercept = ill.coefficient(0).unwrap().values()[idx];
+        let slope = ill.coefficient(1).unwrap().values()[idx];
+        // True model: y = -19999999.0 + 2.0 * x
+        assert!(
+            (intercept - (-19_999_999.0)).abs() / 19_999_999.0 < 1e-8,
+            "intercept={intercept}"
+        );
+        assert!((slope - 2.0).abs() < 1e-8, "slope={slope}");
+        assert!((ill.r_squared().values()[idx] - 1.0).abs() < 1e-10);
+        assert!((ill.fitted_values().values()[idx] - y_ill.values()[idx]).abs() < 1e-7);
+        assert!(ill.standard_deviation_of_errors().values()[idx] < 1e-7);
+    }
+
+    // 5. Out-of-range coefficient(i) returns None
+    assert!(perf.coefficient(3).is_none());
+    assert!(perf.coefficient(99).is_none());
+    let noint = RollingLinearRegression::fit(&[x.clone(), x2], &y_perf, 4, false).unwrap();
+    assert!(noint.coefficient(0).is_none());
+    assert!(noint.coefficient(1).is_some());
+    assert!(noint.coefficient(2).is_some());
+    assert!(noint.coefficient(3).is_none());
+
+    // 6. Bitwise determinism across back-to-back calls
+    let run1 = RollingLinearRegression::fit(std::slice::from_ref(&x_ill), &y_ill, 4, true).unwrap();
+    let run2 = RollingLinearRegression::fit(&[x_ill], &y_ill, 4, true).unwrap();
+    assert_eq!(run1.column_indices(), run2.column_indices());
+    for &col in run1.column_indices() {
+        let a = run1.coefficient(col).unwrap();
+        let b = run2.coefficient(col).unwrap();
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
+            .all(|(u, v)| u.to_bits() == v.to_bits()));
+    }
+    for (a, b) in [
+        (run1.r_squared(), run2.r_squared()),
+        (run1.fitted_values(), run2.fitted_values()),
+        (
+            run1.standard_deviation_of_errors(),
+            run2.standard_deviation_of_errors(),
+        ),
+    ] {
+        assert_eq!(a.dates(), b.dates());
+        assert!(a
+            .values()
+            .iter()
+            .zip(b.values())
             .all(|(u, v)| u.to_bits() == v.to_bits()));
     }
 }
