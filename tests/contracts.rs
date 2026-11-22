@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, bollinger_bands, correlation, exponential_moving_average, macd, max_drawdown,
+    beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
     moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
     std as series_std, volatility, BollingerBands, Date, Error, ReturnKind, Series, Window,
 };
@@ -3467,4 +3467,535 @@ fn bollinger_bands_empty_singleton_oversize_ramp_and_errors() {
         bollinger_bands(&x, Window::Observations { size: 10, ramp: 10 }, None),
         Err(Error::Ramp)
     );
+}
+
+#[test]
+fn cov_upstream_values_and_window_ramp_variants() {
+    let dates = vec![
+        date(2019, 1, 1),
+        date(2019, 1, 2),
+        date(2019, 1, 3),
+        date(2019, 1, 4),
+        date(2019, 1, 7),
+        date(2019, 1, 8),
+    ];
+    let x = Series::try_new(dates.clone(), vec![3.0, 2.0, 3.0, 1.0, 3.0, 6.0]).unwrap();
+    let y = Series::try_new(dates.clone(), vec![3.5, 1.8, 2.9, 1.2, 3.1, 5.9]).unwrap();
+
+    // Upstream test_cov: Window::Expanding
+    let exp = cov(&x, &y, Window::Expanding).unwrap();
+    assert_eq!(exp.dates(), dates.as_slice());
+    assert!(exp.values()[0].is_nan());
+    let expected_exp = [0.85, 0.4666666666666667, 0.95, 0.825, 2.7];
+    for (i, &target) in expected_exp.iter().enumerate() {
+        assert!((exp.values()[i + 1] - target).abs() < 1e-12);
+    }
+
+    // Upstream test_cov: Window::Observations { size: 2, ramp: 0 }
+    let obs2 = cov(&x, &y, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(obs2.dates(), dates.as_slice());
+    assert!(obs2.values()[0].is_nan());
+    let expected_obs2 = [0.85, 0.55, 1.7, 1.9, 4.2];
+    for (i, &target) in expected_obs2.iter().enumerate() {
+        assert!((obs2.values()[i + 1] - target).abs() < 1e-12);
+    }
+
+    // Upstream test_cov: Window::Days { size: 7, ramp: 0 } ("1w")
+    let cal7d = cov(&x, &y, Window::Days { size: 7, ramp: 0 }).unwrap();
+    assert_eq!(cal7d.dates(), dates.as_slice());
+    assert!(cal7d.values()[0].is_nan());
+    let expected_7d = [0.85, 0.4666666666666667, 0.95, 0.825, 3.375];
+    for (i, &target) in expected_7d.iter().enumerate() {
+        assert!((cal7d.values()[i + 1] - target).abs() < 1e-12);
+    }
+
+    // Observation and calendar ramps
+    let obs3_r2 = cov(&x, &y, Window::Observations { size: 3, ramp: 2 }).unwrap();
+    let obs3_r0 = cov(&x, &y, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(obs3_r2.dates(), &dates[2..]);
+    assert_eq!(obs3_r2.values(), &obs3_r0.values()[2..]);
+
+    let cal3_r3 = cov(&x, &y, Window::Days { size: 3, ramp: 3 }).unwrap();
+    assert_eq!(cal3_r3.dates(), &dates[3..]);
+    assert!(cal3_r3.values()[1].is_nan()); // 2019-01-07 has only itself in (2019-01-04, 2019-01-07]
+    assert!((cal3_r3.values()[2] - 4.2).abs() < 1e-12);
+
+    // Size-1 observation & calendar windows -> all NaN
+    for w in [
+        Window::Observations { size: 1, ramp: 0 },
+        Window::Days { size: 1, ramp: 0 },
+    ] {
+        let out = cov(&x, &y, w).unwrap();
+        assert_eq!(out.dates(), dates.as_slice());
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+
+    // Symmetry cov(x, y) == cov(y, x) on shared dates, self-covariance == std^2, and negative cov
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 7, ramp: 0 },
+    ] {
+        let xy = cov(&x, &y, w).unwrap();
+        let yx = cov(&y, &x, w).unwrap();
+        assert_eq!(xy.dates(), yx.dates());
+        assert!(xy
+            .values()
+            .iter()
+            .zip(yx.values())
+            .all(|(a, b)| a.to_bits() == b.to_bits()));
+
+        let xx = cov(&x, &x, w).unwrap();
+        let sx = series_std(&x, w).unwrap();
+        assert_eq!(xx.dates(), sx.dates());
+        for (&v, &sd) in xx.values().iter().zip(sx.values()) {
+            if sd.is_nan() {
+                assert!(v.is_nan());
+            } else {
+                assert!((v - sd * sd).abs() < 1e-12);
+            }
+        }
+    }
+
+    let d5: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let up = Series::try_new(d5.clone(), vec![1.0, 2.0, 3.0, 4.0, 5.0]).unwrap();
+    let down = Series::try_new(d5, vec![10.0, 8.0, 6.0, 4.0, 2.0]).unwrap();
+    let neg = cov(&up, &down, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(neg.values()[0].is_nan());
+    assert!((neg.values()[1] - (-1.0)).abs() < 1e-12);
+    assert!(neg.values()[2..]
+        .iter()
+        .all(|&v| (v - (-2.0)).abs() < 1e-12));
+}
+
+#[test]
+fn cov_date_alignment_and_leap_day() {
+    let d = |m, day| date(2020, m, day);
+
+    // Partial overlap: x has 3 dates (Jan 1, 3, 5), y has 5 dates (Jan 1..5).
+    // Window::Expanding uses win_size = x.dates().len() == 3 across the 5-date union!
+    let px = Series::try_new(vec![d(1, 1), d(1, 3), d(1, 5)], vec![1.0, 3.0, 5.0]).unwrap();
+    let py = Series::try_new(
+        vec![d(1, 1), d(1, 2), d(1, 3), d(1, 4), d(1, 5)],
+        vec![2.0, 10.0, 6.0, 20.0, 10.0],
+    )
+    .unwrap();
+    let part_exp = cov(&px, &py, Window::Expanding).unwrap();
+    assert_eq!(part_exp.dates(), py.dates());
+    assert!(part_exp.values()[0].is_nan() && part_exp.values()[1].is_nan());
+    assert!((part_exp.values()[2] - 4.0).abs() < 1e-12);
+    assert!(part_exp.values()[3].is_nan()); // window [Jan 2, 3, 4] has only 1 matched pair (Jan 3)
+    assert!((part_exp.values()[4] - 4.0).abs() < 1e-12);
+
+    // Window::Observations where x.len() (3) < size (5) <= union.len() (5) returns non-empty union!
+    let part_obs5 = cov(&px, &py, Window::Observations { size: 5, ramp: 0 }).unwrap();
+    assert_eq!(part_obs5.dates(), py.dates());
+    assert!((part_obs5.values()[2] - 4.0).abs() < 1e-12);
+    assert!((part_obs5.values()[3] - 4.0).abs() < 1e-12);
+    assert!((part_obs5.values()[4] - 8.0).abs() < 1e-12);
+
+    // Subset (x ⊂ y) and superset (x ⊃ y) under Observations and Days
+    let sub_days = cov(&px, &py, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert_eq!(sub_days.dates(), px.dates());
+    assert!(sub_days.values()[0].is_nan());
+    assert!((sub_days.values()[1] - 4.0).abs() < 1e-12);
+    assert!((sub_days.values()[2] - 4.0).abs() < 1e-12);
+
+    let sup_days = cov(&py, &px, Window::Days { size: 4, ramp: 0 }).unwrap();
+    assert_eq!(sup_days.dates(), py.dates());
+    assert!(sup_days.values()[0].is_nan() && sup_days.values()[1].is_nan());
+    // At Jan 4 (unmatched in px), (Jan 0, Jan 4] still includes matched pairs Jan 1 and Jan 3!
+    assert!((sup_days.values()[2] - 4.0).abs() < 1e-12);
+    assert!((sup_days.values()[3] - 4.0).abs() < 1e-12);
+    assert!((sup_days.values()[4] - 4.0).abs() < 1e-12);
+
+    // Disjoint dates: Observations/Expanding return union dates all NaN; Days returns x.dates() all NaN
+    let dx = Series::try_new(vec![d(1, 1), d(1, 2), d(1, 3)], vec![1.0, 2.0, 3.0]).unwrap();
+    let dy = Series::try_new(vec![d(1, 4), d(1, 5), d(1, 6)], vec![4.0, 5.0, 6.0]).unwrap();
+    let disj_obs = cov(&dx, &dy, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(disj_obs.dates().len(), 6);
+    assert!(disj_obs.values().iter().all(|v| v.is_nan()));
+    let disj_days = cov(&dx, &dy, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(disj_days.dates(), dx.dates());
+    assert!(disj_days.values().iter().all(|v| v.is_nan()));
+
+    // Interleaved dates
+    let ix = Series::try_new(
+        vec![d(1, 1), d(1, 2), d(1, 4), d(1, 6)],
+        vec![1.0, 4.0, 2.0, 8.0],
+    )
+    .unwrap();
+    let iy = Series::try_new(
+        vec![d(1, 1), d(1, 3), d(1, 4), d(1, 5), d(1, 6)],
+        vec![2.0, 7.0, 5.0, 9.0, 14.0],
+    )
+    .unwrap();
+    let inter_obs = cov(&ix, &iy, Window::Observations { size: 4, ramp: 1 }).unwrap();
+    assert_eq!(
+        inter_obs.dates(),
+        &[d(1, 2), d(1, 3), d(1, 4), d(1, 5), d(1, 6)]
+    );
+    assert!(inter_obs.values()[0].is_nan() && inter_obs.values()[1].is_nan());
+    assert!((inter_obs.values()[2] - 1.5).abs() < 1e-12);
+    assert!(inter_obs.values()[3].is_nan());
+    assert!((inter_obs.values()[4] - 27.0).abs() < 1e-12);
+
+    let inter_days = cov(&ix, &iy, Window::Days { size: 4, ramp: 2 }).unwrap();
+    assert_eq!(inter_days.dates(), &[d(1, 4), d(1, 6)]);
+    assert!((inter_days.values()[0] - 1.5).abs() < 1e-12);
+    assert!((inter_days.values()[1] - 27.0).abs() < 1e-12);
+
+    // Leap day 2020-02-29 calendar windows
+    let leap_dates = vec![d(2, 27), d(2, 28), d(2, 29), d(3, 2), d(3, 5)];
+    let lx = Series::try_new(leap_dates.clone(), vec![1.0, 3.0, 2.0, 6.0, 10.0]).unwrap();
+    let ly = Series::try_new(leap_dates.clone(), vec![2.0, 5.0, 4.0, 11.0, 18.0]).unwrap();
+    let leap_3d = cov(&lx, &ly, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert_eq!(leap_3d.dates(), leap_dates.as_slice());
+    assert!(leap_3d.values()[0].is_nan());
+    assert!((leap_3d.values()[1] - 3.0).abs() < 1e-12);
+    assert!((leap_3d.values()[2] - 1.5).abs() < 1e-12);
+    // At 2020-03-02, (2020-02-28, 2020-03-02] includes leap day 2020-02-29 and 2020-03-02
+    assert!((leap_3d.values()[3] - 14.0).abs() < 1e-12);
+    assert!(leap_3d.values()[4].is_nan()); // 2020-03-05 is 3 days after 2020-03-02 (excluded)
+
+    let leap_3d_r3 = cov(&lx, &ly, Window::Days { size: 3, ramp: 3 }).unwrap();
+    assert_eq!(leap_3d_r3.dates(), &[d(3, 2), d(3, 5)]);
+    assert!((leap_3d_r3.values()[0] - 14.0).abs() < 1e-12);
+    assert!(leap_3d_r3.values()[1].is_nan());
+
+    // Documented boundary: Series::try_new enforces strictly increasing dates on both x and y
+    assert_eq!(
+        Series::try_new(vec![d(1, 2), d(1, 1)], vec![1.0, 2.0]),
+        Err(Error::UnsortedOrDuplicate)
+    );
+    assert_eq!(
+        Series::try_new(vec![d(1, 1), d(1, 1)], vec![1.0, 2.0]),
+        Err(Error::UnsortedOrDuplicate)
+    );
+}
+
+#[test]
+fn cov_empty_singleton_oversize_and_error_boundaries() {
+    let empty = Series::try_new(vec![], vec![]).unwrap();
+    let d5: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let x5 = Series::try_new(d5.clone(), vec![1.0, 2.0, 4.0, 7.0, 11.0]).unwrap();
+    let y5 = Series::try_new(d5.clone(), vec![2.0, 5.0, 3.0, 9.0, 12.0]).unwrap();
+
+    // Both empty: returns empty across all windows (including documented Days ramp > 0 vs IndexError)
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Observations { size: 0, ramp: 0 },
+        Window::Observations { size: 2, ramp: 5 },
+        Window::Days { size: 0, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 1 },
+    ] {
+        let out = cov(&empty, &empty, w).unwrap();
+        assert!(out.dates().is_empty() && out.values().is_empty());
+    }
+
+    // Empty x + non-empty y
+    assert_eq!(cov(&empty, &y5, Window::Expanding), Err(Error::Window));
+    assert_eq!(
+        cov(&empty, &y5, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&empty, &y5, Window::Observations { size: 0, ramp: 10 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&empty, &y5, Window::Observations { size: 2, ramp: 6 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        cov(&empty, &y5, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
+    );
+    let ey_obs2 = cov(&empty, &y5, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(ey_obs2.dates(), d5.as_slice());
+    assert!(ey_obs2.values().iter().all(|v| v.is_nan()));
+    let ey_obs2_r2 = cov(&empty, &y5, Window::Observations { size: 2, ramp: 2 }).unwrap();
+    assert_eq!(ey_obs2_r2.dates(), &d5[2..]);
+    assert!(ey_obs2_r2.values().iter().all(|v| v.is_nan()));
+    assert!(cov(&empty, &y5, Window::Observations { size: 2, ramp: 5 })
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(cov(&empty, &y5, Window::Observations { size: 10, ramp: 0 })
+        .unwrap()
+        .values()
+        .is_empty());
+    for w in [
+        Window::Days { size: 0, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 1 },
+    ] {
+        assert!(cov(&empty, &y5, w).unwrap().values().is_empty());
+    }
+
+    // Non-empty x + empty y
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = cov(&x5, &empty, w).unwrap();
+        assert_eq!(out.dates(), d5.as_slice());
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+    assert_eq!(
+        cov(&x5, &empty, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&x5, &empty, Window::Days { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&x5, &empty, Window::Observations { size: 2, ramp: 6 }),
+        Err(Error::Ramp)
+    );
+    assert!(cov(&x5, &empty, Window::Observations { size: 10, ramp: 0 })
+        .unwrap()
+        .values()
+        .is_empty());
+
+    // Singletons (same date and distinct dates)
+    let s1 = Series::try_new(vec![date(2020, 1, 1)], vec![5.0]).unwrap();
+    let s2 = Series::try_new(vec![date(2020, 1, 2)], vec![7.0]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 1, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+    ] {
+        let out = cov(&s1, &s1, w).unwrap();
+        assert_eq!(out.dates(), s1.dates());
+        assert!(out.values()[0].is_nan());
+    }
+    let s_diff = cov(&s1, &s2, Window::Observations { size: 2, ramp: 0 }).unwrap();
+    assert_eq!(s_diff.dates(), &[date(2020, 1, 1), date(2020, 1, 2)]);
+    assert!(s_diff.values().iter().all(|v| v.is_nan()));
+    assert!(cov(&s1, &s1, Window::Observations { size: 2, ramp: 0 })
+        .unwrap()
+        .values()
+        .is_empty());
+
+    // Oversize windows, ramp == len, Days oversize ramp, and error precedence
+    assert!(cov(&x5, &y5, Window::Observations { size: 10, ramp: 0 })
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(cov(&x5, &y5, Window::Observations { size: 2, ramp: 5 })
+        .unwrap()
+        .values()
+        .is_empty());
+    assert!(cov(&x5, &y5, Window::Days { size: 30, ramp: 30 })
+        .unwrap()
+        .values()
+        .is_empty());
+    assert_eq!(
+        cov(&x5, &y5, Window::Observations { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&x5, &y5, Window::Days { size: 0, ramp: 0 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&x5, &y5, Window::Observations { size: 0, ramp: 10 }),
+        Err(Error::Window)
+    );
+    assert_eq!(
+        cov(&x5, &y5, Window::Observations { size: 2, ramp: 6 }),
+        Err(Error::Ramp)
+    );
+    assert_eq!(
+        cov(&x5, &y5, Window::Observations { size: 10, ramp: 10 }),
+        Err(Error::Ramp)
+    );
+    // Partial overlap where ramp > x.len() (3) even though ramp <= union.len() (5) -> Error::Ramp
+    let x3 = Series::try_new(vec![d5[0], d5[2], d5[4]], vec![1.0, 3.0, 5.0]).unwrap();
+    assert_eq!(
+        cov(&x3, &y5, Window::Observations { size: 4, ramp: 4 }),
+        Err(Error::Ramp)
+    );
+}
+
+#[test]
+fn cov_nan_infinities_constants_signed_zeros_large_offset_overflow_and_determinism() {
+    let d5: Vec<_> = (1..=5).map(|d| date(2020, 1, d)).collect();
+    let lin5 = Series::try_new(d5.clone(), vec![1.0, 2.0, 3.0, 4.0, 5.0]).unwrap();
+
+    // NaN handling across Observations and Days
+    let x_nan = Series::try_new(d5.clone(), vec![1.0, f64::NAN, 3.0, 4.0, 5.0]).unwrap();
+    let y_nan = Series::try_new(d5.clone(), vec![2.0, 4.0, f64::NAN, 8.0, 10.0]).unwrap();
+    for w in [
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = cov(&x_nan, &y_nan, w).unwrap();
+        assert!(out.values()[..4].iter().all(|v| v.is_nan()));
+        assert!((out.values()[4] - 1.0).abs() < 1e-12);
+    }
+    let all_nan = Series::try_new(d5.clone(), vec![f64::NAN; 5]).unwrap();
+    for w in [
+        Window::Expanding,
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = cov(&all_nan, &lin5, w).unwrap();
+        assert!(out.values().iter().all(|v| v.is_nan()));
+    }
+
+    // ±Inf: skipped in Expanding / Observations; in Days, Inf paired with finite/Inf -> NaN,
+    // while Inf paired with NaN or an unmatched date is dropped first!
+    let x_inf = Series::try_new(d5.clone(), vec![1.0, f64::INFINITY, 3.0, 4.0, 5.0]).unwrap();
+    let y_fin = Series::try_new(d5.clone(), vec![2.0, 4.0, 6.0, 8.0, 10.0]).unwrap();
+    let y_nan_at_inf = Series::try_new(d5.clone(), vec![2.0, f64::NAN, 6.0, 8.0, 10.0]).unwrap();
+    let y_unmatched =
+        Series::try_new(vec![d5[0], d5[2], d5[3], d5[4]], vec![2.0, 6.0, 8.0, 10.0]).unwrap();
+
+    let inf_obs = cov(&x_inf, &y_fin, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(inf_obs.values()[0].is_nan() && inf_obs.values()[1].is_nan());
+    assert!((inf_obs.values()[2] - 4.0).abs() < 1e-12);
+    assert!((inf_obs.values()[3] - 1.0).abs() < 1e-12);
+    assert!((inf_obs.values()[4] - 2.0).abs() < 1e-12);
+
+    let inf_days_fin = cov(&x_inf, &y_fin, Window::Days { size: 3, ramp: 0 }).unwrap();
+    assert!(inf_days_fin.values()[..4].iter().all(|v| v.is_nan()));
+    assert!((inf_days_fin.values()[4] - 2.0).abs() < 1e-12);
+
+    for y_drop in [&y_nan_at_inf, &y_unmatched] {
+        let out = cov(&x_inf, y_drop, Window::Days { size: 3, ramp: 0 }).unwrap();
+        assert!(out.values()[0].is_nan() && out.values()[1].is_nan());
+        assert!((out.values()[2] - 4.0).abs() < 1e-12);
+        assert!((out.values()[3] - 1.0).abs() < 1e-12);
+        assert!((out.values()[4] - 2.0).abs() < 1e-12);
+    }
+
+    // Identical [+Inf, +Inf] paired with finite in Days must return NaN (not +0.0)
+    let all_inf = Series::try_new(d5[..2].to_vec(), vec![f64::INFINITY, f64::INFINITY]).unwrap();
+    let fin2 = Series::try_new(d5[..2].to_vec(), vec![1.0, 1.0]).unwrap();
+    assert!(cov(&all_inf, &fin2, Window::Days { size: 2, ramp: 0 })
+        .unwrap()
+        .values()
+        .iter()
+        .all(|v| v.is_nan()));
+
+    // Constants (4.2, 0.1, -0.0, mixed signed zeros) and orthogonal non-constant pairs -> exact +0.0
+    let c42 = Series::try_new(d5.clone(), vec![4.2; 5]).unwrap();
+    let c01 = Series::try_new(d5.clone(), vec![0.1; 5]).unwrap();
+    let cneg0 = Series::try_new(d5.clone(), vec![-0.0; 5]).unwrap();
+    let cmix0 = Series::try_new(d5.clone(), vec![-0.0, 0.0, -0.0, 0.0, -0.0]).unwrap();
+    for (a, b, w) in [
+        (&c42, &lin5, Window::Observations { size: 3, ramp: 0 }),
+        (&lin5, &c42, Window::Observations { size: 3, ramp: 0 }),
+        (&c01, &c01, Window::Days { size: 3, ramp: 0 }),
+        (&cneg0, &cneg0, Window::Observations { size: 3, ramp: 0 }),
+        (&cneg0, &lin5, Window::Days { size: 3, ramp: 0 }),
+        (&cmix0, &lin5, Window::Observations { size: 3, ramp: 0 }),
+    ] {
+        let out = cov(a, b, w).unwrap();
+        assert!(out.values()[0].is_nan());
+        for &v in &out.values()[1..] {
+            assert!(v == 0.0 && v.is_sign_positive());
+        }
+    }
+    let ox = Series::try_new(d5[..4].to_vec(), vec![1.0, 2.0, 1.0, 2.0]).unwrap();
+    let oy = Series::try_new(d5[..4].to_vec(), vec![1.0, 2.0, 3.0, 4.0]).unwrap();
+    let ortho = cov(&ox, &oy, Window::Observations { size: 3, ramp: 0 }).unwrap();
+    assert!(ortho.values()[2] == 0.0 && ortho.values()[2].is_sign_positive());
+    assert!(ortho.values()[3] == 0.0 && ortho.values()[3].is_sign_positive());
+
+    // Large-offset stability: two-pass centered covariance avoids pandas rolling().cov() cancellation
+    let lo_x = Series::try_new(
+        d5.clone(),
+        vec![1e9 + 1.0, 1e9 + 2.0, 1e9 + 4.0, 1e9 + 7.0, 1e9 + 11.0],
+    )
+    .unwrap();
+    let lo_y = Series::try_new(
+        d5.clone(),
+        vec![1e9 + 2.0, 1e9 + 5.0, 1e9 + 3.0, 1e9 + 9.0, 1e9 + 12.0],
+    )
+    .unwrap();
+    let expected_lo3 = [1.5, 1.0 / 3.0, 17.0 / 3.0, 15.5];
+    for w in [
+        Window::Observations { size: 3, ramp: 0 },
+        Window::Days { size: 3, ramp: 0 },
+    ] {
+        let out = cov(&lo_x, &lo_y, w).unwrap();
+        assert!(out.values()[0].is_nan());
+        for (i, &target) in expected_lo3.iter().enumerate() {
+            assert!((out.values()[i + 1] - target).abs() < 1e-12);
+        }
+    }
+    let lo_exp = cov(&lo_x, &lo_y, Window::Expanding).unwrap();
+    let expected_lo_exp = [1.5, 1.0 / 3.0, 41.0 / 6.0, 16.0];
+    for (i, &target) in expected_lo_exp.iter().enumerate() {
+        assert!((lo_exp.values()[i + 1] - target).abs() < 1e-12);
+    }
+
+    // Overflow ([1e308, -1e308]) and large same-sign overflow-safe mean fallback
+    let d2 = d5[..2].to_vec();
+    let ov_x = Series::try_new(d2.clone(), vec![1e308, -1e308]).unwrap();
+    let ov_y = Series::try_new(d2.clone(), vec![1e308, -1e308]).unwrap();
+    let ov_yn = Series::try_new(d2.clone(), vec![-1e308, 1e308]).unwrap();
+    for w in [
+        Window::Observations { size: 2, ramp: 0 },
+        Window::Days { size: 2, ramp: 0 },
+    ] {
+        let pos = cov(&ov_x, &ov_y, w).unwrap();
+        assert!(pos.values()[0].is_nan());
+        assert!(pos.values()[1].is_infinite() && pos.values()[1].is_sign_positive());
+        let neg = cov(&ov_x, &ov_yn, w).unwrap();
+        assert!(neg.values()[0].is_nan());
+        assert!(neg.values()[1].is_infinite() && neg.values()[1].is_sign_negative());
+    }
+    let big_same_x = Series::try_new(d2.clone(), vec![1e308, 1.2e308]).unwrap();
+    let big_same_y = Series::try_new(d2.clone(), vec![1.2e308, 1e308]).unwrap();
+    let small_y = Series::try_new(d2, vec![1.0, 2.0]).unwrap();
+    let big_anti = cov(
+        &big_same_x,
+        &big_same_y,
+        Window::Observations { size: 2, ramp: 0 },
+    )
+    .unwrap();
+    assert!(big_anti.values()[1].is_infinite() && big_anti.values()[1].is_sign_negative());
+    let big_fin = cov(
+        &big_same_x,
+        &small_y,
+        Window::Observations { size: 2, ramp: 0 },
+    )
+    .unwrap();
+    assert!((big_fin.values()[1] - 1e307).abs() / 1e307 < 1e-12);
+
+    // Back-to-back bitwise determinism across all edge inputs
+    let checks: [(&Series, &Series, Window); 10] = [
+        (&x_nan, &y_nan, Window::Observations { size: 3, ramp: 0 }),
+        (&x_inf, &y_fin, Window::Observations { size: 3, ramp: 0 }),
+        (&x_inf, &y_fin, Window::Days { size: 3, ramp: 0 }),
+        (&x_inf, &y_nan_at_inf, Window::Days { size: 3, ramp: 0 }),
+        (&c42, &lin5, Window::Observations { size: 3, ramp: 0 }),
+        (&c01, &c01, Window::Days { size: 3, ramp: 0 }),
+        (&cneg0, &cneg0, Window::Observations { size: 3, ramp: 0 }),
+        (&lo_x, &lo_y, Window::Observations { size: 3, ramp: 0 }),
+        (&ov_x, &ov_y, Window::Observations { size: 2, ramp: 0 }),
+        (
+            &big_same_x,
+            &small_y,
+            Window::Observations { size: 2, ramp: 0 },
+        ),
+    ];
+    for (a, b, w) in checks {
+        let r1 = cov(a, b, w).unwrap();
+        let r2 = cov(a, b, w).unwrap();
+        assert_eq!(r1.dates(), r2.dates());
+        assert!(r1
+            .values()
+            .iter()
+            .zip(r2.values())
+            .all(|(u, v)| u.to_bits() == v.to_bits()));
+    }
 }

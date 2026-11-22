@@ -1,5 +1,5 @@
 use quantus_math::{
-    beta, bollinger_bands, correlation, exponential_moving_average, macd, max_drawdown,
+    beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
     moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
     std as series_std, volatility, Date, ReturnKind, Series, Window,
 };
@@ -103,6 +103,13 @@ fn main() {
         let x = parse_rows(remaining[..len_x].iter().copied());
         let benchmark = parse_rows(remaining[len_x..].iter().copied());
         beta(&x, &benchmark, window, prices)
+    } else if args[0] == "cov" {
+        let window = parse_window(args[1], args[2], args[3]);
+        let len_x: usize = args[4].parse().unwrap();
+        let remaining: Vec<_> = lines.collect();
+        let x = parse_rows(remaining[..len_x].iter().copied());
+        let y = parse_rows(remaining[len_x..].iter().copied());
+        cov(&x, &y, window)
     } else {
         let series = parse_rows(lines);
         match args[0] {

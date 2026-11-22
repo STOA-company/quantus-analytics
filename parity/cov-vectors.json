@@ -1,0 +1,4548 @@
+{
+  "schema": "gsquant-cov-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/statistics.py:cov",
+    "gs_quant/timeseries/helper.py:normalize_window",
+    "gs_quant/timeseries/helper.py:apply_ramp"
+  ],
+  "cases": [
+    {
+      "id": "upstream-exp",
+      "source_ref": "test_statistics.py::test_cov",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.8499999999999996,
+          0.46666666666666634,
+          0.9499999999999993,
+          0.8249999999999991,
+          2.700000000000002
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "upstream-obs2",
+      "source_ref": "test_statistics.py::test_cov",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.8499999999999996,
+          0.5499999999999989,
+          1.6999999999999975,
+          1.9000000000000004,
+          4.200000000000003
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "upstream-1w",
+      "source_ref": "test_statistics.py::test_cov",
+      "operation": "cov",
+      "args": [
+        "days",
+        7,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.85,
+          0.4666666666666667,
+          0.95,
+          0.825,
+          3.3750000000000004
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "obs3-r0",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.8499999999999996,
+          0.46666666666666634,
+          0.8499999999999983,
+          1.1999999999999984,
+          5.950000000000003
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "obs3-r2",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        2
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.46666666666666634,
+          0.8499999999999983,
+          1.1999999999999984,
+          5.950000000000003
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "obs1-r0",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        1,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "obs-ramp-eq-len",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        6
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "obs-oversize",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        10,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "days3-r0",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.85,
+          0.4666666666666667,
+          0.85,
+          {
+            "special": "NaN"
+          },
+          4.2
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "days3-r3d",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          0.85,
+          {
+            "special": "NaN"
+          },
+          4.2
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "days1-r0",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "days",
+        1,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "days-oversize-ramp",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "days",
+        30,
+        30
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "neg-cov-obs3",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          10.0,
+          8.0,
+          6.0,
+          4.0,
+          2.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          -1.0,
+          -2.000000000000001,
+          -1.9999999999999982,
+          -2.000000000000001
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "self-cov-obs3",
+      "source_ref": "synthetic-windows",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.5,
+          0.3333333333333335,
+          1.0000000000000004,
+          1.3333333333333313,
+          6.333333333333332
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-partial-exp",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          10.0,
+          6.0,
+          20.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          },
+          4.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-partial-obs3-r0",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          4.0,
+          2.0,
+          8.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          2.0,
+          7.0,
+          5.0,
+          9.0,
+          14.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          27.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-partial-obs5-gt-lenx",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "observations",
+        5,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          10.0,
+          6.0,
+          20.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          4.0,
+          7.999999999999998
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-partial-days4-r0",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          4.0,
+          2.0,
+          8.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          2.0,
+          7.0,
+          5.0,
+          9.0,
+          14.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.5,
+          27.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-subset-x-in-y-obs3",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          10.0,
+          6.0,
+          20.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          {
+            "special": "NaN"
+          },
+          4.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-superset-x-of-y-days4",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          10.0,
+          6.0,
+          20.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          4.0,
+          4.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-disjoint-obs3",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          4.0,
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-disjoint-days3",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          4.0,
+          5.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-interleaved-obs4-r1",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "observations",
+        4,
+        1
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          4.0,
+          2.0,
+          8.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          2.0,
+          7.0,
+          5.0,
+          9.0,
+          14.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.5,
+          {
+            "special": "NaN"
+          },
+          27.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "align-interleaved-days4-r2d",
+      "source_ref": "synthetic-alignment",
+      "operation": "cov",
+      "args": [
+        "days",
+        4,
+        2
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          4.0,
+          2.0,
+          8.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          2.0,
+          7.0,
+          5.0,
+          9.0,
+          14.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-04",
+          "2020-01-06"
+        ],
+        "values": [
+          1.5,
+          27.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leap-days3-r0",
+      "source_ref": "synthetic-leap",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          2.0,
+          6.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          4.0,
+          11.0,
+          18.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          3.0,
+          1.5,
+          14.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leap-days3-r3d",
+      "source_ref": "synthetic-leap",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        3
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          2.0,
+          6.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          4.0,
+          11.0,
+          18.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          14.0,
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leap-days7-r0",
+      "source_ref": "synthetic-leap",
+      "operation": "cov",
+      "args": [
+        "days",
+        7,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          2.0,
+          6.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          4.0,
+          11.0,
+          18.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-27",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          3.0,
+          1.5,
+          8.333333333333332,
+          23.166666666666664
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-exp",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-obs2",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-obs0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-obs2-r5",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        5
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-days3-r0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-days0-r0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-obs2",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-obs2-r2",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        2
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-obs10",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        10,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-days3-r0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-exp-err",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-obs0-err",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-ramp-gt-y-err",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        6
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "nonempty-x-empty-y-exp",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          4.0,
+          7.0,
+          11.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nonempty-x-empty-y-days3-r0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          4.0,
+          7.0,
+          11.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-same-date-exp",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          7.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "singleton-diff-dates-obs2",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01"
+        ],
+        "values": [
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-02"
+        ],
+        "values": [
+          7.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "err-obs-size0",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "err-obs-size0-ramp-gt-len",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        0,
+        10
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window value must be greater than zero."
+      }
+    },
+    {
+      "id": "err-obs-ramp-gt-len",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        7
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "err-obs-oversize-ramp-gt-len",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        10,
+        10
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "err-partial-ramp-gt-lenx",
+      "source_ref": "synthetic-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        4,
+        4
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          3.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          10.0,
+          6.0,
+          20.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Ramp",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Ramp value must be less than the length of the series and greater than zero."
+      }
+    },
+    {
+      "id": "nan-mid-obs3",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "NaN"
+          },
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "nan-mid-days4",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "days",
+        4,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "NaN"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "NaN"
+          },
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          9.0,
+          1.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "all-nan-obs3",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-obs3-skip",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          1.0,
+          2.0000000000000036
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-exp-skip",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          {
+            "special": "-Inf"
+          },
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          4.0,
+          7.999999999999998
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-days3-finite-pair",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-days3-nan-pair",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          {
+            "special": "NaN"
+          },
+          6.0,
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          1.0,
+          2.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "inf-days3-unmatched",
+      "source_ref": "synthetic-nonfinite",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          {
+            "special": "+Inf"
+          },
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          6.0,
+          8.0,
+          10.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          4.0,
+          1.0,
+          2.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-exact-obs3",
+      "source_ref": "synthetic-zeros",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-neg0-obs3",
+      "source_ref": "synthetic-zeros",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-neg0-days3",
+      "source_ref": "synthetic-zeros",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "mixed-signed-zeros-obs3",
+      "source_ref": "synthetic-zeros",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          -0.0,
+          0.0,
+          -0.0,
+          0.0,
+          -0.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "ortho-zero-obs3",
+      "source_ref": "synthetic-zeros",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          1.0,
+          2.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.5,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "large-offset-days3",
+      "source_ref": "synthetic-stability",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000001.0,
+          1000000002.0,
+          1000000004.0,
+          1000000007.0,
+          1000000011.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000002.0,
+          1000000005.0,
+          1000000003.0,
+          1000000009.0,
+          1000000012.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          1.5,
+          0.3333333333333357,
+          5.666666666666664,
+          15.5
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "overflow-pos-obs2",
+      "source_ref": "synthetic-overflow",
+      "operation": "cov",
+      "args": [
+        "observations",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          1e+308,
+          -1e+308
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          1e+308,
+          -1e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "+Inf"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "overflow-neg-days2",
+      "source_ref": "synthetic-overflow",
+      "operation": "cov",
+      "args": [
+        "days",
+        2,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          1e+308,
+          -1e+308
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          -1e+308,
+          1e+308
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "err-days0",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.0,
+          2.0,
+          3.0,
+          1.0,
+          3.0,
+          6.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          3.5,
+          1.8,
+          2.9,
+          1.2,
+          3.1,
+          5.9
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_zero_day_offset_all_nan",
+      "rust_error": "Window",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-07",
+          "2019-01-08"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "empty-both-days3-r1d",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        1
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_empty_days_ramp_index_error",
+      "upstream_error": {
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "empty-x-nonempty-y-days3-r1d",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        1
+      ],
+      "input_x": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          3.0,
+          9.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_empty_days_ramp_index_error",
+      "upstream_error": {
+        "upstream_type": "IndexError",
+        "upstream_message": "index 0 is out of bounds for axis 0 with size 0"
+      }
+    },
+    {
+      "id": "const-42-obs3",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          4.2,
+          4.2,
+          4.2,
+          4.2,
+          4.2
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_constant_window_rounding_residue",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          -2.6645352591003757e-15,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-01-days3",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "days",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_constant_window_rounding_residue",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          2.8888949165808538e-34,
+          2.8888949165808538e-34,
+          2.8888949165808538e-34
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "large-offset-obs3",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "observations",
+        3,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000001.0,
+          1000000002.0,
+          1000000004.0,
+          1000000007.0,
+          1000000011.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000002.0,
+          1000000005.0,
+          1000000003.0,
+          1000000009.0,
+          1000000012.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_rolling_cov_large_offset_cancellation",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          -192.0,
+          0.0,
+          0.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "large-offset-exp",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "cov",
+      "args": [
+        "expanding",
+        0,
+        0
+      ],
+      "input_x": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000001.0,
+          1000000002.0,
+          1000000004.0,
+          1000000007.0,
+          1000000011.0
+        ],
+        "dtype": "float64"
+      },
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          1000000002.0,
+          1000000005.0,
+          1000000003.0,
+          1000000009.0,
+          1000000012.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "pandas_rolling_cov_large_offset_cancellation",
+      "output": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          {
+            "special": "NaN"
+          },
+          0.0,
+          -192.0,
+          0.0,
+          -160.0
+        ],
+        "unit": "input_product",
+        "dtype": "float64"
+      }
+    }
+  ]
+}
