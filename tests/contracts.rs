@@ -1,7 +1,9 @@
 use quantus_math::{
-    beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
-    moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
-    std as series_std, volatility, BollingerBands, Date, Error, ReturnKind,
+    beta, bollinger_bands, business_day_count, business_day_offset, correlation, cov,
+    day_count_fraction, exponential_moving_average, has_feb_29, is_business_day, macd,
+    max_drawdown, moving_average, prices, relative_strength_index, returns,
+    smoothed_moving_average, std as series_std, volatility, BollingerBands, Date,
+    DayCountConvention, Error, HolidayCalendar, PaymentFrequency, ReturnKind, Roll,
     RollingLinearRegression, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
@@ -4549,4 +4551,483 @@ fn rolling_linear_regression_const_zero_y_perfect_fit_ill_conditioned_and_determ
             .zip(b.values())
             .all(|(u, v)| u.to_bits() == v.to_bits()));
     }
+}
+
+#[test]
+fn calendar_has_feb_29_and_day_count_fraction() {
+    // Date accessors
+    let d_leap = date(2020, 2, 29);
+    assert_eq!(d_leap.year(), 2020);
+    assert_eq!(d_leap.month(), 2);
+    assert_eq!(d_leap.day(), 29);
+
+    // has_feb_29: start exclusive, end inclusive (upstream test_has_feb_29 + century rules)
+    assert!(has_feb_29(date(2020, 1, 1), date(2020, 3, 1)));
+    assert!(has_feb_29(date(2020, 2, 28), date(2020, 2, 29)));
+    assert!(!has_feb_29(date(2020, 2, 29), date(2020, 3, 1)));
+    assert!(!has_feb_29(date(2020, 2, 29), date(2020, 2, 29)));
+    assert!(!has_feb_29(date(2020, 3, 1), date(2020, 2, 28)));
+    assert!(!has_feb_29(date(2019, 1, 1), date(2019, 12, 31)));
+    assert!(!has_feb_29(date(2019, 3, 1), date(2020, 2, 28)));
+    assert!(has_feb_29(date(2019, 3, 1), date(2020, 2, 29)));
+    assert!(!has_feb_29(date(2020, 2, 29), date(2021, 1, 1)));
+
+    // Century leap/non-leap rules: 1900/2100 non-leap, 2000/2400 leap
+    assert!(!has_feb_29(date(1900, 1, 1), date(1900, 12, 31)));
+    assert!(has_feb_29(date(2000, 1, 1), date(2000, 12, 31)));
+    assert!(!has_feb_29(date(2100, 1, 1), date(2100, 12, 31)));
+    assert!(has_feb_29(date(2400, 1, 1), date(2400, 12, 31)));
+    assert!(!has_feb_29(date(1896, 2, 29), date(1904, 2, 28)));
+    assert!(has_feb_29(date(1, 1, 1), date(9999, 12, 31)));
+
+    // PaymentFrequency discriminants
+    assert_eq!(PaymentFrequency::Daily as u32, 252);
+    assert_eq!(PaymentFrequency::Weekly as u32, 52);
+    assert_eq!(PaymentFrequency::SemiMonthly as u32, 26);
+    assert_eq!(PaymentFrequency::Monthly as u32, 12);
+    assert_eq!(PaymentFrequency::SemiQuarterly as u32, 6);
+    assert_eq!(PaymentFrequency::Quarterly as u32, 4);
+    assert_eq!(PaymentFrequency::TriAnnually as u32, 3);
+    assert_eq!(PaymentFrequency::SemiAnnually as u32, 2);
+    assert_eq!(PaymentFrequency::Annually as u32, 1);
+
+    // day_count_fraction: all 6 conventions on 182-day leap-crossing span
+    let s = date(2020, 1, 1);
+    let e = date(2020, 7, 1);
+    assert!(
+        (day_count_fraction(
+            s,
+            e,
+            DayCountConvention::Actual360,
+            PaymentFrequency::Annually
+        ) - 182.0 / 360.0)
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            s,
+            e,
+            DayCountConvention::Actual364,
+            PaymentFrequency::Annually
+        ) - 182.0 / 364.0)
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            s,
+            e,
+            DayCountConvention::Actual36525,
+            PaymentFrequency::Annually
+        ) - 182.0 / 365.25)
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            s,
+            e,
+            DayCountConvention::Actual365F,
+            PaymentFrequency::Annually
+        ) - 182.0 / 365.0)
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            s,
+            e,
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Annually
+        ) - 182.0 / 366.0)
+            .abs()
+            < 1e-12
+    );
+    assert_eq!(
+        day_count_fraction(s, e, DayCountConvention::OneOne, PaymentFrequency::Annually),
+        1.0
+    );
+
+    // Actual365L: Annually checks has_feb_29(start, end); non-Annually checks is_leap(end.year)
+    let mar1 = date(2020, 3, 1);
+    let sep1 = date(2020, 9, 1);
+    assert!(
+        (day_count_fraction(
+            mar1,
+            sep1,
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Annually
+        ) - 184.0 / 365.0)
+            .abs()
+            < 1e-12
+    );
+    for freq in [
+        PaymentFrequency::Daily,
+        PaymentFrequency::Weekly,
+        PaymentFrequency::SemiMonthly,
+        PaymentFrequency::Monthly,
+        PaymentFrequency::SemiQuarterly,
+        PaymentFrequency::Quarterly,
+        PaymentFrequency::TriAnnually,
+        PaymentFrequency::SemiAnnually,
+    ] {
+        assert!(
+            (day_count_fraction(mar1, sep1, DayCountConvention::Actual365L, freq) - 184.0 / 366.0)
+                .abs()
+                < 1e-12
+        );
+    }
+    // Crosses Feb 29 2020, ends in non-leap 2021
+    assert!(
+        (day_count_fraction(
+            date(2020, 1, 1),
+            date(2021, 1, 1),
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Annually
+        ) - 1.0)
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            date(2020, 1, 1),
+            date(2021, 1, 1),
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Monthly
+        ) - 366.0 / 365.0)
+            .abs()
+            < 1e-12
+    );
+
+    // Zero & negative spans
+    assert_eq!(
+        day_count_fraction(
+            s,
+            s,
+            DayCountConvention::Actual360,
+            PaymentFrequency::Annually
+        ),
+        0.0
+    );
+    assert_eq!(
+        day_count_fraction(s, s, DayCountConvention::OneOne, PaymentFrequency::Annually),
+        1.0
+    );
+    assert!(
+        (day_count_fraction(
+            date(2020, 3, 1),
+            date(2020, 1, 1),
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Annually
+        ) - (-60.0 / 365.0))
+            .abs()
+            < 1e-12
+    );
+    assert!(
+        (day_count_fraction(
+            date(2020, 3, 1),
+            date(2020, 1, 1),
+            DayCountConvention::Actual365L,
+            PaymentFrequency::Monthly
+        ) - (-60.0 / 366.0))
+            .abs()
+            < 1e-12
+    );
+    assert_eq!(
+        day_count_fraction(e, s, DayCountConvention::OneOne, PaymentFrequency::Annually),
+        1.0
+    );
+}
+
+#[test]
+fn calendar_holiday_construction_and_is_business_day() {
+    // All-false week_mask -> Error::Date
+    assert_eq!(
+        HolidayCalendar::try_new([false; 7], vec![]),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        HolidayCalendar::try_new([false; 7], vec![date(2020, 1, 1)]),
+        Err(Error::Date)
+    );
+
+    // Default Mon-Fri weekdays with unsorted, duplicate, and weekend holidays normalized
+    let cal = HolidayCalendar::weekdays(vec![
+        date(2020, 1, 4), // Sat -> filtered out
+        date(2020, 1, 5), // Sun -> filtered out
+        date(2020, 1, 6), // Mon
+        date(2020, 1, 1), // Wed
+        date(2020, 1, 1), // duplicate Wed
+    ]);
+    assert_eq!(
+        cal.week_mask(),
+        [true, true, true, true, true, false, false]
+    );
+    assert_eq!(cal.holidays(), &[date(2020, 1, 1), date(2020, 1, 6)]);
+
+    assert!(!is_business_day(date(2020, 1, 1), &cal)); // holiday
+    assert!(is_business_day(date(2020, 1, 2), &cal)); // Thu
+    assert!(is_business_day(date(2020, 1, 3), &cal)); // Fri
+    assert!(!is_business_day(date(2020, 1, 4), &cal)); // Sat
+    assert!(!is_business_day(date(2020, 1, 5), &cal)); // Sun
+    assert!(!is_business_day(date(2020, 1, 6), &cal)); // holiday
+    assert!(is_business_day(date(2020, 1, 7), &cal)); // Tue
+    assert!(!is_business_day(date(2020, 2, 29), &cal)); // Sat leap day
+    assert!(is_business_day(date(2024, 2, 29), &cal)); // Thu leap day
+    assert!(is_business_day(date(1, 1, 1), &cal)); // Mon
+    assert!(is_business_day(date(9999, 12, 31), &cal)); // Fri
+
+    // Custom Sun-Thu weekmask (Mon..Thu + Sun)
+    let sun_thu_mask = [true, true, true, true, false, false, true];
+    let sun_thu = HolidayCalendar::try_new(
+        sun_thu_mask,
+        vec![
+            date(2020, 1, 3), // Fri -> filtered out
+            date(2020, 1, 4), // Sat -> filtered out
+            date(2020, 1, 5), // Sun -> kept
+            date(2020, 1, 5), // duplicate Sun
+        ],
+    )
+    .unwrap();
+    assert_eq!(sun_thu.week_mask(), sun_thu_mask);
+    assert_eq!(sun_thu.holidays(), &[date(2020, 1, 5)]);
+    assert!(!is_business_day(date(2020, 1, 3), &sun_thu)); // Fri off
+    assert!(!is_business_day(date(2020, 1, 4), &sun_thu)); // Sat off
+    assert!(!is_business_day(date(2020, 1, 5), &sun_thu)); // Sun holiday
+    assert!(is_business_day(date(2020, 1, 12), &sun_thu)); // Sun business day
+}
+
+#[test]
+fn calendar_business_day_offset_rolls_large_and_bounds() {
+    let cal_ny = HolidayCalendar::weekdays(vec![date(2020, 1, 1)]);
+
+    // Business day with Roll::Raise
+    assert_eq!(
+        business_day_offset(date(2020, 1, 2), 0, Roll::Raise, &cal_ny),
+        Ok(date(2020, 1, 2))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 2), 2, Roll::Raise, &cal_ny),
+        Ok(date(2020, 1, 6))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 2), -1, Roll::Raise, &cal_ny),
+        Ok(date(2019, 12, 31))
+    );
+    // Non-business day with Roll::Raise -> Error::Date
+    assert_eq!(
+        business_day_offset(date(2020, 1, 1), 0, Roll::Raise, &cal_ny),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 4), 1, Roll::Raise, &cal_ny),
+        Err(Error::Date)
+    );
+
+    // Month-end holiday 2020-01-31 (Fri): all 4 non-raising rolls
+    let cal_jan31 = HolidayCalendar::weekdays(vec![date(2020, 1, 31)]);
+    assert_eq!(
+        business_day_offset(date(2020, 1, 31), 0, Roll::Forward, &cal_jan31),
+        Ok(date(2020, 2, 3))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 31), 0, Roll::Backward, &cal_jan31),
+        Ok(date(2020, 1, 30))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 31), 0, Roll::ModifiedFollowing, &cal_jan31),
+        Ok(date(2020, 1, 30))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 31), 1, Roll::ModifiedFollowing, &cal_jan31),
+        Ok(date(2020, 2, 3))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 31), 0, Roll::ModifiedPreceding, &cal_jan31),
+        Ok(date(2020, 1, 30))
+    );
+
+    // Month-start weekend + holiday 2020-02-03 (Mon)
+    let cal_feb3 = HolidayCalendar::weekdays(vec![date(2020, 2, 3)]);
+    assert_eq!(
+        business_day_offset(date(2020, 2, 1), 0, Roll::Backward, &cal_feb3),
+        Ok(date(2020, 1, 31))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 1), 0, Roll::ModifiedPreceding, &cal_feb3),
+        Ok(date(2020, 2, 4))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 3), 0, Roll::ModifiedPreceding, &cal_feb3),
+        Ok(date(2020, 2, 4))
+    );
+
+    // Leap day 2020-02-29 (Sat)
+    let empty_cal = HolidayCalendar::weekdays(vec![]);
+    assert_eq!(
+        business_day_offset(date(2020, 2, 29), 0, Roll::Forward, &empty_cal),
+        Ok(date(2020, 3, 2))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 29), 0, Roll::Backward, &empty_cal),
+        Ok(date(2020, 2, 28))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 29), 0, Roll::ModifiedFollowing, &empty_cal),
+        Ok(date(2020, 2, 28))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 29), 0, Roll::ModifiedPreceding, &empty_cal),
+        Ok(date(2020, 2, 28))
+    );
+
+    // All-month-holiday Feb 2020 fallbacks
+    let all_feb_2020: Vec<Date> = (1..=29).map(|d| date(2020, 2, d)).collect();
+    let cal_all_feb = HolidayCalendar::weekdays(all_feb_2020);
+    assert_eq!(
+        business_day_offset(date(2020, 2, 15), 0, Roll::ModifiedFollowing, &cal_all_feb),
+        Ok(date(2020, 1, 31))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 15), 1, Roll::ModifiedFollowing, &cal_all_feb),
+        Ok(date(2020, 3, 2))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 15), 0, Roll::ModifiedPreceding, &cal_all_feb),
+        Ok(date(2020, 3, 2))
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 2, 15), -1, Roll::ModifiedPreceding, &cal_all_feb),
+        Ok(date(2020, 1, 31))
+    );
+
+    // Large offsets (+/-5000 business days) & round-trip consistency across centuries
+    let start = date(2000, 1, 3);
+    let fwd = business_day_offset(start, 5000, Roll::Raise, &cal_ny).unwrap();
+    let back = business_day_offset(fwd, -5000, Roll::Raise, &cal_ny).unwrap();
+    assert_eq!(back, start);
+    assert_eq!(business_day_count(start, fwd, &cal_ny), 5000);
+    assert_eq!(business_day_count(fwd, start, &cal_ny), -5000);
+
+    // Extreme i32::MIN / i32::MAX do not overflow/panic
+    assert_eq!(
+        business_day_offset(date(2020, 1, 2), i32::MIN, Roll::Raise, &empty_cal),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        business_day_offset(date(2020, 1, 2), i32::MAX, Roll::Raise, &empty_cal),
+        Err(Error::Date)
+    );
+
+    // Gregorian 0001-01-01 / 9999-12-31 bounds
+    assert_eq!(
+        business_day_offset(date(1, 1, 1), -1, Roll::Backward, &empty_cal),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        business_day_offset(date(9999, 12, 31), 1, Roll::Forward, &empty_cal),
+        Err(Error::Date)
+    );
+    let cal_edge_hols = HolidayCalendar::weekdays(vec![date(1, 1, 1), date(9999, 12, 31)]);
+    assert_eq!(
+        business_day_offset(date(1, 1, 1), 0, Roll::Backward, &cal_edge_hols),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        business_day_offset(date(1, 1, 1), 0, Roll::ModifiedPreceding, &cal_edge_hols),
+        Ok(date(1, 1, 2))
+    );
+    assert_eq!(
+        business_day_offset(date(9999, 12, 31), 0, Roll::Forward, &cal_edge_hols),
+        Err(Error::Date)
+    );
+    assert_eq!(
+        business_day_offset(
+            date(9999, 12, 31),
+            0,
+            Roll::ModifiedFollowing,
+            &cal_edge_hols
+        ),
+        Ok(date(9999, 12, 30))
+    );
+}
+
+#[test]
+fn calendar_business_day_count_asymmetry_spans_and_determinism() {
+    let cal_ny = HolidayCalendar::weekdays(vec![date(2020, 1, 1)]);
+
+    // Exact NumPy asymmetry: [begin, end) forward vs -(end, begin] reversed
+    assert_eq!(
+        business_day_count(date(2020, 1, 1), date(2020, 1, 6), &cal_ny),
+        2
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 6), date(2020, 1, 1), &cal_ny),
+        -3
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 4), date(2020, 1, 6), &cal_ny),
+        0
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 6), date(2020, 1, 4), &cal_ny),
+        -1
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 2), date(2020, 1, 6), &cal_ny),
+        2
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 6), date(2020, 1, 2), &cal_ny),
+        -2
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 6), date(2020, 1, 6), &cal_ny),
+        0
+    );
+    assert_eq!(
+        business_day_count(date(2020, 1, 1), date(2020, 1, 1), &cal_ny),
+        0
+    );
+
+    // Multi-decade span & offset round-trip consistency
+    let hols = vec![
+        date(1980, 1, 1),
+        date(2000, 2, 29),
+        date(2020, 1, 1),
+        date(2024, 2, 29),
+        date(2040, 7, 4),
+    ];
+    let cal = HolidayCalendar::weekdays(hols);
+    let b1 = date(1970, 1, 1);
+    let e1 = date(2050, 1, 3);
+    let cnt_fwd = business_day_count(b1, e1, &cal);
+    let cnt_rev = business_day_count(e1, b1, &cal);
+    assert_eq!(cnt_fwd, -cnt_rev); // both b1 (Thu) and e1 (Mon) are business days
+    assert_eq!(
+        business_day_offset(b1, cnt_fwd as i32, Roll::Raise, &cal),
+        Ok(e1)
+    );
+
+    // Full Gregorian range 0001-01-01..9999-12-31
+    let empty_cal = HolidayCalendar::weekdays(vec![]);
+    let full_fwd = business_day_count(date(1, 1, 1), date(9999, 12, 31), &empty_cal);
+    let full_rev = business_day_count(date(9999, 12, 31), date(1, 1, 1), &empty_cal);
+    assert_eq!(full_fwd, -full_rev);
+    assert_eq!(
+        business_day_offset(date(1, 1, 1), full_fwd as i32, Roll::Raise, &empty_cal),
+        Ok(date(9999, 12, 31))
+    );
+
+    // Custom weekmask (Sun-Thu) and determinism across back-to-back calls
+    let sun_thu = HolidayCalendar::try_new(
+        [true, true, true, true, false, false, true],
+        vec![date(2020, 1, 5)],
+    )
+    .unwrap();
+    let run1 = business_day_count(date(2020, 1, 1), date(2020, 1, 15), &sun_thu);
+    let run2 = business_day_count(date(2020, 1, 1), date(2020, 1, 15), &sun_thu);
+    assert_eq!(run1, run2);
+    assert_eq!(run1, 9);
 }

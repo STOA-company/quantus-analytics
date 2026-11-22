@@ -1,0 +1,1790 @@
+{
+  "schema": "gsquant-calendar-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "numpy": "2.2.6",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/datetime/date.py:has_feb_29",
+    "gs_quant/datetime/date.py:day_count_fraction",
+    "gs_quant/datetime/date.py:is_business_day",
+    "gs_quant/datetime/date.py:business_day_offset",
+    "gs_quant/datetime/date.py:business_day_count",
+    "numpy:busdaycalendar"
+  ],
+  "cases": [
+    {
+      "id": "feb29-within-leap-year",
+      "source_ref": "test_date.py::test_has_feb_29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-01-01",
+        "2020-03-01"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-end-inclusive",
+      "source_ref": "test_date.py::test_has_feb_29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-02-28",
+        "2020-02-29"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-start-exclusive",
+      "source_ref": "test_date.py::test_has_feb_29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-02-29",
+        "2020-03-01"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-same-date-leap-day",
+      "source_ref": "test_date.py::test_has_feb_29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-02-29",
+        "2020-02-29"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-non-leap-year",
+      "source_ref": "test_date.py::test_has_feb_29",
+      "operation": "has_feb_29",
+      "args": [
+        "2019-01-01",
+        "2019-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-cross-year-before",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2019-03-01",
+        "2020-02-28"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-cross-year-on",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2019-03-01",
+        "2020-02-29"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-cross-year-after",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2019-03-01",
+        "2020-03-01"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-after-leap-to-next-year",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-02-29",
+        "2021-01-01"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-century-1900-non-leap",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "1900-01-01",
+        "1900-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-century-2000-leap",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2000-01-01",
+        "2000-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-century-2100-non-leap",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2100-01-01",
+        "2100-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-century-2400-leap",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2400-01-01",
+        "2400-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "feb29-8yr-century-gap-none",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "1896-02-29",
+        "1904-02-28"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-reversed-across-leap",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "2020-03-01",
+        "2020-02-28"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "feb29-full-gregorian-span",
+      "source_ref": "synthetic-feb29",
+      "operation": "has_feb_29",
+      "args": [
+        "0001-01-01",
+        "9999-12-31"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "dcf-act360-leap-span",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "actual_360",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.5055555555555555
+      }
+    },
+    {
+      "id": "dcf-act364-leap-span",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "actual_364",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.5
+      }
+    },
+    {
+      "id": "dcf-act36525-leap-span",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "actual_36525",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.49828884325804246
+      }
+    },
+    {
+      "id": "dcf-act365f-leap-span",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "actual_365f",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.4986301369863014
+      }
+    },
+    {
+      "id": "dcf-act365l-annually-has-feb29",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "actual_365l",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.4972677595628415
+      }
+    },
+    {
+      "id": "dcf-one-one-leap-span",
+      "source_ref": "test_date.py::test_day_count_fraction",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2020-07-01",
+        "one_one",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "dcf-act365l-annually-no-feb29",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-03-01",
+        "2020-09-01",
+        "actual_365l",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.5041095890410959
+      }
+    },
+    {
+      "id": "dcf-act365l-monthly-leap-end-no-feb29",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-03-01",
+        "2020-09-01",
+        "actual_365l",
+        "monthly"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.5027322404371585
+      }
+    },
+    {
+      "id": "dcf-act365l-quarterly-nonleap-end-with-feb29",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2021-01-01",
+        "actual_365l",
+        "quarterly"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 1.0027397260273974
+      }
+    },
+    {
+      "id": "dcf-act365l-annually-nonleap-end-with-feb29",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-01-01",
+        "2021-01-01",
+        "actual_365l",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "dcf-act365l-daily-leap-end",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2024-01-15",
+        "2024-02-15",
+        "actual_365l",
+        "daily"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.08469945355191257
+      }
+    },
+    {
+      "id": "dcf-act365l-weekly-nonleap-end",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2023-01-15",
+        "2023-02-15",
+        "actual_365l",
+        "weekly"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.08493150684931507
+      }
+    },
+    {
+      "id": "dcf-act365l-semi-monthly-leap-end",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-06-01",
+        "2020-06-15",
+        "actual_365l",
+        "semi_monthly"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.03825136612021858
+      }
+    },
+    {
+      "id": "dcf-act365l-semi-quarterly-nonleap",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2021-01-01",
+        "2021-03-01",
+        "actual_365l",
+        "semi_quarterly"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.16164383561643836
+      }
+    },
+    {
+      "id": "dcf-act365l-tri-annually-leap",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-05-01",
+        "2020-09-01",
+        "actual_365l",
+        "tri_annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.3360655737704918
+      }
+    },
+    {
+      "id": "dcf-act365l-semi-annually-leap-end-2000",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "1999-07-01",
+        "2000-01-01",
+        "actual_365l",
+        "semi_annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.5027322404371585
+      }
+    },
+    {
+      "id": "dcf-zero-span-act360",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-06-01",
+        "2020-06-01",
+        "actual_360",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "dcf-zero-span-one-one",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-06-01",
+        "2020-06-01",
+        "one_one",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "dcf-negative-act365l-annually",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-03-01",
+        "2020-01-01",
+        "actual_365l",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": -0.1643835616438356
+      }
+    },
+    {
+      "id": "dcf-negative-one-one",
+      "source_ref": "synthetic-dcf",
+      "operation": "day_count_fraction",
+      "args": [
+        "2020-03-01",
+        "2020-01-01",
+        "one_one",
+        "annually"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "float",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "is-bday-weekday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-02",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "is-bday-holiday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-01",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-saturday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-04",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-sunday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-05",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-leap-sat-2020",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-02-29",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-leap-thu-2024",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2024-02-29",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "is-bday-sun-thu-sunday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-05",
+        "1111001"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "is-bday-sun-thu-friday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-03",
+        "1111001"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-sun-thu-holiday",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-05",
+        "1111001"
+      ],
+      "holidays": [
+        "2020-01-05"
+      ],
+      "output": {
+        "kind": "bool",
+        "value": false
+      }
+    },
+    {
+      "id": "is-bday-unsorted-dup-weekend-hols",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-03",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-04",
+        "2020-01-01",
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "is-bday-min-gregorian",
+      "source_ref": "synthetic-is-bday",
+      "operation": "is_business_day",
+      "args": [
+        "0001-01-01",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "bool",
+        "value": true
+      }
+    },
+    {
+      "id": "is-bday-err-all-false-mask",
+      "source_ref": "synthetic-errors",
+      "operation": "is_business_day",
+      "args": [
+        "2020-01-02",
+        "0000000"
+      ],
+      "holidays": [],
+      "error": {
+        "rust": "Date",
+        "upstream_type": "ValueError",
+        "upstream_message": "Cannot construct a numpy.busdaycal with a weekmask of all zeros"
+      }
+    },
+    {
+      "id": "offset-raise-zero",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        0,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-02"
+      }
+    },
+    {
+      "id": "offset-raise-plus1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        1,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-03"
+      }
+    },
+    {
+      "id": "offset-raise-minus1-skips-hol",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        -1,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2019-12-31"
+      }
+    },
+    {
+      "id": "offset-raise-plus5",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        5,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-09"
+      }
+    },
+    {
+      "id": "offset-raise-minus5",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-09",
+        -5,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-02"
+      }
+    },
+    {
+      "id": "offset-err-raise-holiday",
+      "source_ref": "synthetic-errors",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        0,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "error": {
+        "rust": "Date",
+        "upstream_type": "ValueError",
+        "upstream_message": "Non-business day date in busday_offset"
+      }
+    },
+    {
+      "id": "offset-err-raise-weekend",
+      "source_ref": "synthetic-errors",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-04",
+        1,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "error": {
+        "rust": "Date",
+        "upstream_type": "ValueError",
+        "upstream_message": "Non-business day date in busday_offset"
+      }
+    },
+    {
+      "id": "offset-err-all-false-mask",
+      "source_ref": "synthetic-errors",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        1,
+        "forward",
+        "0000000"
+      ],
+      "holidays": [],
+      "error": {
+        "rust": "Date",
+        "upstream_type": "ValueError",
+        "upstream_message": "Cannot construct a numpy.busdaycal with a weekmask of all zeros"
+      }
+    },
+    {
+      "id": "offset-hol-forward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        0,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-02"
+      }
+    },
+    {
+      "id": "offset-hol-forward-1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        1,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-03"
+      }
+    },
+    {
+      "id": "offset-hol-backward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        0,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2019-12-31"
+      }
+    },
+    {
+      "id": "offset-hol-backward-m1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        -1,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2019-12-30"
+      }
+    },
+    {
+      "id": "offset-hol-modfol-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        0,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-02"
+      }
+    },
+    {
+      "id": "offset-hol-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-01",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-02"
+      }
+    },
+    {
+      "id": "offset-monthend-forward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        0,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-03"
+      }
+    },
+    {
+      "id": "offset-monthend-backward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        0,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-30"
+      }
+    },
+    {
+      "id": "offset-monthend-modfol-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        0,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-30"
+      }
+    },
+    {
+      "id": "offset-monthend-modfol-plus1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        1,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-03"
+      }
+    },
+    {
+      "id": "offset-monthend-modfol-minus1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        -1,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-29"
+      }
+    },
+    {
+      "id": "offset-monthend-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-31",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-31"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-30"
+      }
+    },
+    {
+      "id": "offset-monthstart-sat-forward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-01",
+        0,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-03"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-04"
+      }
+    },
+    {
+      "id": "offset-monthstart-sat-backward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-01",
+        0,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-03"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-31"
+      }
+    },
+    {
+      "id": "offset-monthstart-sat-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-01",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-03"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-04"
+      }
+    },
+    {
+      "id": "offset-monthstart-monhol-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-03",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-03"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-04"
+      }
+    },
+    {
+      "id": "offset-leap-2020-forward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-29",
+        0,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "2020-03-02"
+      }
+    },
+    {
+      "id": "offset-leap-2020-backward-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-29",
+        0,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-28"
+      }
+    },
+    {
+      "id": "offset-leap-2020-modfol-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-29",
+        0,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-28"
+      }
+    },
+    {
+      "id": "offset-leap-2020-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-29",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "2020-02-28"
+      }
+    },
+    {
+      "id": "offset-allfeb-modfol-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-15",
+        0,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-01",
+        "2020-02-02",
+        "2020-02-03",
+        "2020-02-04",
+        "2020-02-05",
+        "2020-02-06",
+        "2020-02-07",
+        "2020-02-08",
+        "2020-02-09",
+        "2020-02-10",
+        "2020-02-11",
+        "2020-02-12",
+        "2020-02-13",
+        "2020-02-14",
+        "2020-02-15",
+        "2020-02-16",
+        "2020-02-17",
+        "2020-02-18",
+        "2020-02-19",
+        "2020-02-20",
+        "2020-02-21",
+        "2020-02-22",
+        "2020-02-23",
+        "2020-02-24",
+        "2020-02-25",
+        "2020-02-26",
+        "2020-02-27",
+        "2020-02-28",
+        "2020-02-29"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-31"
+      }
+    },
+    {
+      "id": "offset-allfeb-modfol-plus1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-15",
+        1,
+        "modified_following",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-01",
+        "2020-02-02",
+        "2020-02-03",
+        "2020-02-04",
+        "2020-02-05",
+        "2020-02-06",
+        "2020-02-07",
+        "2020-02-08",
+        "2020-02-09",
+        "2020-02-10",
+        "2020-02-11",
+        "2020-02-12",
+        "2020-02-13",
+        "2020-02-14",
+        "2020-02-15",
+        "2020-02-16",
+        "2020-02-17",
+        "2020-02-18",
+        "2020-02-19",
+        "2020-02-20",
+        "2020-02-21",
+        "2020-02-22",
+        "2020-02-23",
+        "2020-02-24",
+        "2020-02-25",
+        "2020-02-26",
+        "2020-02-27",
+        "2020-02-28",
+        "2020-02-29"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-03-02"
+      }
+    },
+    {
+      "id": "offset-allfeb-modprec-0",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-15",
+        0,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-01",
+        "2020-02-02",
+        "2020-02-03",
+        "2020-02-04",
+        "2020-02-05",
+        "2020-02-06",
+        "2020-02-07",
+        "2020-02-08",
+        "2020-02-09",
+        "2020-02-10",
+        "2020-02-11",
+        "2020-02-12",
+        "2020-02-13",
+        "2020-02-14",
+        "2020-02-15",
+        "2020-02-16",
+        "2020-02-17",
+        "2020-02-18",
+        "2020-02-19",
+        "2020-02-20",
+        "2020-02-21",
+        "2020-02-22",
+        "2020-02-23",
+        "2020-02-24",
+        "2020-02-25",
+        "2020-02-26",
+        "2020-02-27",
+        "2020-02-28",
+        "2020-02-29"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-03-02"
+      }
+    },
+    {
+      "id": "offset-allfeb-modprec-minus1",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-02-15",
+        -1,
+        "modified_preceding",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-02-01",
+        "2020-02-02",
+        "2020-02-03",
+        "2020-02-04",
+        "2020-02-05",
+        "2020-02-06",
+        "2020-02-07",
+        "2020-02-08",
+        "2020-02-09",
+        "2020-02-10",
+        "2020-02-11",
+        "2020-02-12",
+        "2020-02-13",
+        "2020-02-14",
+        "2020-02-15",
+        "2020-02-16",
+        "2020-02-17",
+        "2020-02-18",
+        "2020-02-19",
+        "2020-02-20",
+        "2020-02-21",
+        "2020-02-22",
+        "2020-02-23",
+        "2020-02-24",
+        "2020-02-25",
+        "2020-02-26",
+        "2020-02-27",
+        "2020-02-28",
+        "2020-02-29"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-31"
+      }
+    },
+    {
+      "id": "offset-sun-thu-fri-forward-2",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-03",
+        2,
+        "forward",
+        "1111001"
+      ],
+      "holidays": [
+        "2020-01-05"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2020-01-08"
+      }
+    },
+    {
+      "id": "offset-large-plus-5000",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2000-01-03",
+        5000,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2000-01-01",
+        "2010-07-05",
+        "2015-12-25"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2019-03-06"
+      }
+    },
+    {
+      "id": "offset-large-minus-5000",
+      "source_ref": "synthetic-offset",
+      "operation": "business_day_offset",
+      "args": [
+        "2020-01-02",
+        -5000,
+        "raise",
+        "1111100"
+      ],
+      "holidays": [
+        "2000-01-01",
+        "2010-07-05",
+        "2015-12-25"
+      ],
+      "output": {
+        "kind": "date",
+        "value": "2000-10-31"
+      }
+    },
+    {
+      "id": "offset-doc-underflow-0001",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "business_day_offset",
+      "args": [
+        "0001-01-01",
+        -1,
+        "backward",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "0000-12-29"
+      },
+      "documented_diff": "gregorian_date_range_bounds",
+      "expected_rust_error": "Date"
+    },
+    {
+      "id": "offset-doc-overflow-9999",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "business_day_offset",
+      "args": [
+        "9999-12-31",
+        1,
+        "forward",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "date",
+        "value": "10000-01-03"
+      },
+      "documented_diff": "gregorian_date_range_bounds",
+      "expected_rust_error": "Date"
+    },
+    {
+      "id": "count-asym-hol-forward",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-01",
+        "2020-01-06",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 2
+      }
+    },
+    {
+      "id": "count-asym-hol-reverse",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-06",
+        "2020-01-01",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": -3
+      }
+    },
+    {
+      "id": "count-asym-weekend-forward",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-04",
+        "2020-01-06",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "count-asym-weekend-reverse",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-06",
+        "2020-01-04",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": -1
+      }
+    },
+    {
+      "id": "count-bday-forward",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-02",
+        "2020-01-06",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 2
+      }
+    },
+    {
+      "id": "count-bday-reverse",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-06",
+        "2020-01-02",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": -2
+      }
+    },
+    {
+      "id": "count-equal-bday",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-06",
+        "2020-01-06",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "count-equal-hol",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-01",
+        "2020-01-01",
+        "1111100"
+      ],
+      "holidays": [
+        "2020-01-01"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 0
+      }
+    },
+    {
+      "id": "count-leap-2020-sat",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-02-24",
+        "2020-03-02",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "int",
+        "value": 5
+      }
+    },
+    {
+      "id": "count-leap-2024-thu",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2024-02-26",
+        "2024-03-04",
+        "1111100"
+      ],
+      "holidays": [],
+      "output": {
+        "kind": "int",
+        "value": 5
+      }
+    },
+    {
+      "id": "count-multi-decade-forward",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "1970-01-01",
+        "2050-01-01",
+        "1111100"
+      ],
+      "holidays": [
+        "1980-01-01",
+        "2000-02-29",
+        "2020-01-01",
+        "2024-02-29",
+        "2040-07-04"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 20867
+      }
+    },
+    {
+      "id": "count-multi-decade-reverse",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2050-01-01",
+        "1970-01-01",
+        "1111100"
+      ],
+      "holidays": [
+        "1980-01-01",
+        "2000-02-29",
+        "2020-01-01",
+        "2024-02-29",
+        "2040-07-04"
+      ],
+      "output": {
+        "kind": "int",
+        "value": -20866
+      }
+    },
+    {
+      "id": "count-sun-thu-custom",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-01",
+        "2020-01-15",
+        "1111001"
+      ],
+      "holidays": [
+        "2020-01-05"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 9
+      }
+    },
+    {
+      "id": "count-sat-only-custom",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-01",
+        "2020-02-01",
+        "0000010"
+      ],
+      "holidays": [
+        "2020-01-11"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 3
+      }
+    },
+    {
+      "id": "count-all-days-custom",
+      "source_ref": "synthetic-count",
+      "operation": "business_day_count",
+      "args": [
+        "2020-02-01",
+        "2020-03-01",
+        "1111111"
+      ],
+      "holidays": [
+        "2020-02-29"
+      ],
+      "output": {
+        "kind": "int",
+        "value": 28
+      }
+    },
+    {
+      "id": "count-err-all-false-mask",
+      "source_ref": "synthetic-errors",
+      "operation": "business_day_count",
+      "args": [
+        "2020-01-01",
+        "2020-01-06",
+        "0000000"
+      ],
+      "holidays": [],
+      "error": {
+        "rust": "Date",
+        "upstream_type": "ValueError",
+        "upstream_message": "Cannot construct a numpy.busdaycal with a weekmask of all zeros"
+      }
+    }
+  ]
+}

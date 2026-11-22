@@ -1,9 +1,76 @@
 use quantus_math::{
-    beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
-    moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
-    std as series_std, volatility, Date, ReturnKind, RollingLinearRegression, Series, Window,
+    beta, bollinger_bands, business_day_count, business_day_offset, correlation, cov,
+    day_count_fraction, exponential_moving_average, has_feb_29, is_business_day, macd,
+    max_drawdown, moving_average, prices, relative_strength_index, returns,
+    smoothed_moving_average, std as series_std, volatility, Date, DayCountConvention,
+    HolidayCalendar, PaymentFrequency, ReturnKind, Roll, RollingLinearRegression, Series, Window,
 };
 use std::io::{self, Read};
+
+fn parse_date(s: &str) -> Date {
+    let parts: Vec<i32> = s.split('-').map(|v| v.parse::<i32>().unwrap()).collect();
+    Date::new(parts[0], parts[1] as u8, parts[2] as u8).unwrap()
+}
+
+fn parse_week_mask(s: &str) -> [bool; 7] {
+    let bytes = s.as_bytes();
+    assert_eq!(bytes.len(), 7, "week_mask must be 7 chars");
+    let mut mask = [false; 7];
+    for (i, &b) in bytes.iter().enumerate() {
+        mask[i] = match b {
+            b'1' => true,
+            b'0' => false,
+            _ => panic!("invalid week_mask char"),
+        };
+    }
+    mask
+}
+
+fn parse_holidays<'a>(lines: impl Iterator<Item = &'a str>) -> Vec<Date> {
+    lines
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(parse_date)
+        .collect()
+}
+
+fn parse_day_count_convention(s: &str) -> DayCountConvention {
+    match s {
+        "actual_360" => DayCountConvention::Actual360,
+        "actual_364" => DayCountConvention::Actual364,
+        "actual_36525" => DayCountConvention::Actual36525,
+        "actual_365f" => DayCountConvention::Actual365F,
+        "actual_365l" => DayCountConvention::Actual365L,
+        "one_one" => DayCountConvention::OneOne,
+        _ => panic!("unknown day count convention"),
+    }
+}
+
+fn parse_payment_frequency(s: &str) -> PaymentFrequency {
+    match s {
+        "daily" => PaymentFrequency::Daily,
+        "weekly" => PaymentFrequency::Weekly,
+        "semi_monthly" => PaymentFrequency::SemiMonthly,
+        "monthly" => PaymentFrequency::Monthly,
+        "semi_quarterly" => PaymentFrequency::SemiQuarterly,
+        "quarterly" => PaymentFrequency::Quarterly,
+        "tri_annually" => PaymentFrequency::TriAnnually,
+        "semi_annually" => PaymentFrequency::SemiAnnually,
+        "annually" => PaymentFrequency::Annually,
+        _ => panic!("unknown payment frequency"),
+    }
+}
+
+fn parse_roll(s: &str) -> Roll {
+    match s {
+        "raise" => Roll::Raise,
+        "forward" => Roll::Forward,
+        "backward" => Roll::Backward,
+        "modified_following" => Roll::ModifiedFollowing,
+        "modified_preceding" => Roll::ModifiedPreceding,
+        _ => panic!("unknown roll"),
+    }
+}
 
 fn parse_rows<'a>(lines: impl Iterator<Item = &'a str>) -> Series {
     let mut dates = Vec::new();
@@ -51,6 +118,55 @@ fn main() {
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "has_feb_29" {
+        let start = parse_date(args[1]);
+        let end = parse_date(args[2]);
+        println!("{}", has_feb_29(start, end));
+        return;
+    }
+    if args[0] == "day_count_fraction" {
+        let start = parse_date(args[1]);
+        let end = parse_date(args[2]);
+        let conv = parse_day_count_convention(args[3]);
+        let freq = parse_payment_frequency(args[4]);
+        println!("{:?}", day_count_fraction(start, end, conv, freq));
+        return;
+    }
+    if args[0] == "is_business_day" {
+        let date = parse_date(args[1]);
+        let mask = parse_week_mask(args[2]);
+        let holidays = parse_holidays(lines);
+        match HolidayCalendar::try_new(mask, holidays) {
+            Ok(cal) => println!("{}", is_business_day(date, &cal)),
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
+    if args[0] == "business_day_offset" {
+        let date = parse_date(args[1]);
+        let offset: i32 = args[2].parse().unwrap();
+        let roll = parse_roll(args[3]);
+        let mask = parse_week_mask(args[4]);
+        let holidays = parse_holidays(lines);
+        match HolidayCalendar::try_new(mask, holidays)
+            .and_then(|cal| business_day_offset(date, offset, roll, &cal))
+        {
+            Ok(d) => println!("{d}"),
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
+    if args[0] == "business_day_count" {
+        let begin = parse_date(args[1]);
+        let end = parse_date(args[2]);
+        let mask = parse_week_mask(args[3]);
+        let holidays = parse_holidays(lines);
+        match HolidayCalendar::try_new(mask, holidays) {
+            Ok(cal) => println!("{}", business_day_count(begin, end, &cal)),
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
     if args[0] == "rolling_ols" {
         let window: usize = args[1].parse().unwrap();
         let fit_intercept = match args[2] {
