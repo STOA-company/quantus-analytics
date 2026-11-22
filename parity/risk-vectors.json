@@ -1,0 +1,3562 @@
+{
+  "schema": "gsquant-risk-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "numpy": "2.2.6",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/datetime/point.py:point_sort_order",
+    "gs_quant/risk/core.py:sort_risk",
+    "gs_quant/risk/core.py:aggregate_risk",
+    "gs_quant/risk/core.py:aggregate_results",
+    "gs_quant/risk/core.py:subtract_risk"
+  ],
+  "cases": [
+    {
+      "id": "pso-empty",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "",
+      "output": 0.0
+    },
+    {
+      "id": "pso-const-on",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "O/N",
+      "output": 0.0
+    },
+    {
+      "id": "pso-const-on-lower",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "o/n",
+      "output": 0.0
+    },
+    {
+      "id": "pso-const-tn",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "T/N",
+      "output": 0.1
+    },
+    {
+      "id": "pso-const-ois-fix",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "OIS FIX",
+      "output": 1.0
+    },
+    {
+      "id": "pso-const-cash-stub",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Cash Stub",
+      "output": 1.1
+    },
+    {
+      "id": "pso-const-cashstub",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "CashStub",
+      "output": 1.1
+    },
+    {
+      "id": "pso-const-default",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "DEFAULT",
+      "output": 0.0
+    },
+    {
+      "id": "pso-const-in",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "In",
+      "output": 0.1
+    },
+    {
+      "id": "pso-const-out",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Out",
+      "output": 0.2
+    },
+    {
+      "id": "pso-compound-1y-5y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y;5y",
+      "output": 365.5
+    },
+    {
+      "id": "pso-compound-1y-2y-3y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y;2y;3y",
+      "output": 365.5
+    },
+    {
+      "id": "pso-compound-6m-2y-10y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "6m;2y;10y",
+      "output": 182.43333333333334
+    },
+    {
+      "id": "pso-compound-on-5y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "O/N;5y",
+      "output": 0.0
+    },
+    {
+      "id": "pso-compound-spaced",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": " 3m ; 1y ",
+      "output": 90.40555555555555
+    },
+    {
+      "id": "pso-infl-caplet",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "USD Caplet 1y",
+      "output": 0.0
+    },
+    {
+      "id": "pso-infl-zccap",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "ZCCap 5y",
+      "output": 1.0
+    },
+    {
+      "id": "pso-infl-swaption",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Swaption 10y",
+      "output": 2.0
+    },
+    {
+      "id": "pso-infl-zcswo",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "ZCSwo Caplet",
+      "output": 3.0
+    },
+    {
+      "id": "pso-copula-rho",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "USD Rho",
+      "output": null
+    },
+    {
+      "id": "pso-copula-ko",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "EUR KO",
+      "output": null
+    },
+    {
+      "id": "pso-copula-rr",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y RR",
+      "output": null
+    },
+    {
+      "id": "pso-copula-bf",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "BF 2y",
+      "output": null
+    },
+    {
+      "id": "pso-copula-alpha",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Alpha",
+      "output": null
+    },
+    {
+      "id": "pso-copula-k0l",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "K0=L",
+      "output": null
+    },
+    {
+      "id": "pso-seasonal-front",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Front",
+      "output": 0.0
+    },
+    {
+      "id": "pso-seasonal-back",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Back",
+      "output": 1.0
+    },
+    {
+      "id": "pso-seasonal-back-front",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Back Front",
+      "output": 1.0
+    },
+    {
+      "id": "pso-mmm-jan",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Jan",
+      "output": -8780.0
+    },
+    {
+      "id": "pso-mmm-dec",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Dec",
+      "output": -8445.0
+    },
+    {
+      "id": "pso-euro-jan25",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "JAN25",
+      "output": 366.0
+    },
+    {
+      "id": "pso-euro-dec68",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Dec68",
+      "output": 16406.0
+    },
+    {
+      "id": "pso-euro-dec69",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Dec69",
+      "output": -19754.0
+    },
+    {
+      "id": "pso-rdate-1d",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1d",
+      "output": 1.0
+    },
+    {
+      "id": "pso-rdate-10b",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "10B",
+      "output": 10.0
+    },
+    {
+      "id": "pso-rdate-neg-2w",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "-2w",
+      "output": -14.0
+    },
+    {
+      "id": "pso-rdate-2f",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "2F",
+      "output": 60.0
+    },
+    {
+      "id": "pso-rdate-1y5y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y5y",
+      "output": 365.0
+    },
+    {
+      "id": "pso-cashfx-1y5y-xc",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y5y XC",
+      "output": 365.0
+    },
+    {
+      "id": "pso-pricerbf-1y5y10y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1y5y10y",
+      "output": 365.0
+    },
+    {
+      "id": "pso-frax-3x6",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "3x6",
+      "output": 90.0
+    },
+    {
+      "id": "pso-spike-qe1",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "QE1-2025",
+      "output": 411.0
+    },
+    {
+      "id": "pso-spike-qe2",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "QE2-2025",
+      "output": 503.0
+    },
+    {
+      "id": "pso-spike-qe3",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "QE3-2025",
+      "output": 595.0
+    },
+    {
+      "id": "pso-spike-qe4",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "QE4-2025",
+      "output": 686.0
+    },
+    {
+      "id": "pso-mmmyyyy-jun2025",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Jun2025",
+      "output": 503.0
+    },
+    {
+      "id": "pso-ddmmmyyyy-15mar2026",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "15Mar2026",
+      "output": 790.0
+    },
+    {
+      "id": "pso-ddmmmyyyy-leap-29feb2024",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "29Feb2024",
+      "output": 45.0
+    },
+    {
+      "id": "pso-ddmmmyyyy-1jan2024",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1Jan2024",
+      "output": -14.0
+    },
+    {
+      "id": "pso-ddmmmyyyy-leading-zero-miss",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "05Jan2024",
+      "output": 0.0
+    },
+    {
+      "id": "pso-number-42",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "42",
+      "output": 42.0
+    },
+    {
+      "id": "pso-floating-year-05y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "0.5y",
+      "output": 182.5
+    },
+    {
+      "id": "pso-floating-year-15Y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1.5Y",
+      "output": 547.5
+    },
+    {
+      "id": "pso-floating-year-dot5y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": ".5y",
+      "output": 182.5
+    },
+    {
+      "id": "pso-pricer-coord-no",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "No 5",
+      "output": 5.0
+    },
+    {
+      "id": "pso-pricer-coord-pricer",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Pricer 12",
+      "output": 12.0
+    },
+    {
+      "id": "pso-bond-spread-none",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "5S25/5Q25",
+      "output": null
+    },
+    {
+      "id": "pso-lyy-h25",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "H25",
+      "output": 411.0
+    },
+    {
+      "id": "pso-lyy-m26",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "M26",
+      "output": 868.0
+    },
+    {
+      "id": "pso-lyy-z68",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Z68",
+      "output": 16392.0
+    },
+    {
+      "id": "pso-lyy-z69",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Z69",
+      "output": -19768.0
+    },
+    {
+      "id": "pso-datepair-slash",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "20240101/20250615",
+      "output": 517.0
+    },
+    {
+      "id": "pso-datepair-space",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "20240101 20250615",
+      "output": 517.0
+    },
+    {
+      "id": "pso-mmmyy-jan-25",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "JAN 25",
+      "output": 352.0
+    },
+    {
+      "id": "pso-fxvol-spread-addon",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "Spread Addon",
+      "output": null
+    },
+    {
+      "id": "pso-fxvol-hl",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "HL",
+      "output": null
+    },
+    {
+      "id": "pso-bond-coord",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1 2.5 15/03/2026",
+      "output": 790.0
+    },
+    {
+      "id": "pso-bond-fut-usth4",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "USTH4",
+      "output": 46.0
+    },
+    {
+      "id": "pso-ff-fut-ffz5",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "FFZ5",
+      "output": 321.0
+    },
+    {
+      "id": "pso-ff-fut-ffh4",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "FFH4",
+      "output": 46.0
+    },
+    {
+      "id": "pso-repogc-on",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "ON GC",
+      "output": 0.0
+    },
+    {
+      "id": "pso-repogc-tn",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "TN GC",
+      "output": 1.0
+    },
+    {
+      "id": "pso-repogc-sn",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "SN GC",
+      "output": 2.0
+    },
+    {
+      "id": "pso-repogc-3m",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "3 Month GC",
+      "output": 90.0
+    },
+    {
+      "id": "pso-repogc-2w",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "2 Week GC",
+      "output": 14.0
+    },
+    {
+      "id": "pso-repogc-1y",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "1 Year GC",
+      "output": 365.0
+    },
+    {
+      "id": "pso-repogc-5d",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "5 Day GC",
+      "output": 5.0
+    },
+    {
+      "id": "pso-repogc-bare-none",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "3 GC",
+      "output": null
+    },
+    {
+      "id": "pso-relative-10d",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "10 day",
+      "output": 10.0
+    },
+    {
+      "id": "pso-relative-3w",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "3 week",
+      "output": 21.0
+    },
+    {
+      "id": "pso-relative-6m",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "6 month",
+      "output": 180.0
+    },
+    {
+      "id": "pso-relative-2y-upper",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "2 YEAR",
+      "output": 730.0
+    },
+    {
+      "id": "pso-ddmmmyy-05feb25",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "05Feb25",
+      "output": 387.0
+    },
+    {
+      "id": "pso-ddmmmyy-leap-29feb24",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "29Feb24",
+      "output": 45.0
+    },
+    {
+      "id": "pso-fallback-unknown",
+      "source_ref": "gs_quant/datetime/point.py:point_sort_order",
+      "operation": "point_sort_order",
+      "ref_date": "2024-01-15",
+      "point": "unknown_point",
+      "output": 0.0
+    },
+    {
+      "id": "sort-basic-tenors",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "10y",
+            "value": 100.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "O/N",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 50.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 75.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "O/N",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 50.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 75.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "10y",
+            "value": 100.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sort-tie-stability-30d-1m",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sort-none-point-as-zero",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1d",
+            "value": 3.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "USD Rho",
+            "value": 1.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "O/N",
+            "value": 2.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "-1w",
+            "value": 4.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "-1w",
+            "value": 4.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "USD Rho",
+            "value": 1.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "O/N",
+            "value": 2.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1d",
+            "value": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sort-multi-column-dims",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 1.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "FX",
+            "mkt_asset": "USD",
+            "mkt_class": "FWD",
+            "mkt_point": "5y",
+            "value": 2.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "EUR",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 3.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "CASH",
+            "mkt_point": "5y",
+            "value": 4.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 5.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "FX",
+            "mkt_asset": "USD",
+            "mkt_class": "FWD",
+            "mkt_point": "5y",
+            "value": 2.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "EUR",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 3.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "CASH",
+            "mkt_point": "5y",
+            "value": 4.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sort-dated-and-timed",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-02",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "14:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 20.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 30.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 40.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-01",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 30.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 40.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "14:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 20.0
+          },
+          {
+            "date": "2024-01-02",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sort-compound-semicolon-tenors",
+      "source_ref": "gs_quant/risk/core.py:sort_risk",
+      "operation": "sort_risk",
+      "ref_date": "2024-01-15",
+      "table": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;10y",
+            "value": 12.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;2y",
+            "value": 8.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "6m;5y",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;5y",
+            "value": 10.0
+          }
+        ]
+      },
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "6m;5y",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;2y",
+            "value": 8.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAPTION",
+            "mkt_point": "1y;10y",
+            "value": 12.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-two-tables-fillna-cancel-tiebreak",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "10y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-threshold-zero-drops-cancel",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": 0.0,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "10y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-threshold-10-strict-boundary",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": 10.0,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -25.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-threshold-25-strict-boundary",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": 25.0,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": []
+      }
+    },
+    {
+      "id": "agg-threshold-neg-1-keeps-zero",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": -1.0,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "10y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-threshold-nan-drops-all",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": "NaN",
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": []
+      }
+    },
+    {
+      "id": "agg-threshold-pos-inf-drops-all",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": "Infinity",
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -25.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "10y",
+              "value": 10.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": []
+      }
+    },
+    {
+      "id": "agg-duplicate-buckets-single-table",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 12.5
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -2.5
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 4.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 4.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 20.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-all-nan-bucket-becomes-zero",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 3.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "NaN"
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-inf-propagation",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "Infinity"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": "-Infinity"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": "Infinity"
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -3.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": "-Infinity"
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": "Infinity"
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": "-Infinity"
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": "NaN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-inf-threshold-zero-drops-nan",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": 0.0,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": "Infinity"
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": "Infinity"
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": "-Infinity"
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": "Infinity"
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-three-tables-multi-asset-class",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "FX",
+              "mkt_asset": "EURUSD",
+              "mkt_class": "FWD",
+              "mkt_point": "3m",
+              "value": -4.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 2.5
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "OIS",
+              "mkt_point": "1y",
+              "value": 8.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "FX",
+              "mkt_asset": "EURUSD",
+              "mkt_class": "FWD",
+              "mkt_point": "3m",
+              "value": 6.5
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "EUR",
+              "mkt_class": "SWAP",
+              "mkt_point": "2y",
+              "value": -1.25
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "FX",
+            "mkt_asset": "EURUSD",
+            "mkt_class": "FWD",
+            "mkt_point": "3m",
+            "value": 2.5
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "EUR",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -1.25
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "OIS",
+            "mkt_point": "1y",
+            "value": 8.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 12.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-dated-tables",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": "2024-01-02",
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": "2024-01-01",
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": "2024-01-02",
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 5.0
+            },
+            {
+              "date": "2024-01-01",
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 7.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-01",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 7.0
+          },
+          {
+            "date": "2024-01-02",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 15.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-dated-and-timed-tables",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": "2024-01-01",
+              "time": "14:00",
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": "2024-01-01",
+              "time": "09:00",
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 20.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": "2024-01-01",
+              "time": "09:00",
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": -5.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-01",
+            "time": "09:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 15.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": "14:00",
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-groupby-lex-tiebreak-30d-1m",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-unit-inherit-none-and-usd",
+      "source_ref": "gs_quant/risk/core.py:aggregate_results",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": null,
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "3m",
+              "value": 15.0
+            }
+          ]
+        },
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 15.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-unit-all-none",
+      "source_ref": "gs_quant/risk/core.py:aggregate_results",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": null,
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "3m",
+              "value": 15.0
+            }
+          ]
+        },
+        {
+          "unit": null,
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 2.0
+            }
+          ]
+        }
+      ],
+      "output": {
+        "unit": null,
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 15.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 7.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "agg-err-unit-mismatch-usd-eur",
+      "source_ref": "gs_quant/risk/core.py:aggregate_results",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 10.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1y",
+              "value": 20.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "30d",
+              "value": 5.0
+            },
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "USD",
+              "mkt_class": "SWAP",
+              "mkt_point": "1m",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "unit": "EUR",
+          "rows": [
+            {
+              "date": null,
+              "time": null,
+              "mkt_type": "IR",
+              "mkt_asset": "EUR",
+              "mkt_class": "SWAP",
+              "mkt_point": "5y",
+              "value": 3.0
+            }
+          ]
+        }
+      ],
+      "error": {
+        "rust": "UnitMismatch",
+        "upstream_type": "ValueError"
+      }
+    },
+    {
+      "id": "agg-err-empty-tables",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [],
+      "error": {
+        "rust": "Length",
+        "upstream_type": "ValueError"
+      }
+    },
+    {
+      "id": "agg-single-empty-rows-table",
+      "source_ref": "gs_quant/risk/core.py:aggregate_risk",
+      "operation": "aggregate_risk",
+      "ref_date": "2024-01-15",
+      "threshold": null,
+      "tables": [
+        {
+          "unit": "USD",
+          "rows": []
+        }
+      ],
+      "output": {
+        "unit": "USD",
+        "rows": []
+      }
+    },
+    {
+      "id": "sub-cancellation-and-asymmetric",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 25.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 4.0
+          }
+        ]
+      },
+      "right": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": 6.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 5.0
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "3m",
+            "value": 4.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "2y",
+            "value": -6.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sub-with-nan-fillna",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 15.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": "NaN"
+          }
+        ]
+      },
+      "right": {
+        "unit": null,
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": "NaN"
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 3.5
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 15.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": -3.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "sub-dated-tables",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-02",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 30.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 12.0
+          }
+        ]
+      },
+      "right": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-02",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 18.0
+          },
+          {
+            "date": "2024-01-01",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 12.0
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-01",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 0.0
+          },
+          {
+            "date": "2024-01-02",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 12.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sub-self-exact-zero",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          }
+        ]
+      },
+      "right": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "output": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 0.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "sub-err-unit-mismatch",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          }
+        ]
+      },
+      "right": {
+        "unit": "EUR",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "EUR",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 3.0
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "error": {
+        "rust": "UnitMismatch",
+        "upstream_type": "ValueError"
+      }
+    },
+    {
+      "id": "sub-err-date-schema-mismatch",
+      "source_ref": "gs_quant/risk/core.py:subtract_risk",
+      "operation": "subtract_risk",
+      "ref_date": "2024-01-15",
+      "left": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 10.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1y",
+            "value": 20.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "30d",
+            "value": 5.0
+          },
+          {
+            "date": null,
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "1m",
+            "value": 7.0
+          }
+        ]
+      },
+      "right": {
+        "unit": "USD",
+        "rows": [
+          {
+            "date": "2024-01-15",
+            "time": null,
+            "mkt_type": "IR",
+            "mkt_asset": "USD",
+            "mkt_class": "SWAP",
+            "mkt_point": "5y",
+            "value": 1.0
+          }
+        ]
+      },
+      "upstream_note": "upstream_subtract_risk_columns_names_bug",
+      "error": {
+        "rust": "Length",
+        "upstream_type": "AssertionError"
+      }
+    }
+  ]
+}
