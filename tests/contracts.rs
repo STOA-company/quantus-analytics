@@ -6974,3 +6974,448 @@ fn predefined_error_boundaries_and_determinism() {
         assert_eq!(a.to_bits(), b.to_bits());
     }
 }
+
+#[test]
+fn error_non_exhaustive_wildcard_match() {
+    let classify = |err: Error| match err {
+        Error::Date => "date",
+        Error::Window | Error::Ramp => "window",
+        Error::UnitMismatch => "unit",
+        _ => "other",
+    };
+    assert_eq!(classify(Error::Date), "date");
+    assert_eq!(classify(Error::Window), "window");
+    assert_eq!(classify(Error::Ramp), "window");
+    assert_eq!(classify(Error::UnitMismatch), "unit");
+    assert_eq!(classify(Error::Length), "other");
+    assert_eq!(classify(Error::Overflow), "other");
+}
+
+#[test]
+fn rolling_linear_regression_implicit_constant_no_intercept() {
+    let dates10: Vec<Date> = (1..=10).map(|day| date(2024, 1, day)).collect();
+    let d_vals = vec![1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0];
+    let one_minus_d_vals: Vec<f64> = d_vals.iter().map(|&v| 1.0 - v).collect();
+    let y_vals = vec![10.0, 20.0, 12.0, 19.0, 11.0, 13.0, 21.0, 9.0, 18.0, 22.0];
+    let z_vals = vec![0.2, 0.5, -0.1, 0.3, 0.8, -0.4, 0.7, 0.1, -0.2, 0.6];
+
+    let d_s = Series::try_new(dates10.clone(), d_vals.clone()).unwrap();
+    let comp_s = Series::try_new(dates10.clone(), one_minus_d_vals).unwrap();
+    let z_s = Series::try_new(dates10.clone(), z_vals).unwrap();
+    let y_s = Series::try_new(dates10.clone(), y_vals.clone()).unwrap();
+
+    // 1. Complementary dummies [d, 1 - d] with fit_intercept = false -> centered R^2
+    let reg_dummies =
+        RollingLinearRegression::fit(&[d_s.clone(), comp_s.clone()], &y_s, 5, false).unwrap();
+    assert_eq!(reg_dummies.column_indices(), &[1, 2]);
+    let r2_dummies = reg_dummies.r_squared().values();
+    assert!(r2_dummies[..4].iter().all(|v| v.is_nan()));
+    let expected_dummies = [
+        0.97197309417,
+        0.964285714286,
+        0.950495049505,
+        0.90671641791,
+        0.873991935484,
+        0.862486248625,
+    ];
+    for (got, exp) in r2_dummies[4..].iter().zip(expected_dummies) {
+        assert!(
+            (got - exp).abs() < 1e-10,
+            "implicit-const-dummies-no-ic mismatch: got {got}, expected {exp}"
+        );
+    }
+
+    // 2. Complementary dummies + continuous factor [d, 1 - d, z] with fit_intercept = false -> centered R^2
+    let reg_factor =
+        RollingLinearRegression::fit(&[d_s.clone(), comp_s.clone(), z_s.clone()], &y_s, 6, false)
+            .unwrap();
+    assert_eq!(reg_factor.column_indices(), &[1, 2, 3]);
+    let r2_factor = reg_factor.r_squared().values();
+    assert!(r2_factor[..5].iter().all(|v| v.is_nan()));
+    let expected_factor = [
+        0.960752123157,
+        0.967441860465,
+        0.911322180619,
+        0.892422589578,
+        0.891750783153,
+    ];
+    for (got, exp) in r2_factor[5..].iter().zip(expected_factor) {
+        assert!(
+            (got - exp).abs() < 1e-10,
+            "implicit-const-dummies-plus-factor-no-ic mismatch: got {got}, expected {exp}"
+        );
+    }
+
+    // 3. Implicit constant with constant y -> centered SST == 0 => r_squared = NaN (not 1.0)
+    let y_const = Series::try_new(dates10.clone(), vec![5.0; 10]).unwrap();
+    let reg_const_y =
+        RollingLinearRegression::fit(&[d_s.clone(), comp_s.clone()], &y_const, 5, false).unwrap();
+    assert!(reg_const_y.r_squared().values().iter().all(|v| v.is_nan()));
+    for &se in &reg_const_y.standard_deviation_of_errors().values()[4..] {
+        assert!(se.abs() < 1e-12);
+    }
+
+    // 4. Rank-deficient aligned_x containing implicit constant [d, 1 - d, 2 * d] -> handled cleanly
+    let two_d =
+        Series::try_new(dates10.clone(), d_vals.iter().map(|&v| 2.0 * v).collect()).unwrap();
+    let reg_rank_def = RollingLinearRegression::fit(&[d_s, comp_s, two_d], &y_s, 5, false).unwrap();
+    assert!(reg_rank_def.r_squared().values().iter().all(|v| v.is_nan()));
+
+    // 5. Non-constant predictors [x1, x2] with fit_intercept = false still use uncentered R^2
+    let x1 = Series::try_new(dates10.clone(), (1..=10).map(|k| k as f64).collect()).unwrap();
+    let x2 = Series::try_new(dates10.clone(), (1..=10).map(|k| (k * k) as f64).collect()).unwrap();
+    let reg_nonconst = RollingLinearRegression::fit(&[x1.clone(), x2], &y_s, 5, false).unwrap();
+    // On window 0..5, compute uncentered SST = sum(y^2) and centered SST = sum((y - mean)^2)
+    let y_win = &y_vals[..5];
+    let uncentered_sst: f64 = y_win.iter().map(|v| v * v).sum();
+    let mean_y: f64 = y_win.iter().sum::<f64>() / 5.0;
+    let centered_sst: f64 = y_win.iter().map(|v| (v - mean_y).powi(2)).sum();
+    let se0 = reg_nonconst.standard_deviation_of_errors().values()[4];
+    let sse0 = se0 * se0 * (5.0 - 2.0);
+    let expected_uncentered_r2 = 1.0 - sse0 / uncentered_sst;
+    let centered_r2 = 1.0 - sse0 / centered_sst;
+    assert!((expected_uncentered_r2 - centered_r2).abs() > 1e-2);
+    assert!((reg_nonconst.r_squared().values()[4] - expected_uncentered_r2).abs() < 1e-10);
+
+    // 6. All-zero column does NOT trigger has_constant = true
+    let zeros = Series::try_new(dates10, vec![0.0; 10]).unwrap();
+    let reg_zeros = RollingLinearRegression::fit(&[zeros], &y_s, 4, false).unwrap();
+    assert!(reg_zeros.r_squared().values().iter().all(|v| v.is_nan()));
+    // Single non-zero predictor without constant also uses uncentered R^2
+    let reg_single = RollingLinearRegression::fit(&[x1], &y_s, 5, false).unwrap();
+    let se_single = reg_single.standard_deviation_of_errors().values()[4];
+    let sse_single = se_single * se_single * (5.0 - 1.0);
+    assert!(
+        (reg_single.r_squared().values()[4] - (1.0 - sse_single / uncentered_sst)).abs() < 1e-10
+    );
+}
+
+#[test]
+fn basket_five_assets_accumulation_and_weight_normalization() {
+    let cal = vec![
+        date(2024, 1, 2),
+        date(2024, 1, 5),
+        date(2024, 1, 9),  // weekly k=1
+        date(2024, 1, 16), // weekly k=2
+        date(2024, 2, 2),  // monthly k=1
+        date(2024, 2, 9),
+        date(2024, 3, 2), // monthly k=2
+        date(2024, 3, 5),
+    ];
+    let p_vals = [
+        vec![100.0, 104.0, 102.0, 110.0, 115.0, 112.0, 120.0, 126.0],
+        vec![50.0, 49.0, 52.0, 51.0, 55.0, 56.0, 54.0, 58.0],
+        vec![200.0, 206.0, 210.0, 204.0, 212.0, 220.0, 225.0, 230.0],
+        vec![80.0, 82.0, 79.0, 84.0, 81.0, 85.0, 88.0, 90.0],
+        vec![125.0, 125.0, 130.0, 132.0, 128.0, 135.0, 140.0, 138.0],
+    ];
+    let series: Vec<Series> = p_vals
+        .iter()
+        .map(|vals| Series::try_new(cal.clone(), vals.clone()).unwrap())
+        .collect();
+
+    // Mixed Fixed + Series weights (summing to 1.0 on every date) and mixed Fixed + Series costs
+    let w0_vals = vec![0.30, 0.25, 0.20, 0.35, 0.25, 0.20, 0.30, 0.25];
+    let w1_vals = vec![0.10, 0.15, 0.20, 0.05, 0.15, 0.20, 0.10, 0.15];
+    let w0_s = Series::try_new(cal.clone(), w0_vals.clone()).unwrap();
+    let w1_s = Series::try_new(cal.clone(), w1_vals.clone()).unwrap();
+    let c0_vals = vec![0.001, 0.0015, 0.002, 0.001, 0.0025, 0.001, 0.002, 0.001];
+    let c3_vals = vec![0.0005, 0.001, 0.0005, 0.0015, 0.001, 0.002, 0.001, 0.0005];
+    let c0_s = Series::try_new(cal.clone(), c0_vals.clone()).unwrap();
+    let c3_s = Series::try_new(cal.clone(), c3_vals.clone()).unwrap();
+
+    let weights = [
+        BasketParam::Series(&w0_s),
+        BasketParam::Series(&w1_s),
+        BasketParam::Fixed(0.25),
+        BasketParam::Fixed(0.20),
+        BasketParam::Fixed(0.15),
+    ];
+    let costs = [
+        BasketParam::Series(&c0_s),
+        BasketParam::Fixed(0.001),
+        BasketParam::Fixed(0.002),
+        BasketParam::Series(&c3_s),
+        BasketParam::Fixed(0.0005),
+    ];
+
+    let w_mat = [
+        w0_vals,
+        w1_vals,
+        vec![0.25; cal.len()],
+        vec![0.20; cal.len()],
+        vec![0.15; cal.len()],
+    ];
+    let c_mat = [
+        c0_vals,
+        vec![0.001; cal.len()],
+        vec![0.002; cal.len()],
+        c3_vals,
+        vec![0.0005; cal.len()],
+    ];
+
+    // Expected rebalance masks for cal (2024-01-02 .. 2024-03-05)
+    let daily_mask = vec![true; cal.len()];
+    // Weekly: Jan 2 (0), Jan 9 (2), Jan 16 (3), Jan 23/30 -> snap Feb 2 (4), Feb 6 -> snap Feb 9 (5), Feb 13/20/27 -> snap Mar 2 (6); Mar 5 == last excluded
+    let weekly_mask = vec![true, false, true, true, true, true, true, false];
+    // Monthly: Jan 2 (0), Feb 2 (4), Mar 2 (6)
+    let monthly_mask = vec![true, false, false, false, true, false, true, false];
+
+    for (freq, rebal_mask) in [
+        (RebalFreq::Daily, daily_mask),
+        (RebalFreq::Weekly, weekly_mask),
+        (RebalFreq::Monthly, monthly_mask),
+    ] {
+        let res = backtest_basket(&series, Some(&weights), Some(&costs), freq).unwrap();
+        let nav_only = basket_series(&series, Some(&weights), Some(&costs), freq).unwrap();
+        assert_eq!(res.nav, nav_only);
+        assert_eq!(res.actual_weights.len(), 5);
+
+        // Exact left-to-right reference recurrence over 5 assets
+        let n = cal.len();
+        let mut ref_nav = vec![0.0_f64; n];
+        let mut ref_units = [0.0_f64; 5];
+        let mut ref_aw = vec![vec![0.0_f64; n]; 5];
+        ref_nav[0] = 100.0;
+        for a in 0..5 {
+            ref_units[a] = ref_nav[0] * w_mat[a][0] / p_vals[a][0];
+            ref_aw[a][0] = w_mat[a][0];
+        }
+        let mut prev_rebal = 0usize;
+        for i in 1..n {
+            let mut pnl = 0.0_f64;
+            for a in 0..5 {
+                pnl += ref_units[a] * (p_vals[a][i] - p_vals[a][i - 1]);
+            }
+            let mut nav_i = ref_nav[i - 1] + pnl;
+            for a in 0..5 {
+                ref_aw[a][i] = w_mat[a][prev_rebal]
+                    * (p_vals[a][i] / p_vals[a][prev_rebal])
+                    * (ref_nav[prev_rebal] / nav_i);
+            }
+            // Verify drifted weights sum to 1.0 when target weights sum to 1.0
+            let drifted_sum: f64 = ref_aw.iter().map(|aw| aw[i]).sum();
+            assert!((drifted_sum - 1.0).abs() < 1e-12);
+            if rebal_mask[i] {
+                let mut cost_rate = 0.0_f64;
+                for a in 0..5 {
+                    cost_rate += c_mat[a][i] * (w_mat[a][i] - ref_aw[a][i]).abs();
+                }
+                nav_i -= cost_rate * nav_i;
+                for a in 0..5 {
+                    ref_units[a] = nav_i * w_mat[a][i] / p_vals[a][i];
+                    ref_aw[a][i] = w_mat[a][i];
+                }
+                prev_rebal = i;
+            }
+            ref_nav[i] = nav_i;
+        }
+
+        for (i, &expected_nav) in ref_nav.iter().enumerate() {
+            assert_eq!(res.nav.values()[i].to_bits(), expected_nav.to_bits());
+            let mut w_sum = 0.0;
+            for (a, expected_aw) in ref_aw.iter().enumerate() {
+                assert_eq!(
+                    res.actual_weights[a].values()[i].to_bits(),
+                    expected_aw[i].to_bits()
+                );
+                w_sum += res.actual_weights[a].values()[i];
+            }
+            assert!((w_sum - 1.0).abs() < 1e-12);
+        }
+    }
+
+    // Default equal weights (1/5 = 0.2) and zero costs on N = 5
+    let eq_res = backtest_basket(&series, None, None, RebalFreq::Monthly).unwrap();
+    let eq_nav = basket_series(&series, None, None, RebalFreq::Monthly).unwrap();
+    assert_eq!(eq_res.nav, eq_nav);
+    for a in 0..5 {
+        assert_eq!(eq_res.actual_weights[a].values()[0], 0.2);
+    }
+    for i in 0..cal.len() {
+        let sum_w: f64 = (0..5).map(|a| eq_res.actual_weights[a].values()[i]).sum();
+        assert!((sum_w - 1.0).abs() < 1e-12);
+    }
+}
+
+#[test]
+fn risk_sort_risk_cached_key_stability_and_subtract_mixed_schema() {
+    let r = date(2024, 1, 15);
+
+    // 1. sort_risk tie-preservation with cached keys (including -0.0 -> +0.0 and None -> 0.0 ties)
+    let table = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 1.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1m", 2.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "USD Rho", 3.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "30d", 4.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "-0d", 5.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "7d", 6.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "O/N", 7.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "1w", 8.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "0d", 9.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "-1w", 10.0),
+        ],
+    };
+    let sorted = sort_risk(&table, r);
+    let summary: Vec<(&str, f64)> = sorted
+        .rows
+        .iter()
+        .map(|row| (row.mkt_point.as_str(), row.value))
+        .collect();
+    // -1w (-7.0) < {USD Rho, -0d, O/N, 0d} (all 0.0, input order preserved)
+    // < {7d, 1w} (both 7.0, input order preserved)
+    // < {1m, 30d} (both 30.0, input order preserved) < 5y
+    assert_eq!(
+        summary,
+        vec![
+            ("-1w", 10.0),
+            ("USD Rho", 3.0),
+            ("-0d", 5.0),
+            ("O/N", 7.0),
+            ("0d", 9.0),
+            ("7d", 6.0),
+            ("1w", 8.0),
+            ("1m", 2.0),
+            ("30d", 4.0),
+            ("5y", 1.0),
+        ]
+    );
+
+    // 2. subtract_risk rejects mixed Some/None date or time within a single table
+    let consistent_undated = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![risk_row(None, None, "IR", "USD", "SWAP", "1y", 10.0)],
+    };
+    let consistent_dated = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![risk_row(
+            Some(date(2024, 1, 15)),
+            None,
+            "IR",
+            "USD",
+            "SWAP",
+            "1y",
+            10.0,
+        )],
+    };
+    let empty_table = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![],
+    };
+    let mixed_date = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(
+                Some(date(2024, 1, 15)),
+                None,
+                "IR",
+                "USD",
+                "SWAP",
+                "1y",
+                5.0,
+            ),
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 2.0),
+        ],
+    };
+    let mixed_time = RiskTable {
+        unit: Some("USD".into()),
+        rows: vec![
+            risk_row(None, Some("09:30"), "IR", "USD", "SWAP", "1y", 5.0),
+            risk_row(None, None, "IR", "USD", "SWAP", "5y", 2.0),
+        ],
+    };
+
+    assert_eq!(
+        subtract_risk(&mixed_date, &consistent_dated, r),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        subtract_risk(&mixed_date, &consistent_undated, r),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        subtract_risk(&mixed_date, &empty_table, r),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        subtract_risk(&consistent_undated, &mixed_time, r),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        subtract_risk(&empty_table, &mixed_time, r),
+        Err(Error::Length)
+    );
+}
+
+#[test]
+fn predefined_unfilled_closing_order_omitted_from_ledger() {
+    let d0 = date(2021, 1, 4);
+    let d1 = date(2021, 1, 5);
+    let d2 = date(2021, 1, 6);
+    let d3 = date(2021, 1, 7); // after backtest end
+    let cal = HolidayCalendar::weekdays(vec![]);
+
+    let mut daily_prices = BTreeMap::new();
+    daily_prices.insert(
+        "AssetA".to_string(),
+        Series::try_new(vec![d0, d1, d2, d3], vec![10.0, 12.0, 15.0, 18.0]).unwrap(),
+    );
+
+    let res = run_predefined_backtest(&PredefinedBacktestInput {
+        start: d0,
+        end: d2,
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices,
+        intraday_prices: BTreeMap::new(),
+        orders: vec![
+            // Filled opening buy on d1 EOD at 12.0
+            PredefinedOrder {
+                instrument: "AssetA".to_string(),
+                quantity: 2.0,
+                generation_time: ts(2021, 1, 5, 10, 0, 0),
+                kind: PredefinedOrderKind::MarketOnClose { execution_date: d1 },
+                source: "Open".to_string(),
+            },
+            // Unfilled closing MOC whose execution_date (d3) is after adjusted_end (d2)
+            PredefinedOrder {
+                instrument: "AssetA".to_string(),
+                quantity: -2.0,
+                generation_time: ts(2021, 1, 6, 10, 0, 0),
+                kind: PredefinedOrderKind::MarketOnClose { execution_date: d3 },
+                source: "UnfilledCloseMoc".to_string(),
+            },
+            // Unfilled closing TWAP whose end falls after the last EOD timer tick (23:00:00)
+            PredefinedOrder {
+                instrument: "AssetA".to_string(),
+                quantity: -1.0,
+                generation_time: ts(2021, 1, 6, 11, 0, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 6, 23, 0, 0),
+                    end: ts(2021, 1, 6, 23, 30, 0),
+                },
+                source: "UnfilledCloseTwap".to_string(),
+            },
+        ],
+    })
+    .unwrap();
+
+    // Only the opening order filled; both unfilled closing orders are omitted from fills & ledger
+    assert_eq!(res.fills.len(), 1);
+    assert_eq!(res.fills[0].source, "Open");
+    assert_eq!(res.trade_ledger.len(), 1);
+    assert_eq!(res.trade_ledger[0].instrument, "AssetA");
+    assert_eq!(res.trade_ledger[0].status, TradeStatus::Open);
+    assert_eq!(res.trade_ledger[0].open_price, 12.0);
+    assert_eq!(res.trade_ledger[0].close_time, None);
+    assert_eq!(res.trade_ledger[0].close_price, None);
+    assert_eq!(res.trade_ledger[0].trade_pnl, None);
+    // Position remains open at final EOD (cash = 100 - 2*12 = 76, AssetA = 2 @ 15 = 30 -> NAV = 106)
+    assert_eq!(res.performance.values(), &[100.0, 100.0, 106.0]);
+    assert_eq!(res.snapshots.last().unwrap().holdings["AssetA"], 2.0);
+    assert_eq!(res.snapshots.last().unwrap().holdings["USD"], 76.0);
+}
