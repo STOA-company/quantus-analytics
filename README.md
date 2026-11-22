@@ -2,7 +2,7 @@
 
 Unofficial Rust port of goldmansachs/gs-quant; not affiliated with, endorsed or sponsored by Goldman Sachs.
 
-Quantus Analytics is a unified repository for financial calculations. Its first package, `quantus-math`, provides offline, dependency-free moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, price level reconstruction (`prices`), realized volatility (`volatility`, `vol_swap_volatility`), correlation (`correlation`, `corr_swap_correlation`), beta, maximum drawdown, offline business-day calendar & day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), and offline bucketed risk aggregation, subtraction, sorting, and market-point tenor sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`, `Error::UnitMismatch`) as a slice of [gs-quant](https://github.com/goldmansachs/gs-quant), based on upstream commit `70220e300524d54bd273be0f4c485d53b3780482`. Prices (including reconstructed levels from `prices`), moving averages, exponential moving averages, smoothed moving averages, MACD, standard deviation (`std`), Bollinger bands (`bollinger_bands`), rolling regression `fitted_values` and `standard_deviation_of_errors`, and absolute returns use the caller's input units; bucketed risk tables (`RiskTable`) carry an optional explicit unit/currency label (e.g. `Some("USD")`) validated across aggregated or subtracted tables while `point_sort_order` returns approximate calendar days from an explicit `ref_date`; basket NAV (`backtest_basket`, `basket_series`) is an excess-return index rebased to `100.0` on the first common date while realized `actual_weights` are dimensionless ratios; sample covariance (`cov`) uses the product of `x` and `y` input units; simple returns, logarithmic returns, correlation (`correlation`, `corr_swap_correlation`), beta, rolling regression `r_squared`, maximum drawdown, and day-count fractions (`day_count_fraction`) are dimensionless ratios (not percent; e.g. `-0.2` for a 20% drawdown); relative strength index (RSI) is returned on a `0`–`100` scale; volatility (`volatility`, `vol_swap_volatility`) is returned in percent (e.g. `20.0` for 20%). No network, market data, or internal engine is involved.
+Quantus Analytics is a unified repository for financial calculations. Its first package, `quantus-math`, provides offline, dependency-free moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, price level reconstruction (`prices`), realized volatility (`volatility`, `vol_swap_volatility`), correlation (`correlation`, `corr_swap_correlation`), beta, maximum drawdown, offline business-day calendar & day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`), offline event-driven predefined-asset backtesting (`Timestamp`, `PredefinedOrderKind`, `PredefinedOrder`, `SimulatedFill`, `TradeStatus`, `TradeLedgerEntry`, `DailyPositionSnapshot`, `PredefinedBacktestResult`, `PredefinedBacktestInput`, `run_predefined_backtest`), and offline bucketed risk aggregation, subtraction, sorting, and market-point tenor sort order (`RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`, `Error::UnitMismatch`) as a slice of [gs-quant](https://github.com/goldmansachs/gs-quant), based on upstream commit `70220e300524d54bd273be0f4c485d53b3780482`. Prices (including reconstructed levels from `prices`), moving averages, exponential moving averages, smoothed moving averages, MACD, standard deviation (`std`), Bollinger bands (`bollinger_bands`), rolling regression `fitted_values` and `standard_deviation_of_errors`, and absolute returns use the caller's input units; bucketed risk tables (`RiskTable`) carry an optional explicit unit/currency label (e.g. `Some("USD")`) validated across aggregated or subtracted tables while `point_sort_order` returns approximate calendar days from an explicit `ref_date`; basket NAV (`backtest_basket`, `basket_series`) is an excess-return index rebased to `100.0` on the first common date while realized `actual_weights` are dimensionless ratios; event-driven predefined-asset backtest NAV (`run_predefined_backtest`) starts at caller-supplied `initial_value` in cash units while EOD `weights` are dimensionless ratios and `trade_ledger` `trade_pnl` is the signed unit price spread; sample covariance (`cov`) uses the product of `x` and `y` input units; simple returns, logarithmic returns, correlation (`correlation`, `corr_swap_correlation`), beta, rolling regression `r_squared`, maximum drawdown, and day-count fractions (`day_count_fraction`) are dimensionless ratios (not percent; e.g. `-0.2` for a 20% drawdown); relative strength index (RSI) is returned on a `0`–`100` scale; volatility (`volatility`, `vol_swap_volatility`) is returned in percent (e.g. `20.0` for 20%). No network, market data, or internal engine is involved.
 
 | Feature | Supported subset |
 |---|---|
@@ -27,7 +27,8 @@ Quantus Analytics is a unified repository for financial calculations. Its first 
 | Multi-asset basket backtesting | Reuses `Series`, `Date`, and `Error::Length` without adding dependencies or new `Error` variants. `backtest_basket(series, weights, costs, rebal_freq)` returns `BasketResult { nav, actual_weights }` (excess-return NAV starting at `100.0` plus realized weight series in asset order), and `basket_series(series, weights, costs, rebal_freq)` returns `nav`, mirroring `gs_quant/timeseries/backtesting.py` lines 52–180. Accepts `weights` and `costs` as `Option<&[BasketParam<'_>]>` (`Fixed(f64)` or time-varying `Series(&Series)`); `None` defaults to `1/N` equal weights and `0.0` execution costs. Aligns onto the sorted common calendar intersection across all price series and all `BasketParam::Series` weight/cost inputs. Supports `RebalFreq::{Daily, Weekly, Monthly}` with upstream's strict `hyp < max(cal)` rule, holiday-gap snapping with duplicate-snap deduplication, and anchor-based month clamping (`2024-01-31 -> 2024-02-29 -> 2024-03-31 -> 2024-04-30`). Reproduces upstream IEEE-754 recurrence including signed cost deduction `nav_i -= cost_rate * nav_i` on rebalance dates, short/leveraged/zero weights, and `NaN`/zero-price/zero-NAV/negative-NAV propagation. Documented parity boundaries: (1) remote `Basket` class (`GsAssetApi`/`GsDataApi`) is intentionally out of scope; (2) `weights: None` / `costs: None` represent defaults while explicit empty slices `Some(&[])` on non-empty `series` return `Err(Error::Length)` (vs Python's falsy `or` fallback); (3) empty `series`, length mismatch, and disjoint/empty calendar intersection return typed `Err(Error::Length)` (vs Python `ZeroDivisionError`, `MqValueError`, `IndexError`); (4) duplicate/unsorted dates and `DatetimeIndex` time zones are rejected by `Series::try_new`. |
 | Bucketed risk aggregation, subtraction, sorting & `point_sort_order` | Adds `RiskRow`, `RiskTable`, `point_sort_order`, `sort_risk`, `aggregate_risk`, `subtract_risk`, and a single semantic error variant `Error::UnitMismatch` in pure `std` Rust (zero external dependencies). Mirrors `gs_quant/datetime/point.py` lines 25–325 and `gs_quant/risk/core.py` lines 33–34, 516–682. `point_sort_order(point, ref_date)` implements all upstream tenor/date/const/compound `;`/copula/futures/repo patterns in exact precedence with POSIX `%y` 68/69 pivot and returns `None` where upstream leaves `days = None` (treated as `0.0` by `sort_risk`). `sort_risk(table, ref_date)` stable-sorts rows by `(date, time, mkt_type, mkt_asset, mkt_class, point_sort_order(mkt_point, ref_date).unwrap_or(0.0))` preserving input order on ties (`30d` vs `1m`). `aggregate_risk(tables, threshold, ref_date)` rejects empty `tables` (`Err(Error::Length)`), validates unit compatibility across non-empty `unit` labels (`Err(Error::UnitMismatch)`, inheriting non-empty unit over `None`/`Some("")`), replaces `NaN` with `0.0` (`fillna(0)` while propagating `±Inf`), sums buckets in canonical lexicographical order (matching pandas `groupby(..., sort=True)` before `sort_risk`), filters by strict `abs(value) > threshold` (`== threshold`, `0.0` at `threshold = 0.0`, and all rows at `NaN`/`+Inf` dropped), and sorts via `sort_risk`. `subtract_risk(left, right, ref_date)` validates unit compatibility (`Err(Error::UnitMismatch)`) and optional `date`/`time` presence compatibility on non-empty tables (`Err(Error::Length)`), negates `right`, and delegates to `aggregate_risk`. Documented parity boundaries: (1) upstream `gs_quant/risk/core.py:642-643` (`subtract_risk`) asserts `'value' in left.columns.names`, inspecting pandas `Index.names` (`[None]`) instead of column names and raising `AssertionError` on standard DataFrames—Rust implements the documented/intended semantics; (2) Rust requires an explicit `ref_date: Date` instead of reading `datetime.date.today()`, guaranteeing deterministic offline behavior; (3) only already-resolved bucketed risk tables/rows are supported—remote `PricingContext`, `Future`, server pricing, and `ErrorValue` are out of scope. |
 | Volatility & correlation swaps (`vol_swap_volatility`, `corr_swap_correlation`) | Reuses `Series`, `Date`, `volatility`, `correlation`, `ReturnKind::Logarithmic`, `Window::Observations`, and `Error` without adding dependencies or new `Error` variants. Mirrors `gs_quant/timeseries/econometrics.py:{vol_swap_volatility,corr_swap_correlation}` (lines 695–765 and 891–964). `vol_swap_volatility(prices, n_days, annualization_factor, assume_zero_mean)` returns annualized volatility in percent using logarithmic returns over `Window::Observations { size: n, ramp: n - 1 }` (`n = n_days.unwrap_or(prices.dates().len())`, default `annualization_factor = 252`); empty `prices` returns empty before validating `n_days`, `n == 0` returns `Err(Error::Window)`, `n == len + 1` returns empty, `n >= len + 2` returns `Err(Error::Ramp)`, and non-positive prices return `Err(Error::NonPositivePrice)`. `corr_swap_correlation(x, y, n_days, assume_zero_mean)` returns dimensionless realized correlation in `[-1, 1]` using logarithmic returns over `Window::Observations { size: n - 1, ramp: n - 2 }` (`n = n_days.unwrap_or_else(|| x.dates().len().min(y.dates().len()))`); empty `x` returns empty before validating `n_days`, `n <= 1` returns `Err(Error::Window)`, non-positive prices return `Err(Error::NonPositivePrice)`, and zero-mean mode propagates underlying `Error::AnnualizationFactor` / `Error::Ramp` from `correlation`. Documented parity boundaries: (1) upstream's `Window(w, r)` validation (`r != w - 1` → `MqTypeError`) is enforced by construction via Rust's typed `Option<usize>` parameter; (2) constant zero-variance price/log-return series with `assume_zero_mean = false` in `corr_swap_correlation` inherit `correlation`'s `NaN` contract (vs upstream pandas `±Inf` rounding residue); (3) zero new Cargo dependencies and zero new `Error` variants. |
-| Not supported | Remote `PricingContext`, `Future`, server risk pricing, `ErrorValue`, remote `Basket` class (`GsAssetApi`/`GsDataApi`), remote `GsCalendar` exchange/currency holiday dataset fetches (`HOLIDAY`, `HOLIDAY_CURRENCY`), date-based return lag, months/weeks (`1m`, `3m`, `1w`), mixed-unit ramps, duplicate or unsorted indices, `DatetimeIndex` / time zones, non-date indices (`TypeError` in upstream `max_drawdown`), pandas nullable values distinct from NaN, non-simple return kinds for `beta`, variance swap wrappers, service-level portfolio beta (`measures_portfolios.py`) and drawdown report services, and other gs-quant functions. This is not a claim of full upstream compatibility. |
+| Event-driven predefined-asset backtesting (`run_predefined_backtest`) | Adds `Timestamp`, `PredefinedOrderKind` (`MarketOnClose`, `Twap`, `AtMarket`, `Cost`), `PredefinedOrder`, `SimulatedFill`, `TradeStatus`, `TradeLedgerEntry`, `DailyPositionSnapshot`, `PredefinedBacktestResult`, `PredefinedBacktestInput`, and `run_predefined_backtest` in pure `std` Rust (zero new dependencies, zero new `Error` variants). Mirrors `gs_quant/backtests/{predefined_asset_engine,execution_engine,order,backtest_objects,data_handler,data_sources}.py` (flagship vector `test_backtest_predefined`). Adjusts `start`/`end` backward onto explicit `HolidayCalendar`, records initial NAV `(adjusted_start, initial_value)`, builds a sorted/deduplicated UTC wall-clock timer over active business days `(adjusted_start, adjusted_end]`, and executes the exact FIFO `VecDeque` event loop (`ping` fills → `Market` order submission → `Valuation` EOD mark-to-market with `1e-12` zero-position pruning → `Order` insertion stably sorted by `execution_end_time`). `Twap` averages intraday ticks strictly over half-open `(start, end]`, `MarketOnClose` fills at `23:00:00` daily close, `AtMarket` fills at exact intraday tick, and `Cost` applies cash-only adjustments at price `0.0`. Produces FIFO `trade_ledger` over executed orders grouped by first-seen instrument (`Cost` mapped to `cash_label`) with `trade_pnl = Some((close_price - open_price) * sign(open_qty))` (exact `np.sign`). Documented parity boundaries: (1) requires explicit `HolidayCalendar`, daily/intraday price tables, and explicit `PredefinedOrder` events — remote `GsDataSource`, `GsCalendar`, `PricingContext`, `GenericEngine`, live order routing, and IANA timezone conversions are out of scope (all timestamps are UTC wall-clock); (2) missing or `NaN` execution/valuation prices return typed `Err(Error::Length)` (vs upstream `KeyError`/`RuntimeError`), invalid date/time ranges return `Err(Error::Date)`, and unsorted/duplicate intraday timestamps return `Err(Error::UnsortedOrDuplicate)`. |
+| Not supported | Remote `GsDataSource`, `GenericEngine`, live order routing, IANA timezone conversions, remote `PricingContext`, `Future`, server risk pricing, `ErrorValue`, remote `Basket` class (`GsAssetApi`/`GsDataApi`), remote `GsCalendar` exchange/currency holiday dataset fetches (`HOLIDAY`, `HOLIDAY_CURRENCY`), date-based return lag, months/weeks (`1m`, `3m`, `1w`), mixed-unit ramps, duplicate or unsorted indices, `DatetimeIndex` / time zones, non-date indices (`TypeError` in upstream `max_drawdown`), pandas nullable values distinct from NaN, non-simple return kinds for `beta`, variance swap wrappers, service-level portfolio beta (`measures_portfolios.py`) and drawdown report services, and other gs-quant functions. This is not a claim of full upstream compatibility. |
 
 Observation window size must be positive and its ramp at most the number of rows; for `moving_average`, `std`, `bollinger_bands`, `smoothed_moving_average`, `relative_strength_index` (against `gains` of length `x.len().saturating_sub(1)` after initial normalization on `x`), Pearson `correlation`, `beta`, and `max_drawdown`, size larger than the effective series returns an empty series (or empty `BollingerBands`) after rejecting an invalid observation ramp with `Err(Error::Ramp)`. For `cov`, observation/expanding windows validate against `x` when `x` is non-empty and then against the sorted date union of `x` and `y` (so `empty x` + `non-empty y` returns `Err(Error::Window)` for `Window::Expanding` / `size == 0` and `Err(Error::Ramp)` for `ramp > y.len()`, while `size > union.len()` returns empty); under `Window::Days`, empty `x` returns empty (whereas upstream `apply_ramp` raises `IndexError` when `ramp > 0`) and non-empty `x` rejects `size == 0` with `Err(Error::Window)`. For `volatility`, size larger than the series returns empty when `annualization_factor` is `Some(...)`, and `Err(Error::AnnualizationFactor)` when `None`. For zero-mean `correlation`, size larger than the aligned non-NaN pair count (including `Window::Expanding` when `aligned.len() < x.len()`) returns `Err(Error::AnnualizationFactor)` unless an inner observation ramp `> aligned.len()` triggers `Err(Error::Ramp)` first. Calendar-day size must be positive. Empty `moving_average`, `std`, `bollinger_bands`, `volatility`, and left-input `correlation` and `beta` return empty before window or annualization validation; empty `max_drawdown`, `smoothed_moving_average`, and `relative_strength_index` return `Err(Error::Ramp)` when given a positive calendar-day ramp (`Window::Days { ramp > 0, .. }`, mapping upstream's `IndexError`) and empty otherwise; `returns` rejects lag zero even on empty input; `exponential_moving_average` validates `0.0 <= beta < 1.0` even on empty input, returning `Err(Error::Beta)` for negative values, values `>= 1.0`, `±Inf`, and `NaN`; `macd` validates `m >= 1`, `n >= 1`, `s >= 1` even on empty input, returning `Err(Error::Span)` if any span is `0`; `prices` returns empty on empty input regardless of `initial` or `kind`, and returns `Err(Error::Overflow)` in `ReturnKind::Logarithmic` when any finite `v` overflows `v.exp()`. A larger-than-series lag gives all NaNs. Singleton or unclassifiable spacing under automatic annualization returns `Err(Error::AnnualizationFactor)`. Use `Window::Observations { size: n, ramp: n }` for the upstream integer-window default ramp and `Window::Days { size: n, ramp: n }` for its day-string default. Public errors are `Error` variants.
 
@@ -1599,7 +1600,123 @@ fn main() {
 }
 ```
 
-Parity: `python3 parity/check.py --replay`, `python3 parity/check-volatility.py --replay`, `python3 parity/check-correlation.py --replay`, `python3 parity/check-beta.py --replay`, `python3 parity/check-drawdown.py --replay`, `python3 parity/check-ema.py --replay`, `python3 parity/check-smma.py --replay`, `python3 parity/check-rsi.py --replay`, `python3 parity/check-macd.py --replay`, `python3 parity/check-prices.py --replay`, `python3 parity/check-std.py --replay`, `python3 parity/check-bollinger-bands.py --replay`, `python3 parity/check-cov.py --replay`, `python3 parity/check-rolling-ols.py --replay`, `python3 parity/check-calendar.py --replay`, `python3 parity/check-basket.py --replay`, `python3 parity/check-risk.py --replay`, and `python3 parity/check-volcorr-swap.py --replay` build the offline replay binary and check frozen unrounded Python outputs. [The assertion map](parity/MAP.md) records the covered cases and exclusions. To regenerate vectors, use the pinned Python environment and an independently verified checkout of the upstream SHA:
+Standalone offline event-driven `PredefinedAssetEngine` example (#18) for an external Cargo project:
+
+```rust
+use std::collections::BTreeMap;
+use quantus_math::{
+    run_predefined_backtest, Date, Error, HolidayCalendar, PredefinedBacktestInput,
+    PredefinedOrder, PredefinedOrderKind, Series, Timestamp, TradeStatus,
+};
+
+fn main() {
+    let d = |day| Date::new(2021, 1, day).unwrap();
+    let ts = |day, h, m, s| Timestamp::new(d(day), h, m, s).unwrap();
+    let cal = HolidayCalendar::weekdays(vec![]);
+
+    let mut daily_prices = BTreeMap::new();
+    daily_prices.insert(
+        "TestRic".to_string(),
+        Series::try_new(vec![d(4), d(5), d(6)], vec![1.0, 1.5, 2.0]).unwrap(),
+    );
+
+    // 1. Flagship MOC backtest (upstream test_backtest_predefined)
+    let moc = run_predefined_backtest(&PredefinedBacktestInput {
+        start: d(4),
+        end: d(6),
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices: daily_prices.clone(),
+        intraday_prices: BTreeMap::new(),
+        orders: vec![PredefinedOrder {
+            instrument: "TestRic".to_string(),
+            quantity: 1.0,
+            generation_time: ts(5, 10, 0, 0),
+            kind: PredefinedOrderKind::MarketOnClose {
+                execution_date: d(5),
+            },
+            source: "Test".to_string(),
+        }],
+    })
+    .unwrap();
+    assert_eq!(moc.performance.values(), &[100.0, 100.0, 100.5]);
+    assert_eq!(moc.snapshots[0].holdings["USD"], 98.5);
+    assert_eq!(moc.snapshots[0].holdings["TestRic"], 1.0);
+    assert_eq!(moc.trade_ledger[0].status, TradeStatus::Open);
+
+    // 2. Intraday TWAP half-open (start, end] round-trip + Cost fee
+    let mut intraday_prices = BTreeMap::new();
+    intraday_prices.insert(
+        "TestRic".to_string(),
+        vec![
+            (ts(5, 10, 0, 0), 999.0), // exact start: excluded
+            (ts(5, 10, 15, 0), 15.0),
+            (ts(5, 10, 30, 0), 17.0), // exact end: included -> mean 16.0
+            (ts(5, 14, 30, 0), 25.0),
+        ],
+    );
+    let twap = run_predefined_backtest(&PredefinedBacktestInput {
+        start: d(4),
+        end: d(5),
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices,
+        intraday_prices,
+        orders: vec![
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: 1.0,
+                generation_time: ts(5, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(5, 10, 0, 0),
+                    end: ts(5, 10, 30, 0),
+                },
+                source: "TwapEntry".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: -1.0,
+                generation_time: ts(5, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(5, 14, 0, 0),
+                    end: ts(5, 14, 30, 0),
+                },
+                source: "TwapExit".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "USD".to_string(),
+                quantity: -1.0,
+                generation_time: ts(5, 15, 0, 0),
+                kind: PredefinedOrderKind::Cost {
+                    execution_time: ts(5, 15, 0, 0),
+                },
+                source: "Fee".to_string(),
+            },
+        ],
+    })
+    .unwrap();
+    assert_eq!(twap.performance.values(), &[100.0, 108.0]);
+    assert!(!twap.snapshots[0].holdings.contains_key("TestRic"));
+    assert_eq!(twap.snapshots[0].weights["USD"], 1.0);
+    assert_eq!(twap.trade_ledger[0].status, TradeStatus::Closed);
+    assert_eq!(twap.trade_ledger[0].trade_pnl, Some(9.0));
+
+    // 3. Typed validation error
+    assert_eq!(Timestamp::new(d(5), 24, 0, 0), Err(Error::Date));
+
+    println!(
+        "moc_final={} twap_final={}",
+        moc.performance.values().last().unwrap(),
+        twap.performance.values().last().unwrap()
+    );
+}
+```
+
+Parity: `python3 parity/check.py --replay`, `python3 parity/check-volatility.py --replay`, `python3 parity/check-correlation.py --replay`, `python3 parity/check-beta.py --replay`, `python3 parity/check-drawdown.py --replay`, `python3 parity/check-ema.py --replay`, `python3 parity/check-smma.py --replay`, `python3 parity/check-rsi.py --replay`, `python3 parity/check-macd.py --replay`, `python3 parity/check-prices.py --replay`, `python3 parity/check-std.py --replay`, `python3 parity/check-bollinger-bands.py --replay`, `python3 parity/check-cov.py --replay`, `python3 parity/check-rolling-ols.py --replay`, `python3 parity/check-calendar.py --replay`, `python3 parity/check-basket.py --replay`, `python3 parity/check-risk.py --replay`, `python3 parity/check-volcorr-swap.py --replay`, and `python3 parity/check-predefined.py --replay` build the offline replay binary and check frozen unrounded Python outputs. [The assertion map](parity/MAP.md) records the covered cases and exclusions. To regenerate vectors, use the pinned Python environment and an independently verified checkout of the upstream SHA:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate.py /path/to/gs-quant
@@ -1620,6 +1737,7 @@ PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-calendar.py /path/to/g
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-basket.py /path/to/gs-quant
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-risk.py /path/to/gs-quant
 PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-volcorr-swap.py /path/to/gs-quant
+PYTHONDONTWRITEBYTECODE=1 /path/to/python parity/generate-predefined.py /path/to/gs-quant
 ```
 
 Generation imports the upstream Python implementation; replay does not. Compare a regenerated file and its hash before accepting any change. Upstream LICENSE, NOTICE and NOTICE.txt are preserved; source attribution is in `src/lib.rs`.

@@ -2,11 +2,14 @@ use quantus_math::{
     aggregate_risk, backtest_basket, basket_series, beta, bollinger_bands, business_day_count,
     business_day_offset, corr_swap_correlation, correlation, cov, day_count_fraction,
     exponential_moving_average, has_feb_29, is_business_day, macd, max_drawdown, moving_average,
-    point_sort_order, prices, relative_strength_index, returns, smoothed_moving_average, sort_risk,
-    std as series_std, subtract_risk, vol_swap_volatility, volatility, BasketParam, BollingerBands,
-    Date, DayCountConvention, Error, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind,
-    RiskRow, RiskTable, Roll, RollingLinearRegression, Series, Window,
+    point_sort_order, prices, relative_strength_index, returns, run_predefined_backtest,
+    smoothed_moving_average, sort_risk, std as series_std, subtract_risk, vol_swap_volatility,
+    volatility, BasketParam, BollingerBands, Date, DayCountConvention, Error, HolidayCalendar,
+    PaymentFrequency, PredefinedBacktestInput, PredefinedOrder, PredefinedOrderKind, RebalFreq,
+    ReturnKind, RiskRow, RiskTable, Roll, RollingLinearRegression, Series, Timestamp, TradeStatus,
+    Window,
 };
+use std::collections::BTreeMap;
 fn date(y: i32, m: u8, d: u8) -> Date {
     Date::new(y, m, d).unwrap()
 }
@@ -6378,6 +6381,596 @@ fn corr_swap_correlation_boundaries_empty_singleton_irregular_constant_and_deter
     let run2 = corr_swap_correlation(&x, &y, Some(4), true).unwrap();
     assert_eq!(run1.dates(), run2.dates());
     for (&a, &b) in run1.values().iter().zip(run2.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+}
+
+fn ts(y: i32, m: u8, d: u8, h: u8, mi: u8, s: u8) -> Timestamp {
+    Timestamp::new(date(y, m, d), h, mi, s).unwrap()
+}
+
+#[test]
+fn predefined_upstream_moc_and_twap_flagship_vectors() {
+    let start = date(2021, 1, 4);
+    let mid = date(2021, 1, 5);
+    let end = date(2021, 1, 6);
+    let cal = HolidayCalendar::weekdays(vec![]);
+
+    let mut daily_prices = BTreeMap::new();
+    daily_prices.insert(
+        "TestRic".to_string(),
+        Series::try_new(vec![start, mid, end], vec![1.0, 1.5, 2.0]).unwrap(),
+    );
+
+    // 1. Upstream test_backtest_predefined MOC: [1, 1.5, 2] -> NAV [100, 100, 100.5], cash 98.5, units 1
+    let moc_input = PredefinedBacktestInput {
+        start,
+        end,
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices: daily_prices.clone(),
+        intraday_prices: BTreeMap::new(),
+        orders: vec![PredefinedOrder {
+            instrument: "TestRic".to_string(),
+            quantity: 1.0,
+            generation_time: ts(2021, 1, 5, 10, 0, 0),
+            kind: PredefinedOrderKind::MarketOnClose {
+                execution_date: mid,
+            },
+            source: "Test".to_string(),
+        }],
+    };
+    let moc = run_predefined_backtest(&moc_input).unwrap();
+    assert_eq!(moc.performance.dates(), &[start, mid, end]);
+    assert_eq!(moc.performance.values(), &[100.0, 100.0, 100.5]);
+    assert_eq!(moc.snapshots.len(), 2);
+    assert_eq!(moc.snapshots[0].date, mid);
+    assert_eq!(moc.snapshots[0].holdings["USD"], 98.5);
+    assert_eq!(moc.snapshots[0].holdings["TestRic"], 1.0);
+    assert!((moc.snapshots[0].weights["USD"] - 0.985).abs() < 1e-12);
+    assert!((moc.snapshots[0].weights["TestRic"] - 0.015).abs() < 1e-12);
+    assert_eq!(moc.snapshots[1].date, end);
+    assert_eq!(moc.snapshots[1].holdings["USD"], 98.5);
+    assert_eq!(moc.snapshots[1].holdings["TestRic"], 1.0);
+    assert_eq!(moc.fills.len(), 1);
+    assert_eq!(moc.fills[0].filled_price, 1.5);
+    assert_eq!(moc.fills[0].execution_time, ts(2021, 1, 5, 23, 0, 0));
+    assert_eq!(moc.trade_ledger.len(), 1);
+    assert_eq!(moc.trade_ledger[0].status, TradeStatus::Open);
+    assert_eq!(moc.trade_ledger[0].open_price, 1.5);
+    assert_eq!(moc.trade_ledger[0].close_time, None);
+    assert_eq!(moc.trade_ledger[0].trade_pnl, None);
+
+    // 2. Upstream test_backtest_predefined TWAP: 16->25, 30->40 -> NAV [100, 109, 119], flat EOD
+    let mut intraday_prices = BTreeMap::new();
+    intraday_prices.insert(
+        "TestRic".to_string(),
+        vec![
+            (ts(2021, 1, 5, 10, 30, 0), 16.0),
+            (ts(2021, 1, 5, 14, 30, 0), 25.0),
+            (ts(2021, 1, 6, 10, 30, 0), 30.0),
+            (ts(2021, 1, 6, 14, 30, 0), 40.0),
+        ],
+    );
+    let twap_input = PredefinedBacktestInput {
+        start,
+        end,
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices,
+        intraday_prices,
+        orders: vec![
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: 1.0,
+                generation_time: ts(2021, 1, 5, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 5, 10, 0, 0),
+                    end: ts(2021, 1, 5, 10, 30, 0),
+                },
+                source: "FuturesExample".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: -1.0,
+                generation_time: ts(2021, 1, 5, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 5, 14, 0, 0),
+                    end: ts(2021, 1, 5, 14, 30, 0),
+                },
+                source: "FuturesExample".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: 1.0,
+                generation_time: ts(2021, 1, 6, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 6, 10, 0, 0),
+                    end: ts(2021, 1, 6, 10, 30, 0),
+                },
+                source: "FuturesExample".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "TestRic".to_string(),
+                quantity: -1.0,
+                generation_time: ts(2021, 1, 6, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 6, 14, 0, 0),
+                    end: ts(2021, 1, 6, 14, 30, 0),
+                },
+                source: "FuturesExample".to_string(),
+            },
+        ],
+    };
+    let twap = run_predefined_backtest(&twap_input).unwrap();
+    assert_eq!(twap.performance.dates(), &[start, mid, end]);
+    assert_eq!(twap.performance.values(), &[100.0, 109.0, 119.0]);
+    for (snap, expected_cash) in twap.snapshots.iter().zip([109.0, 119.0]) {
+        assert!(!snap.holdings.contains_key("TestRic"));
+        assert!(!snap.weights.contains_key("TestRic"));
+        assert_eq!(snap.holdings["USD"], expected_cash);
+        assert_eq!(snap.weights["USD"], 1.0);
+    }
+    assert_eq!(twap.fills.len(), 4);
+    assert_eq!(twap.trade_ledger.len(), 2);
+    assert_eq!(twap.trade_ledger[0].status, TradeStatus::Closed);
+    assert_eq!(twap.trade_ledger[0].open_price, 16.0);
+    assert_eq!(twap.trade_ledger[0].close_price, Some(25.0));
+    assert_eq!(twap.trade_ledger[0].trade_pnl, Some(9.0));
+    assert_eq!(twap.trade_ledger[1].status, TradeStatus::Closed);
+    assert_eq!(twap.trade_ledger[1].open_price, 30.0);
+    assert_eq!(twap.trade_ledger[1].close_price, Some(40.0));
+    assert_eq!(twap.trade_ledger[1].trade_pnl, Some(10.0));
+}
+
+#[test]
+fn predefined_at_market_cost_twap_half_open_and_multi_asset_short_first_ledger() {
+    let d0 = date(2021, 1, 4);
+    let d1 = date(2021, 1, 5);
+    let d2 = date(2021, 1, 6);
+    let cal = HolidayCalendar::weekdays(vec![]);
+
+    let mut daily_prices = BTreeMap::new();
+    daily_prices.insert(
+        "ShortAsset".to_string(),
+        Series::try_new(vec![d0, d1, d2], vec![100.0, 95.0, 90.0]).unwrap(),
+    );
+    daily_prices.insert(
+        "TwapAsset".to_string(),
+        Series::try_new(vec![d0, d1, d2], vec![10.0, 14.0, 16.0]).unwrap(),
+    );
+
+    let mut intraday_prices = BTreeMap::new();
+    // Half-open (10:00, 10:30]: exact start 10:00 (999.0) EXCLUDED, exact end 10:30 (14.0) INCLUDED
+    intraday_prices.insert(
+        "TwapAsset".to_string(),
+        vec![
+            (ts(2021, 1, 5, 10, 0, 0), 999.0),
+            (ts(2021, 1, 5, 10, 10, 0), 10.0),
+            (ts(2021, 1, 5, 10, 20, 0), 12.0),
+            (ts(2021, 1, 5, 10, 30, 0), 14.0),
+            (ts(2021, 1, 5, 10, 31, 0), 888.0),
+        ],
+    );
+    intraday_prices.insert(
+        "ShortAsset".to_string(),
+        vec![
+            (ts(2021, 1, 5, 9, 45, 0), 100.0),
+            (ts(2021, 1, 6, 15, 0, 0), 90.0),
+        ],
+    );
+
+    let input = PredefinedBacktestInput {
+        start: d0,
+        end: d2,
+        calendar: &cal,
+        initial_value: 500.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices,
+        intraday_prices,
+        orders: vec![
+            // ShortAsset opened SHORT via AtMarket (qty = -2.0 @ 100.0)
+            PredefinedOrder {
+                instrument: "ShortAsset".to_string(),
+                quantity: -2.0,
+                generation_time: ts(2021, 1, 5, 9, 45, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 5, 9, 45, 0),
+                },
+                source: "ShortOpen".to_string(),
+            },
+            // TwapAsset bought via half-open (10:00, 10:30] TWAP -> mean(10, 12, 14) = 12.0
+            PredefinedOrder {
+                instrument: "TwapAsset".to_string(),
+                quantity: 3.0,
+                generation_time: ts(2021, 1, 5, 9, 30, 0),
+                kind: PredefinedOrderKind::Twap {
+                    start: ts(2021, 1, 5, 10, 0, 0),
+                    end: ts(2021, 1, 5, 10, 30, 0),
+                },
+                source: "TwapBuy".to_string(),
+            },
+            // Cost fee outflow (-2.5 cash, fill price 0.0)
+            PredefinedOrder {
+                instrument: "IGNORED_FOR_COST".to_string(),
+                quantity: -2.5,
+                generation_time: ts(2021, 1, 5, 11, 0, 0),
+                kind: PredefinedOrderKind::Cost {
+                    execution_time: ts(2021, 1, 5, 11, 0, 0),
+                },
+                source: "Fee".to_string(),
+            },
+            // ShortAsset closed LONG via AtMarket (qty = +2.0 @ 90.0)
+            PredefinedOrder {
+                instrument: "ShortAsset".to_string(),
+                quantity: 2.0,
+                generation_time: ts(2021, 1, 6, 15, 0, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 6, 15, 0, 0),
+                },
+                source: "ShortClose".to_string(),
+            },
+        ],
+    };
+
+    let res = run_predefined_backtest(&input).unwrap();
+    // Day 1 fills in execution_end_time order: ShortAsset (09:45, 100), TwapAsset (10:30, 12), USD Cost (11:00, 0)
+    assert_eq!(res.fills.len(), 4);
+    assert_eq!(res.fills[0].instrument, "ShortAsset");
+    assert_eq!(res.fills[0].filled_price, 100.0);
+    assert_eq!(res.fills[1].instrument, "TwapAsset");
+    assert_eq!(res.fills[1].filled_price, 12.0);
+    assert_eq!(res.fills[2].instrument, "USD");
+    assert_eq!(res.fills[2].filled_price, 0.0);
+    assert_eq!(res.fills[2].quantity, -2.5);
+    assert_eq!(res.fills[3].instrument, "ShortAsset");
+    assert_eq!(res.fills[3].filled_price, 90.0);
+
+    // Day 1 EOD: cash = 500 + 200 - 36 - 2.5 = 661.5; ShortAsset = -2*95 = -190; TwapAsset = 3*14 = 42 -> NAV = 513.5
+    // Day 2 EOD: cash = 661.5 - 180 = 481.5; TwapAsset = 3*16 = 48 -> NAV = 529.5
+    assert_eq!(res.performance.values(), &[500.0, 513.5, 529.5]);
+    assert_eq!(res.snapshots[0].holdings["USD"], 661.5);
+    assert_eq!(res.snapshots[0].holdings["ShortAsset"], -2.0);
+    assert_eq!(res.snapshots[0].holdings["TwapAsset"], 3.0);
+    assert!(!res.snapshots[1].holdings.contains_key("ShortAsset"));
+    assert_eq!(res.snapshots[1].holdings["USD"], 481.5);
+    assert_eq!(res.snapshots[1].holdings["TwapAsset"], 3.0);
+    let w_sum: f64 = res.snapshots[1].weights.values().sum();
+    assert!((w_sum - 1.0).abs() < 1e-12);
+
+    // FIFO trade_ledger preserves first-seen submission order: TwapAsset (submitted at 09:30), ShortAsset (09:45), USD (11:00)
+    assert_eq!(res.trade_ledger.len(), 3);
+    assert_eq!(res.trade_ledger[0].instrument, "TwapAsset");
+    assert_eq!(res.trade_ledger[0].status, TradeStatus::Open);
+    assert_eq!(res.trade_ledger[0].open_price, 12.0);
+
+    // Short-first closed entry: open = short (100.0), close = long (90.0), trade_pnl = (90 - 100) * (-1) = +10.0
+    assert_eq!(res.trade_ledger[1].instrument, "ShortAsset");
+    assert_eq!(res.trade_ledger[1].status, TradeStatus::Closed);
+    assert_eq!(res.trade_ledger[1].open_time, ts(2021, 1, 5, 9, 45, 0));
+    assert_eq!(
+        res.trade_ledger[1].close_time,
+        Some(ts(2021, 1, 6, 15, 0, 0))
+    );
+    assert_eq!(res.trade_ledger[1].open_price, 100.0);
+    assert_eq!(res.trade_ledger[1].close_price, Some(90.0));
+    assert_eq!(res.trade_ledger[1].trade_pnl, Some(10.0));
+
+    assert_eq!(res.trade_ledger[2].instrument, "USD");
+    assert_eq!(res.trade_ledger[2].status, TradeStatus::Open);
+    assert_eq!(res.trade_ledger[2].open_price, 0.0);
+}
+
+#[test]
+fn predefined_calendar_skip_backward_roll_start_eq_end_initial_value_and_epsilon_pruning() {
+    // 1. Explicit HolidayCalendar: Jan 1 & Jan 6 are holidays; Sun Jan 3 -> rolls back to Thu Dec 31, Sat Jan 9 -> Fri Jan 8
+    let cal = HolidayCalendar::weekdays(vec![date(2021, 1, 1), date(2021, 1, 6)]);
+    let mut daily_prices = BTreeMap::new();
+    daily_prices.insert(
+        "HolFut".to_string(),
+        Series::try_new(
+            vec![
+                date(2020, 12, 31),
+                date(2021, 1, 4),
+                date(2021, 1, 5),
+                date(2021, 1, 7),
+                date(2021, 1, 8),
+            ],
+            vec![10.0, 10.0, 11.0, 13.0, 14.0],
+        )
+        .unwrap(),
+    );
+    let res = run_predefined_backtest(&PredefinedBacktestInput {
+        start: date(2021, 1, 3), // Sunday -> Fri Jan 1 (holiday) -> Thu Dec 31
+        end: date(2021, 1, 9),   // Saturday -> Fri Jan 8
+        calendar: &cal,
+        initial_value: 250_000.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices,
+        intraday_prices: BTreeMap::new(),
+        orders: vec![
+            PredefinedOrder {
+                instrument: "HolFut".to_string(),
+                quantity: 2.0,
+                generation_time: ts(2021, 1, 5, 10, 0, 0),
+                kind: PredefinedOrderKind::MarketOnClose {
+                    execution_date: date(2021, 1, 5),
+                },
+                source: "BeforeHol".to_string(),
+            },
+            // Generated on holiday Jan 6 -> ignored (never enters timer)
+            PredefinedOrder {
+                instrument: "HolFut".to_string(),
+                quantity: 99.0,
+                generation_time: ts(2021, 1, 6, 10, 0, 0),
+                kind: PredefinedOrderKind::MarketOnClose {
+                    execution_date: date(2021, 1, 6),
+                },
+                source: "HolidayIgnored".to_string(),
+            },
+        ],
+    })
+    .unwrap();
+    assert_eq!(
+        res.performance.dates(),
+        &[
+            date(2020, 12, 31),
+            date(2021, 1, 4),
+            date(2021, 1, 5),
+            date(2021, 1, 7),
+            date(2021, 1, 8),
+        ]
+    );
+    assert_eq!(
+        res.performance.values(),
+        &[250_000.0, 250_000.0, 250_000.0, 250_004.0, 250_006.0]
+    );
+    assert_eq!(res.fills.len(), 1);
+    assert_eq!(res.snapshots.len(), 4);
+
+    // 2. start == end (and Fri -> Sat rolling to same adjusted date): initial NAV only
+    let plain_cal = HolidayCalendar::weekdays(vec![]);
+    for (s, e) in [
+        (date(2021, 1, 4), date(2021, 1, 4)),
+        (date(2021, 1, 8), date(2021, 1, 9)),
+    ] {
+        let r = run_predefined_backtest(&PredefinedBacktestInput {
+            start: s,
+            end: e,
+            calendar: &plain_cal,
+            initial_value: 750.0,
+            eod_valuation_time: (23, 0, 0),
+            cash_label: "USD".to_string(),
+            daily_prices: BTreeMap::new(),
+            intraday_prices: BTreeMap::new(),
+            orders: vec![],
+        })
+        .unwrap();
+        assert_eq!(r.performance.dates(), &[s]);
+        assert_eq!(r.performance.values(), &[750.0]);
+        assert!(r.snapshots.is_empty());
+        assert!(r.fills.is_empty());
+        assert!(r.trade_ledger.is_empty());
+    }
+
+    // 3. Epsilon 1e-12 zero-position pruning (5e-13 pruned; 5e-12 retained)
+    let mut eps_daily = BTreeMap::new();
+    eps_daily.insert(
+        "Pruned".to_string(),
+        Series::try_new(vec![date(2021, 1, 4), date(2021, 1, 5)], vec![10.0, 10.0]).unwrap(),
+    );
+    eps_daily.insert(
+        "Kept".to_string(),
+        Series::try_new(vec![date(2021, 1, 4), date(2021, 1, 5)], vec![10.0, 10.0]).unwrap(),
+    );
+    let mut eps_intraday = BTreeMap::new();
+    for name in ["Pruned", "Kept"] {
+        eps_intraday.insert(
+            name.to_string(),
+            vec![
+                (ts(2021, 1, 5, 10, 0, 0), 10.0),
+                (ts(2021, 1, 5, 14, 0, 0), 12.0),
+            ],
+        );
+    }
+    let eps = run_predefined_backtest(&PredefinedBacktestInput {
+        start: date(2021, 1, 4),
+        end: date(2021, 1, 5),
+        calendar: &plain_cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices: eps_daily,
+        intraday_prices: eps_intraday,
+        orders: vec![
+            PredefinedOrder {
+                instrument: "Pruned".to_string(),
+                quantity: 1.0,
+                generation_time: ts(2021, 1, 5, 10, 0, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 5, 10, 0, 0),
+                },
+                source: "P1".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "Pruned".to_string(),
+                quantity: -1.0 + 5e-13,
+                generation_time: ts(2021, 1, 5, 14, 0, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 5, 14, 0, 0),
+                },
+                source: "P2".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "Kept".to_string(),
+                quantity: 1.0,
+                generation_time: ts(2021, 1, 5, 10, 0, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 5, 10, 0, 0),
+                },
+                source: "K1".to_string(),
+            },
+            PredefinedOrder {
+                instrument: "Kept".to_string(),
+                quantity: -1.0 + 5e-12,
+                generation_time: ts(2021, 1, 5, 14, 0, 0),
+                kind: PredefinedOrderKind::AtMarket {
+                    execution_time: ts(2021, 1, 5, 14, 0, 0),
+                },
+                source: "K2".to_string(),
+            },
+        ],
+    })
+    .unwrap();
+    assert!(!eps.snapshots[0].holdings.contains_key("Pruned"));
+    assert!(!eps.snapshots[0].weights.contains_key("Pruned"));
+    assert!(eps.snapshots[0].holdings.contains_key("Kept"));
+    assert!(eps.snapshots[0].weights.contains_key("Kept"));
+}
+
+#[test]
+fn predefined_error_boundaries_and_determinism() {
+    let d0 = date(2021, 1, 4);
+    let d1 = date(2021, 1, 5);
+    let d2 = date(2021, 1, 6);
+    let cal = HolidayCalendar::weekdays(vec![]);
+
+    // 1. Timestamp::new validation & Display formatting
+    let valid_ts = Timestamp::new(d1, 9, 5, 3).unwrap();
+    assert_eq!(valid_ts.date(), d1);
+    assert_eq!(valid_ts.hour(), 9);
+    assert_eq!(valid_ts.minute(), 5);
+    assert_eq!(valid_ts.second(), 3);
+    assert_eq!(valid_ts.to_string(), "2021-01-05T09:05:03");
+    assert_eq!(Timestamp::new(d1, 24, 0, 0), Err(Error::Date));
+    assert_eq!(Timestamp::new(d1, 23, 60, 0), Err(Error::Date));
+    assert_eq!(Timestamp::new(d1, 23, 59, 60), Err(Error::Date));
+
+    let base = PredefinedBacktestInput {
+        start: d0,
+        end: d1,
+        calendar: &cal,
+        initial_value: 100.0,
+        eod_valuation_time: (23, 0, 0),
+        cash_label: "USD".to_string(),
+        daily_prices: BTreeMap::new(),
+        intraday_prices: BTreeMap::new(),
+        orders: vec![],
+    };
+
+    // 2. start > end -> Error::Date
+    let mut bad_range = base.clone();
+    bad_range.start = d2;
+    bad_range.end = d0;
+    assert_eq!(run_predefined_backtest(&bad_range), Err(Error::Date));
+
+    // 3. Invalid eod_valuation_time -> Error::Date
+    for bad_time in [(24, 0, 0), (12, 60, 0), (12, 0, 60)] {
+        let mut bad_eod = base.clone();
+        bad_eod.eod_valuation_time = bad_time;
+        assert_eq!(run_predefined_backtest(&bad_eod), Err(Error::Date));
+    }
+
+    // 4. Unsorted and duplicate intraday timestamps -> Error::UnsortedOrDuplicate
+    for bad_ticks in [
+        vec![
+            (ts(2021, 1, 5, 11, 0, 0), 10.0),
+            (ts(2021, 1, 5, 10, 0, 0), 11.0),
+        ],
+        vec![
+            (ts(2021, 1, 5, 10, 0, 0), 10.0),
+            (ts(2021, 1, 5, 10, 0, 0), 11.0),
+        ],
+    ] {
+        let mut bad_intra = base.clone();
+        bad_intra.intraday_prices.insert("A".to_string(), bad_ticks);
+        assert_eq!(
+            run_predefined_backtest(&bad_intra),
+            Err(Error::UnsortedOrDuplicate)
+        );
+    }
+
+    // 5. Missing daily price (MOC), NaN daily price (valuation), missing intraday price (AtMarket), empty TWAP window -> Error::Length
+    let mut miss_moc = base.clone();
+    miss_moc.orders.push(PredefinedOrder {
+        instrument: "NoDaily".to_string(),
+        quantity: 1.0,
+        generation_time: ts(2021, 1, 5, 10, 0, 0),
+        kind: PredefinedOrderKind::MarketOnClose { execution_date: d1 },
+        source: "S".to_string(),
+    });
+    assert_eq!(run_predefined_backtest(&miss_moc), Err(Error::Length));
+
+    let mut nan_val = base.clone();
+    nan_val.end = d2;
+    nan_val.daily_prices.insert(
+        "NanVal".to_string(),
+        Series::try_new(vec![d0, d1, d2], vec![10.0, 11.0, f64::NAN]).unwrap(),
+    );
+    nan_val.orders.push(PredefinedOrder {
+        instrument: "NanVal".to_string(),
+        quantity: 1.0,
+        generation_time: ts(2021, 1, 5, 10, 0, 0),
+        kind: PredefinedOrderKind::MarketOnClose { execution_date: d1 },
+        source: "S".to_string(),
+    });
+    assert_eq!(run_predefined_backtest(&nan_val), Err(Error::Length));
+
+    let mut miss_mkt = base.clone();
+    miss_mkt
+        .intraday_prices
+        .insert("M".to_string(), vec![(ts(2021, 1, 5, 10, 0, 0), 20.0)]);
+    miss_mkt.orders.push(PredefinedOrder {
+        instrument: "M".to_string(),
+        quantity: 1.0,
+        generation_time: ts(2021, 1, 5, 10, 15, 0),
+        kind: PredefinedOrderKind::AtMarket {
+            execution_time: ts(2021, 1, 5, 10, 15, 0),
+        },
+        source: "S".to_string(),
+    });
+    assert_eq!(run_predefined_backtest(&miss_mkt), Err(Error::Length));
+
+    let mut empty_twap = base.clone();
+    empty_twap
+        .intraday_prices
+        .insert("T".to_string(), vec![(ts(2021, 1, 5, 10, 0, 0), 20.0)]);
+    empty_twap.orders.push(PredefinedOrder {
+        instrument: "T".to_string(),
+        quantity: 1.0,
+        generation_time: ts(2021, 1, 5, 9, 30, 0),
+        kind: PredefinedOrderKind::Twap {
+            start: ts(2021, 1, 5, 10, 0, 0),
+            end: ts(2021, 1, 5, 10, 30, 0),
+        },
+        source: "S".to_string(),
+    });
+    assert_eq!(run_predefined_backtest(&empty_twap), Err(Error::Length));
+
+    // 6. Bit-for-bit determinism across repeated calls
+    let mut det = base;
+    det.end = d2;
+    det.daily_prices.insert(
+        "Det".to_string(),
+        Series::try_new(vec![d0, d1, d2], vec![10.0, 11.25, 12.75]).unwrap(),
+    );
+    det.orders.push(PredefinedOrder {
+        instrument: "Det".to_string(),
+        quantity: 2.5,
+        generation_time: ts(2021, 1, 5, 10, 0, 0),
+        kind: PredefinedOrderKind::MarketOnClose { execution_date: d1 },
+        source: "Det".to_string(),
+    });
+    let r1 = run_predefined_backtest(&det).unwrap();
+    let r2 = run_predefined_backtest(&det).unwrap();
+    assert_eq!(r1, r2);
+    for (&a, &b) in r1.performance.values().iter().zip(r2.performance.values()) {
         assert_eq!(a.to_bits(), b.to_bits());
     }
 }
