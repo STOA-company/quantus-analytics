@@ -1,9 +1,9 @@
 use quantus_math::{
-    beta, bollinger_bands, business_day_count, business_day_offset, correlation, cov,
-    day_count_fraction, exponential_moving_average, has_feb_29, is_business_day, macd,
-    max_drawdown, moving_average, prices, relative_strength_index, returns,
-    smoothed_moving_average, std as series_std, volatility, BollingerBands, Date,
-    DayCountConvention, Error, HolidayCalendar, PaymentFrequency, ReturnKind, Roll,
+    backtest_basket, basket_series, beta, bollinger_bands, business_day_count, business_day_offset,
+    correlation, cov, day_count_fraction, exponential_moving_average, has_feb_29, is_business_day,
+    macd, max_drawdown, moving_average, prices, relative_strength_index, returns,
+    smoothed_moving_average, std as series_std, volatility, BasketParam, BollingerBands, Date,
+    DayCountConvention, Error, HolidayCalendar, PaymentFrequency, RebalFreq, ReturnKind, Roll,
     RollingLinearRegression, Series, Window,
 };
 fn date(y: i32, m: u8, d: u8) -> Date {
@@ -5030,4 +5030,460 @@ fn calendar_business_day_count_asymmetry_spans_and_determinism() {
     let run2 = business_day_count(date(2020, 1, 1), date(2020, 1, 15), &sun_thu);
     assert_eq!(run1, run2);
     assert_eq!(run1, 9);
+}
+
+#[test]
+fn basket_upstream_scenarios_and_basket_series_equivalence() {
+    let d5: Vec<Date> = (1..=5).map(|d| date(2024, 1, d)).collect();
+    let s1 = Series::try_new(d5.clone(), vec![100.0, 110.0, 99.0, 108.9, 120.0]).unwrap();
+    let s2 = Series::try_new(d5.clone(), vec![50.0, 50.0, 55.0, 52.25, 60.0]).unwrap();
+    let s3 = Series::try_new(d5.clone(), vec![200.0, 220.0, 210.0, 231.0, 240.0]).unwrap();
+
+    // 1 asset default weights: NAV equals 100 * p[i] / p[0], actual weight stays 1.0
+    let res1 = backtest_basket(std::slice::from_ref(&s1), None, None, RebalFreq::Daily).unwrap();
+    assert_eq!(res1.nav.dates(), d5.as_slice());
+    assert_eq!(res1.actual_weights.len(), 1);
+    for (i, &p) in s1.values().iter().enumerate() {
+        assert!((res1.nav.values()[i] - 100.0 * p / s1.values()[0]).abs() < 1e-12);
+        assert!((res1.actual_weights[0].values()[i] - 1.0).abs() < 1e-12);
+    }
+
+    // [1.0, 0.0] and [0.0, 1.0] select asset 0 and asset 1 respectively
+    let w10 = [BasketParam::Fixed(1.0), BasketParam::Fixed(0.0)];
+    let w01 = [BasketParam::Fixed(0.0), BasketParam::Fixed(1.0)];
+    let r10 = backtest_basket(
+        &[s1.clone(), s2.clone()],
+        Some(&w10),
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    let r01 = backtest_basket(
+        &[s1.clone(), s2.clone()],
+        Some(&w01),
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    for i in 0..d5.len() {
+        assert!((r10.nav.values()[i] - 100.0 * s1.values()[i] / s1.values()[0]).abs() < 1e-12);
+        assert!((r01.nav.values()[i] - 100.0 * s2.values()[i] / s2.values()[0]).abs() < 1e-12);
+        assert_eq!(r10.actual_weights[0].values()[i], 1.0);
+        assert_eq!(r10.actual_weights[1].values()[i], 0.0);
+        assert_eq!(r01.actual_weights[0].values()[i], 0.0);
+        assert_eq!(r01.actual_weights[1].values()[i], 1.0);
+    }
+
+    // 2-asset and 3-asset equal-weight daily baskets
+    let r2 = backtest_basket(&[s1.clone(), s2.clone()], None, None, RebalFreq::Daily).unwrap();
+    // Day 1: 0.5*(+10%) + 0.5*(0%) = +5% -> 105.0
+    assert!((r2.nav.values()[1] - 105.0).abs() < 1e-12);
+    // Day 2: 0.5*(-10%) + 0.5*(+10%) = 0% -> 105.0
+    assert!((r2.nav.values()[2] - 105.0).abs() < 1e-12);
+    let r3 = backtest_basket(
+        &[s1.clone(), s2.clone(), s3.clone()],
+        None,
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    // Day 1: (10% + 0% + 10%) / 3 = +20/3 % -> 100 + 20/3
+    assert!((r3.nav.values()[1] - (100.0 + 20.0 / 3.0)).abs() < 1e-12);
+    assert_eq!(r3.actual_weights.len(), 3);
+
+    // Monthly single-asset basket over multiple months equals normalized price series
+    let monthly_dates = vec![
+        date(2024, 1, 10),
+        date(2024, 2, 12),
+        date(2024, 3, 15),
+        date(2024, 4, 20),
+    ];
+    let sm = Series::try_new(monthly_dates.clone(), vec![80.0, 88.0, 96.0, 100.0]).unwrap();
+    let rm = backtest_basket(std::slice::from_ref(&sm), None, None, RebalFreq::Monthly).unwrap();
+    for (i, &p) in sm.values().iter().enumerate() {
+        assert!((rm.nav.values()[i] - 100.0 * p / 80.0).abs() < 1e-12);
+    }
+
+    // Weekly leveraged [1.0, 1.0] basket
+    let wk_dates = vec![
+        date(2024, 1, 1),
+        date(2024, 1, 3),
+        date(2024, 1, 8),
+        date(2024, 1, 12),
+    ];
+    let wa = Series::try_new(wk_dates.clone(), vec![100.0, 110.0, 120.0, 126.0]).unwrap();
+    let wb = Series::try_new(wk_dates, vec![100.0, 105.0, 100.0, 110.0]).unwrap();
+    let w11 = [BasketParam::Fixed(1.0), BasketParam::Fixed(1.0)];
+    let rw = backtest_basket(
+        &[wa.clone(), wb.clone()],
+        Some(&w11),
+        None,
+        RebalFreq::Weekly,
+    )
+    .unwrap();
+    // Day 1 (Jan 3): +10 + 5 = 115.0; Day 2 (Jan 8, rebal): +10 - 5 = 120.0, reset units to 120/120=1, 120/100=1.2
+    // Day 3 (Jan 12): 120 + 1*(6) + 1.2*(10) = 138.0
+    assert!((rw.nav.values()[1] - 115.0).abs() < 1e-12);
+    assert!((rw.nav.values()[2] - 120.0).abs() < 1e-12);
+    assert!((rw.nav.values()[3] - 138.0).abs() < 1e-12);
+
+    // basket_series is bit-exact with backtest_basket(...).nav
+    let costs = [BasketParam::Fixed(0.001), BasketParam::Fixed(0.002)];
+    let full = backtest_basket(
+        &[wa.clone(), wb.clone()],
+        Some(&w11),
+        Some(&costs),
+        RebalFreq::Weekly,
+    )
+    .unwrap();
+    let nav_only = basket_series(&[wa, wb], Some(&w11), Some(&costs), RebalFreq::Weekly).unwrap();
+    assert_eq!(full.nav.dates(), nav_only.dates());
+    for (&a, &b) in full.nav.values().iter().zip(nav_only.values()) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+}
+
+#[test]
+fn basket_rebalance_schedules_strict_max_gap_snap_and_jan31() {
+    let w50 = [BasketParam::Fixed(0.5), BasketParam::Fixed(0.5)];
+    let c10 = [BasketParam::Fixed(0.1), BasketParam::Fixed(0.1)];
+
+    // 1. Exact 7-day weekly span: hyp = 2024-01-08 == max(cal) -> NOT rebalanced on last day!
+    let d_exact7 = vec![date(2024, 1, 1), date(2024, 1, 4), date(2024, 1, 8)];
+    let p_a7 = Series::try_new(d_exact7.clone(), vec![100.0, 120.0, 150.0]).unwrap();
+    let p_b7 = Series::try_new(d_exact7, vec![100.0, 100.0, 100.0]).unwrap();
+    let r_exact7 =
+        backtest_basket(&[p_a7, p_b7], Some(&w50), Some(&c10), RebalFreq::Weekly).unwrap();
+    // No rebalance on Jan 8 -> NAV = 100 + 0.5*50 + 0.5*0 = 125.0 (zero cost charged!), aw = [0.6, 0.4]
+    assert!((r_exact7.nav.values()[2] - 125.0).abs() < 1e-12);
+    assert!((r_exact7.actual_weights[0].values()[2] - 0.6).abs() < 1e-12);
+    assert!((r_exact7.actual_weights[1].values()[2] - 0.4).abs() < 1e-12);
+
+    // 2. Holiday-gap snap onto cal[n-1]: hyp = 2024-01-08 < 2024-01-10 snaps to Jan 10 -> IS rebalanced!
+    let d_snap = vec![date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 10)];
+    let p_as = Series::try_new(d_snap.clone(), vec![100.0, 120.0, 150.0]).unwrap();
+    let p_bs = Series::try_new(d_snap, vec![100.0, 100.0, 100.0]).unwrap();
+    let r_snap = backtest_basket(&[p_as, p_bs], Some(&w50), Some(&c10), RebalFreq::Weekly).unwrap();
+    // Pre-cost NAV = 125.0, aw = [0.6, 0.4], cost_rate = 0.1*0.1 + 0.1*0.1 = 0.02 -> NAV = 122.5, aw reset to [0.5, 0.5]
+    assert!((r_snap.nav.values()[2] - 122.5).abs() < 1e-12);
+    assert_eq!(r_snap.actual_weights[0].values()[2], 0.5);
+    assert_eq!(r_snap.actual_weights[1].values()[2], 0.5);
+
+    // 3. Multiple hypothetical weekly dates (Jan 8, Jan 15, Jan 22) snapping into the same gap rebalance ONCE
+    let d_dedup = vec![
+        date(2024, 1, 1),
+        date(2024, 1, 2),
+        date(2024, 1, 25),
+        date(2024, 1, 26),
+    ];
+    let p_ad = Series::try_new(d_dedup.clone(), vec![100.0, 120.0, 150.0, 150.0]).unwrap();
+    let p_bd = Series::try_new(d_dedup, vec![100.0, 100.0, 100.0, 100.0]).unwrap();
+    let r_dedup =
+        backtest_basket(&[p_ad, p_bd], Some(&w50), Some(&c10), RebalFreq::Weekly).unwrap();
+    assert!((r_dedup.nav.values()[2] - 122.5).abs() < 1e-12);
+    assert!((r_dedup.nav.values()[3] - 122.5).abs() < 1e-12);
+
+    // 4. Monthly Jan 31 leap anchor (2024): 2024-01-31 -> 2024-02-29 -> 2024-03-31 -> 2024-04-30
+    let d_leap = vec![
+        date(2024, 1, 31),
+        date(2024, 2, 28), // NOT rebal (Feb 29 is leap day)
+        date(2024, 2, 29), // REBAL (k=1)
+        date(2024, 3, 29), // NOT rebal (anchor is 31, not chained 29!)
+        date(2024, 3, 31), // REBAL (k=2)
+        date(2024, 4, 29), // NOT rebal
+        date(2024, 4, 30), // REBAL (k=3, < May 1)
+        date(2024, 5, 1),  // NOT rebal
+    ];
+    let p_al = Series::try_new(
+        d_leap.clone(),
+        vec![100.0, 120.0, 150.0, 180.0, 200.0, 220.0, 250.0, 260.0],
+    )
+    .unwrap();
+    let p_bl = Series::try_new(d_leap, vec![100.0; 8]).unwrap();
+    let r_leap =
+        backtest_basket(&[p_al, p_bl], Some(&w50), Some(&c10), RebalFreq::Monthly).unwrap();
+    // Non-rebal dates drift away from 0.5; rebal dates reset to exact 0.5
+    assert!((r_leap.actual_weights[0].values()[1] - 0.5).abs() > 1e-3); // Feb 28 drifts
+    assert_eq!(r_leap.actual_weights[0].values()[2], 0.5); // Feb 29 rebalances
+    assert!((r_leap.actual_weights[0].values()[3] - 0.5).abs() > 1e-3); // Mar 29 drifts!
+    assert_eq!(r_leap.actual_weights[0].values()[4], 0.5); // Mar 31 rebalances
+    assert!((r_leap.actual_weights[0].values()[5] - 0.5).abs() > 1e-3); // Apr 29 drifts
+    assert_eq!(r_leap.actual_weights[0].values()[6], 0.5); // Apr 30 rebalances
+    assert!((r_leap.actual_weights[0].values()[7] - 0.5).abs() > 1e-3); // May 1 drifts
+
+    // 5. Monthly Jan 31 non-leap anchor (2023): 2023-01-31 -> 2023-02-28 -> 2023-03-31 -> 2023-04-30
+    let d_nonleap = vec![
+        date(2023, 1, 31),
+        date(2023, 2, 27), // drifts
+        date(2023, 2, 28), // REBAL (k=1)
+        date(2023, 3, 28), // drifts (proves anchor is Jan 31, NOT chained Feb 28!)
+        date(2023, 3, 31), // REBAL (k=2)
+        date(2023, 4, 30), // NOT rebal (hyp == max(cal) excluded!)
+    ];
+    let p_an = Series::try_new(
+        d_nonleap.clone(),
+        vec![100.0, 120.0, 150.0, 180.0, 200.0, 240.0],
+    )
+    .unwrap();
+    let p_bn = Series::try_new(d_nonleap, vec![100.0; 6]).unwrap();
+    let r_nonleap =
+        backtest_basket(&[p_an, p_bn], Some(&w50), Some(&c10), RebalFreq::Monthly).unwrap();
+    assert!((r_nonleap.actual_weights[0].values()[1] - 0.5).abs() > 1e-3);
+    assert_eq!(r_nonleap.actual_weights[0].values()[2], 0.5);
+    assert!((r_nonleap.actual_weights[0].values()[3] - 0.5).abs() > 1e-3);
+    assert_eq!(r_nonleap.actual_weights[0].values()[4], 0.5);
+    assert!((r_nonleap.actual_weights[0].values()[5] - 0.5).abs() > 1e-3); // Apr 30 == max(cal) excluded
+}
+
+#[test]
+fn basket_series_params_calendar_alignment_leverage_zero_weights_and_singleton() {
+    // 1. Misaligned price + weight Series + cost Series intersection
+    let p1 = Series::try_new(
+        vec![
+            date(2024, 1, 1),
+            date(2024, 1, 2),
+            date(2024, 1, 3),
+            date(2024, 1, 4),
+            date(2024, 1, 5),
+        ],
+        vec![90.0, 100.0, 110.0, 120.0, 130.0],
+    )
+    .unwrap();
+    let p2 = Series::try_new(
+        vec![
+            date(2024, 1, 2),
+            date(2024, 1, 3),
+            date(2024, 1, 4),
+            date(2024, 1, 6),
+        ],
+        vec![50.0, 50.0, 55.0, 60.0],
+    )
+    .unwrap();
+    let w1_s = Series::try_new(
+        vec![date(2024, 1, 2), date(2024, 1, 3), date(2024, 1, 4)],
+        vec![0.6, 0.8, 0.5],
+    )
+    .unwrap();
+    let c2_s = Series::try_new(
+        vec![date(2024, 1, 2), date(2024, 1, 3), date(2024, 1, 4)],
+        vec![0.001, 0.002, 0.003],
+    )
+    .unwrap();
+    let weights = [BasketParam::Series(&w1_s), BasketParam::Fixed(0.4)];
+    let costs = [BasketParam::Fixed(0.001), BasketParam::Series(&c2_s)];
+    let res = backtest_basket(&[p1, p2], Some(&weights), Some(&costs), RebalFreq::Daily).unwrap();
+    assert_eq!(
+        res.nav.dates(),
+        &[date(2024, 1, 2), date(2024, 1, 3), date(2024, 1, 4)]
+    );
+    // Day 0 (Jan 2): nav = 100.0, aw = [0.6, 0.4]
+    // Day 1 (Jan 3): p1: 100->110 (+10%), p2: 50->50 (0%) -> pre-cost nav = 106.0
+    //   aw_pre = [0.6*1.1*(100/106), 0.4*1.0*(100/106)] = [66/106, 40/106]
+    //   cost_rate = 0.001*|0.8 - 66/106| + 0.002*|0.4 - 40/106|
+    let aw0_pre: f64 = 66.0 / 106.0;
+    let aw1_pre: f64 = 40.0 / 106.0;
+    let expected_nav1 =
+        106.0 - (0.001 * (0.8 - aw0_pre).abs() + 0.002 * (0.4 - aw1_pre).abs()) * 106.0;
+    assert!((res.nav.values()[1] - expected_nav1).abs() < 1e-12);
+    assert_eq!(res.actual_weights[0].values()[1], 0.8);
+    assert_eq!(res.actual_weights[1].values()[1], 0.4);
+
+    // 2. Short / leveraged weights (sum != 1 and net short)
+    let d3 = vec![date(2024, 2, 1), date(2024, 2, 2), date(2024, 2, 5)];
+    let pa = Series::try_new(d3.clone(), vec![100.0, 110.0, 121.0]).unwrap();
+    let pb = Series::try_new(d3.clone(), vec![100.0, 90.0, 99.0]).unwrap();
+    let w_ls = [BasketParam::Fixed(1.5), BasketParam::Fixed(-0.5)];
+    let r_ls = backtest_basket(
+        &[pa.clone(), pb.clone()],
+        Some(&w_ls),
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    // Day 1: 1.5*(+10%) + (-0.5)*(-10%) = +20% -> 120.0
+    assert!((r_ls.nav.values()[1] - 120.0).abs() < 1e-12);
+
+    // 3. All-zero weights: NAV stays 100.0, actual weights stay 0.0
+    let w_zero = [BasketParam::Fixed(0.0), BasketParam::Fixed(0.0)];
+    let r_zero = backtest_basket(
+        &[pa.clone(), pb.clone()],
+        Some(&w_zero),
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    assert_eq!(r_zero.nav.values(), &[100.0, 100.0, 100.0]);
+    assert_eq!(r_zero.actual_weights[0].values(), &[0.0, 0.0, 0.0]);
+    assert_eq!(r_zero.actual_weights[1].values(), &[0.0, 0.0, 0.0]);
+
+    // 4. Single-date series across Daily, Weekly, Monthly
+    let s1 = Series::try_new(vec![date(2024, 3, 1)], vec![123.45]).unwrap();
+    let s2 = Series::try_new(vec![date(2024, 3, 1)], vec![67.89]).unwrap();
+    let w73 = [BasketParam::Fixed(0.7), BasketParam::Fixed(0.3)];
+    for freq in [RebalFreq::Daily, RebalFreq::Weekly, RebalFreq::Monthly] {
+        let r = backtest_basket(&[s1.clone(), s2.clone()], Some(&w73), None, freq).unwrap();
+        assert_eq!(r.nav.dates(), &[date(2024, 3, 1)]);
+        assert_eq!(r.nav.values(), &[100.0]);
+        assert_eq!(r.actual_weights[0].values(), &[0.7]);
+        assert_eq!(r.actual_weights[1].values(), &[0.3]);
+    }
+}
+
+#[test]
+fn basket_nonfinite_zero_negative_nav_errors_and_determinism() {
+    let d3 = vec![date(2024, 4, 1), date(2024, 4, 2), date(2024, 4, 3)];
+
+    // 1. NaN price propagates cleanly through NAV and actual weights
+    let p_nan = Series::try_new(d3.clone(), vec![100.0, f64::NAN, 110.0]).unwrap();
+    let p_ok = Series::try_new(d3.clone(), vec![100.0, 105.0, 110.0]).unwrap();
+    let r_nan = backtest_basket(&[p_nan, p_ok.clone()], None, None, RebalFreq::Daily).unwrap();
+    assert_eq!(r_nan.nav.values()[0], 100.0);
+    assert!(r_nan.nav.values()[1].is_nan());
+    assert!(r_nan.nav.values()[2].is_nan());
+
+    // 2. Zero price on day 0 -> units = +Inf -> Weekly keeps +Inf on non-rebal day 1,
+    //    Daily rebalances on day 1 where 0.0 * |w - NaN| propagates NaN into NAV.
+    let p_z0 = Series::try_new(d3.clone(), vec![0.0, 10.0, 20.0]).unwrap();
+    let r_z0_w =
+        backtest_basket(&[p_z0.clone(), p_ok.clone()], None, None, RebalFreq::Weekly).unwrap();
+    assert_eq!(r_z0_w.nav.values()[0], 100.0);
+    assert!(r_z0_w.nav.values()[1].is_infinite() && r_z0_w.nav.values()[1].is_sign_positive());
+    assert!(r_z0_w.actual_weights[0].values()[1].is_nan());
+    let r_z0_d = backtest_basket(&[p_z0, p_ok.clone()], None, None, RebalFreq::Daily).unwrap();
+    assert_eq!(r_z0_d.nav.values()[0], 100.0);
+    assert!(r_z0_d.nav.values()[1].is_nan());
+
+    // 3. Zero NAV (100 -> 0 -> 0) propagates IEEE-754 cleanly
+    let p_crash = Series::try_new(d3.clone(), vec![100.0, 0.0, 10.0]).unwrap();
+    let w1 = [BasketParam::Fixed(1.0)];
+    let r_znav = backtest_basket(
+        std::slice::from_ref(&p_crash),
+        Some(&w1),
+        None,
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    assert_eq!(r_znav.nav.values()[0], 100.0);
+    assert!(r_znav.nav.values()[1].is_nan()); // aw = 1.0 * 0.0 * (100/0) = NaN, cost = 0*NaN = NaN -> nav_i = NaN
+
+    // 4. Negative NAV with leveraged weight & cost sign (nav_i -= cost_rate * nav_i)
+    let p_drop = Series::try_new(d3.clone(), vec![100.0, 40.0, 50.0]).unwrap();
+    let w2 = [BasketParam::Fixed(2.0)];
+    let c01 = [BasketParam::Fixed(0.01)];
+    let r_neg = backtest_basket(
+        std::slice::from_ref(&p_drop),
+        Some(&w2),
+        Some(&c01),
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    // Day 1 pre-cost: units = 2.0, pnl = 2.0 * (-60) = -120 -> nav_pre = -20.0
+    // aw_pre = 2.0 * (40/100) * (100 / -20) = -4.0
+    // cost_rate = 0.01 * |2.0 - (-4.0)| = 0.06
+    // nav_i = -20.0 - 0.06 * (-20.0) = -18.8 (exact signed multiplication as upstream!)
+    assert!((r_neg.nav.values()[1] - (-18.8)).abs() < 1e-12);
+
+    // 5. Typed Error::Length errors
+    let s_a =
+        Series::try_new(vec![date(2024, 1, 1), date(2024, 1, 2)], vec![100.0, 101.0]).unwrap();
+    let s_b = Series::try_new(vec![date(2024, 2, 1), date(2024, 2, 2)], vec![50.0, 51.0]).unwrap();
+    let empty_s = Series::try_new(vec![], vec![]).unwrap();
+    assert_eq!(
+        backtest_basket(&[], None, None, RebalFreq::Daily),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        basket_series(&[], None, None, RebalFreq::Daily),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(
+            &[s_a.clone(), s_a.clone()],
+            Some(&[BasketParam::Fixed(1.0)]),
+            None,
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(
+            &[s_a.clone(), s_a.clone()],
+            None,
+            Some(&[BasketParam::Fixed(0.01)]),
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    // Explicit Some(&[]) on non-empty series returns Err(Error::Length)
+    assert_eq!(
+        backtest_basket(
+            std::slice::from_ref(&s_a),
+            Some(&[]),
+            None,
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(
+            std::slice::from_ref(&s_a),
+            None,
+            Some(&[]),
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    // Disjoint calendars (prices, weight series, cost series, empty single series)
+    assert_eq!(
+        backtest_basket(&[s_a.clone(), s_b.clone()], None, None, RebalFreq::Daily),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(
+            std::slice::from_ref(&s_a),
+            Some(&[BasketParam::Series(&s_b)]),
+            None,
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(
+            std::slice::from_ref(&s_a),
+            None,
+            Some(&[BasketParam::Series(&s_b)]),
+            RebalFreq::Daily
+        ),
+        Err(Error::Length)
+    );
+    assert_eq!(
+        backtest_basket(&[empty_s], None, None, RebalFreq::Daily),
+        Err(Error::Length)
+    );
+
+    // 6. Bit-for-bit determinism across repeated calls
+    let run1 = backtest_basket(
+        &[p_drop.clone(), p_ok.clone()],
+        None,
+        Some(&[BasketParam::Fixed(0.001), BasketParam::Fixed(0.002)]),
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    let run2 = backtest_basket(
+        &[p_drop, p_ok],
+        None,
+        Some(&[BasketParam::Fixed(0.001), BasketParam::Fixed(0.002)]),
+        RebalFreq::Daily,
+    )
+    .unwrap();
+    assert_eq!(run1.nav.dates(), run2.nav.dates());
+    for (&u, &v) in run1.nav.values().iter().zip(run2.nav.values()) {
+        assert_eq!(u.to_bits(), v.to_bits());
+    }
+    for (wa, wb) in run1.actual_weights.iter().zip(&run2.actual_weights) {
+        assert_eq!(wa.dates(), wb.dates());
+        for (&u, &v) in wa.values().iter().zip(wb.values()) {
+            assert_eq!(u.to_bits(), v.to_bits());
+        }
+    }
 }

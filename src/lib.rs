@@ -1,5 +1,5 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, and business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`).
-//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py and
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), rolling sample covariance (`cov`), rolling linear regression (`RollingLinearRegression`), Bollinger bands (`bollinger_bands`), returns, realized volatility, correlation, beta, maximum drawdown, business-day calendar / day-count utilities (`HolidayCalendar`, `DayCountConvention`, `PaymentFrequency`, `Roll`, `has_feb_29`, `day_count_fraction`, `is_business_day`, `business_day_offset`, `business_day_count`), and offline multi-asset basket backtesting (`RebalFreq`, `BasketParam`, `BasketResult`, `backtest_basket`, `basket_series`).
+//! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,backtesting,helper}.py and
 //! gs_quant/datetime/date.py (with explicit-holiday `np.busdaycalendar` semantics) at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -2664,4 +2664,321 @@ pub fn business_day_count(begin: Date, end: Date, calendar: &HolidayCalendar) ->
         let hi = calendar.holidays.partition_point(|&h| h <= begin);
         -(wm - (hi - lo) as i64)
     }
+}
+
+/// Number of calendar days in `(year, month)` under the proleptic Gregorian calendar, or `0` for
+/// an invalid month outside `1..=12`.
+fn days_in_month(year: i32, month: u8) -> u8 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => 0,
+    }
+}
+
+/// Add `months` calendar months to `start`, clamping the day of month to the target month's
+/// length (matching `start + months * dateutil.relativedelta(months=1)` anchored at `start`).
+fn add_months_clamped(start: Date, months: i64) -> Result<Date, Error> {
+    let total_months = i64::from(start.year - 1) * 12 + i64::from(start.month - 1) + months;
+    if total_months < 0 {
+        return Err(Error::Date);
+    }
+    let year_i64 = total_months / 12 + 1;
+    if !(1..=9999).contains(&year_i64) {
+        return Err(Error::Date);
+    }
+    let year = year_i64 as i32;
+    let month = (total_months % 12 + 1) as u8;
+    let day = start.day.min(days_in_month(year, month));
+    Date::new(year, month, day)
+}
+
+fn intersect_two_sorted(a: &[Date], b: &[Date]) -> Vec<Date> {
+    let mut out = Vec::with_capacity(a.len().min(b.len()));
+    let (mut i, mut j) = (0, 0);
+    while i < a.len() && j < b.len() {
+        match a[i].cmp(&b[j]) {
+            std::cmp::Ordering::Less => i += 1,
+            std::cmp::Ordering::Greater => j += 1,
+            std::cmp::Ordering::Equal => {
+                out.push(a[i]);
+                i += 1;
+                j += 1;
+            }
+        }
+    }
+    out
+}
+
+fn align_values(s: &Series, cal: &[Date]) -> Vec<f64> {
+    let mut out = Vec::with_capacity(cal.len());
+    let mut j = 0;
+    for &d in cal {
+        while s.dates[j] < d {
+            j += 1;
+        }
+        debug_assert_eq!(s.dates[j], d);
+        out.push(s.values[j]);
+        j += 1;
+    }
+    out
+}
+
+/// Rebalancing schedule for [`backtest_basket`] and [`basket_series`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RebalFreq {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+/// Asset weight or execution cost input: either a constant scalar across the aligned calendar
+/// or a date-indexed series whose calendar participates in the common date intersection.
+#[derive(Debug, Clone, PartialEq)]
+pub enum BasketParam<'a> {
+    Fixed(f64),
+    Series(&'a Series),
+}
+
+/// Output of [`backtest_basket`]: basket NAV series (starting at `100.0`) and realized asset
+/// weight series in the same asset order as the input price series.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BasketResult {
+    pub nav: Series,
+    pub actual_weights: Vec<Series>,
+}
+
+/// Offline multi-asset basket backtest returning basket NAV (rebased to `100.0` on the first
+/// common date) and realized asset weight series.
+///
+/// Mirrors upstream `gs_quant/timeseries/backtesting.py:backtest_basket` (lines 52–145) at commit
+/// `70220e300524d54bd273be0f4c485d53b3780482`:
+///
+/// - `weights: None` defaults every asset to fixed equal weight `1.0 / (series.len() as f64)`.
+/// - `costs: None` defaults every asset to fixed execution cost `0.0`.
+/// - The simulation calendar `cal` is the sorted intersection of `dates()` across all price
+///   `series` and every [`BasketParam::Series`] inside `weights` and `costs`.
+/// - Rebalance dates:
+///   - [`RebalFreq::Daily`]: every date in `cal`.
+///   - [`RebalFreq::Weekly`]: hypothetical dates `cal[0] + 7 * k` days for
+///     `k in 0..=((cal[n - 1] - cal[0]) / 7)`; each `hyp < cal[n - 1]` snaps to the first
+///     `cal[idx] >= hyp` (multiple hypothetical dates snapping to the same `idx` rebalance once;
+///     an exact hit `hyp == cal[n - 1]` is excluded, whereas a gap-snapped `hyp < cal[n - 1]`
+///     whose next calendar date is `cal[n - 1]` does rebalance on `cal[n - 1]`).
+///   - [`RebalFreq::Monthly`]: hypothetical dates `cal[0] + k` calendar months (anchored at
+///     `cal[0]` and day-clamped to the target month length, e.g. `2024-01-31 -> 2024-02-29 ->
+///     2024-03-31 -> 2024-04-30`), using the same strict `hyp < cal[n - 1]` snap rule.
+/// - Recurrence: initializes `nav[0] = 100.0`, `units[a] = 100.0 * w[a][0] / p[a][0]`,
+///   `actual_weights[a][0] = w[a][0]`, and `prev_rebal = 0`. For each `i in 1..cal.len()`,
+///   accumulates `pnl = sum_a units[a] * (p[a][i] - p[a][i - 1])`, updates
+///   `nav_i = nav[i - 1] + pnl`, computes drifted weights
+///   `aw[a] = w[a][prev_rebal] * (p[a][i] / p[a][prev_rebal]) * (nav[prev_rebal] / nav_i)`, and
+///   on rebalance dates deducts `nav_i -= (sum_a c[a][i] * |w[a][i] - aw[a]|) * nav_i` before
+///   resetting `units[a] = nav_i * w[a][i] / p[a][i]`, `aw[a] = w[a][i]`, and `prev_rebal = i`.
+///
+/// # Documented Parity Boundaries
+/// - Only offline `backtest_basket` and [`basket_series`] (excess return) are ported; the remote
+///   `Basket` class (`GsAssetApi`/`GsDataApi`) is intentionally out of scope.
+/// - `weights: None` and `costs: None` represent upstream defaults (`1/N` equal weight, `0.0`
+///   cost); explicit empty slices `Some(&[])` on non-empty `series` return `Err(Error::Length)`
+///   (unlike Python's falsy `weights or [...]` / `costs or [...]` fallback).
+/// - Empty `series`, mismatched `weights`/`costs` lengths, and an empty/disjoint common calendar
+///   intersection all return typed `Err(Error::Length)` (mapping upstream `ZeroDivisionError`,
+///   `MqValueError`, and `IndexError`).
+/// - Duplicate or unsorted dates and `DatetimeIndex` time zones are rejected by [`Series::try_new`].
+///
+/// # Example
+/// ```
+/// use quantus_math::{backtest_basket, BasketParam, Date, RebalFreq, Series};
+///
+/// let dates = vec![
+///     Date::new(2024, 1, 1).unwrap(),
+///     Date::new(2024, 1, 2).unwrap(),
+///     Date::new(2024, 1, 3).unwrap(),
+/// ];
+/// let a = Series::try_new(dates.clone(), vec![100.0, 110.0, 121.0]).unwrap();
+/// let b = Series::try_new(dates, vec![100.0, 100.0, 100.0]).unwrap();
+/// let weights = [BasketParam::Fixed(0.5), BasketParam::Fixed(0.5)];
+/// let costs = [BasketParam::Fixed(0.0), BasketParam::Fixed(0.0)];
+/// let res = backtest_basket(&[a, b], Some(&weights), Some(&costs), RebalFreq::Daily).unwrap();
+/// assert_eq!(res.nav.values()[0], 100.0);
+/// assert!((res.nav.values()[1] - 105.0).abs() < 1e-12);
+/// assert!((res.nav.values()[2] - 110.25).abs() < 1e-12);
+/// assert_eq!(res.actual_weights.len(), 2);
+/// ```
+pub fn backtest_basket(
+    series: &[Series],
+    weights: Option<&[BasketParam<'_>]>,
+    costs: Option<&[BasketParam<'_>]>,
+    rebal_freq: RebalFreq,
+) -> Result<BasketResult, Error> {
+    let num_assets = series.len();
+    if num_assets == 0 {
+        return Err(Error::Length);
+    }
+    if let Some(w) = weights {
+        if w.len() != num_assets {
+            return Err(Error::Length);
+        }
+    }
+    if let Some(c) = costs {
+        if c.len() != num_assets {
+            return Err(Error::Length);
+        }
+    }
+
+    let mut cal = series[0].dates.clone();
+    for s in &series[1..] {
+        cal = intersect_two_sorted(&cal, &s.dates);
+    }
+    if let Some(ws) = weights {
+        for param in ws {
+            if let BasketParam::Series(s) = param {
+                cal = intersect_two_sorted(&cal, &s.dates);
+            }
+        }
+    }
+    if let Some(cs) = costs {
+        for param in cs {
+            if let BasketParam::Series(s) = param {
+                cal = intersect_two_sorted(&cal, &s.dates);
+            }
+        }
+    }
+    if cal.is_empty() {
+        return Err(Error::Length);
+    }
+
+    let n = cal.len();
+    let p: Vec<Vec<f64>> = series.iter().map(|s| align_values(s, &cal)).collect();
+    let equal_weight = 1.0 / (num_assets as f64);
+    let w: Vec<Vec<f64>> = match weights {
+        None => vec![vec![equal_weight; n]; num_assets],
+        Some(ws) => ws
+            .iter()
+            .map(|param| match param {
+                BasketParam::Fixed(val) => vec![*val; n],
+                BasketParam::Series(s) => align_values(s, &cal),
+            })
+            .collect(),
+    };
+    let c: Vec<Vec<f64>> = match costs {
+        None => vec![vec![0.0; n]; num_assets],
+        Some(cs) => cs
+            .iter()
+            .map(|param| match param {
+                BasketParam::Fixed(val) => vec![*val; n],
+                BasketParam::Series(s) => align_values(s, &cal),
+            })
+            .collect(),
+    };
+
+    let rebal_mask = match rebal_freq {
+        RebalFreq::Daily => vec![true; n],
+        RebalFreq::Weekly => {
+            let mut mask = vec![false; n];
+            let first = cal[0];
+            let last = cal[n - 1];
+            let num_rebals = (last.ordinal() - first.ordinal()) / 7;
+            for k in 0..=num_rebals {
+                let hyp = Date::from_ordinal(first.ordinal() + k * 7)?;
+                if hyp < last {
+                    let idx = cal.partition_point(|&d| d < hyp);
+                    mask[idx] = true;
+                }
+            }
+            mask
+        }
+        RebalFreq::Monthly => {
+            let mut mask = vec![false; n];
+            let first = cal[0];
+            let last = cal[n - 1];
+            let num_rebals = i64::from(last.year() - first.year()) * 12 + i64::from(last.month())
+                - i64::from(first.month());
+            for k in 0..=num_rebals {
+                let hyp = add_months_clamped(first, k)?;
+                if hyp < last {
+                    let idx = cal.partition_point(|&d| d < hyp);
+                    mask[idx] = true;
+                }
+            }
+            mask
+        }
+    };
+
+    let mut nav = vec![0.0_f64; n];
+    let mut units = vec![0.0_f64; num_assets];
+    let mut aw = vec![vec![0.0_f64; n]; num_assets];
+
+    nav[0] = 100.0;
+    for a in 0..num_assets {
+        units[a] = nav[0] * w[a][0] / p[a][0];
+        aw[a][0] = w[a][0];
+    }
+    let mut prev_rebal = 0usize;
+
+    for i in 1..n {
+        let mut pnl = 0.0_f64;
+        for a in 0..num_assets {
+            pnl += units[a] * (p[a][i] - p[a][i - 1]);
+        }
+        let mut nav_i = nav[i - 1] + pnl;
+        for a in 0..num_assets {
+            aw[a][i] = w[a][prev_rebal] * (p[a][i] / p[a][prev_rebal]) * (nav[prev_rebal] / nav_i);
+        }
+        if rebal_mask[i] {
+            let mut cost_rate = 0.0_f64;
+            for a in 0..num_assets {
+                cost_rate += c[a][i] * (w[a][i] - aw[a][i]).abs();
+            }
+            nav_i -= cost_rate * nav_i;
+            for a in 0..num_assets {
+                units[a] = nav_i * w[a][i] / p[a][i];
+                aw[a][i] = w[a][i];
+            }
+            prev_rebal = i;
+        }
+        nav[i] = nav_i;
+    }
+
+    let mut actual_weights = Vec::with_capacity(num_assets);
+    for asset_weights in aw {
+        actual_weights.push(Series::try_new(cal.clone(), asset_weights)?);
+    }
+    let nav_series = Series::try_new(cal, nav)?;
+    Ok(BasketResult {
+        nav: nav_series,
+        actual_weights,
+    })
+}
+
+/// Offline multi-asset basket excess-return NAV series (rebased to `100.0` on the first common
+/// date).
+///
+/// Mirrors upstream `gs_quant/timeseries/backtesting.py:basket_series` (lines 148–180) and returns
+/// `backtest_basket(series, weights, costs, rebal_freq)?.nav`. See [`backtest_basket`] for full
+/// scheduling, cost, alignment, and documented parity-boundary semantics.
+///
+/// # Example
+/// ```
+/// use quantus_math::{basket_series, Date, RebalFreq, Series};
+///
+/// let dates = vec![
+///     Date::new(2024, 1, 1).unwrap(),
+///     Date::new(2024, 1, 2).unwrap(),
+/// ];
+/// let a = Series::try_new(dates.clone(), vec![100.0, 120.0]).unwrap();
+/// let b = Series::try_new(dates, vec![50.0, 50.0]).unwrap();
+/// let nav = basket_series(&[a, b], None, None, RebalFreq::Daily).unwrap();
+/// assert_eq!(nav.values(), &[100.0, 110.0]);
+/// ```
+pub fn basket_series(
+    series: &[Series],
+    weights: Option<&[BasketParam<'_>]>,
+    costs: Option<&[BasketParam<'_>]>,
+    rebal_freq: RebalFreq,
+) -> Result<Series, Error> {
+    Ok(backtest_basket(series, weights, costs, rebal_freq)?.nav)
 }
