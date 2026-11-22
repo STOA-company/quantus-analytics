@@ -1,4 +1,4 @@
-//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), returns, realized volatility, correlation, beta, and maximum drawdown.
+//! Offline date-indexed prices, price level reconstruction from returns, moving averages, exponential moving averages, smoothed moving averages, relative strength index, moving average convergence divergence (MACD), rolling standard deviation (`std`), returns, realized volatility, correlation, beta, and maximum drawdown.
 //! Adapted from gs_quant/timeseries/{technicals,econometrics,statistics,datetime,helper}.py at
 //! 70220e300524d54bd273be0f4c485d53b3780482; Rust translation and modifications by STOA.
 //! Copyright 2018-2019 Goldman Sachs. Upstream also includes code copyright Scott Weinstein.
@@ -1233,4 +1233,143 @@ pub fn relative_strength_index(x: &Series, window: Option<Window>) -> Result<Ser
         .collect();
 
     Series::try_new(moving_avg_gains.dates, rsi_values)
+}
+
+/// Unbiased sample standard deviation (`ddof = 1`) over a rolling or expanding window.
+///
+/// Mirrors upstream `gs_quant/timeseries/statistics.py:std` and `rolling_std` (lines 55–70,
+/// 535–580) on a `datetime.date` index:
+///
+/// - Empty input returns an empty `Series` before window or ramp validation.
+/// - On non-empty input, `size == 0` returns `Err(Error::Window)` (including
+///   `Window::Days { size: 0, .. }`, whereas upstream `DateOffset(days=0)` silently falls through
+///   as an expanding window), observation `ramp > x.dates().len()` returns `Err(Error::Ramp)`, and
+///   observation `size > x.dates().len()` or a ramp leaving no rows returns an empty `Series`.
+/// - For `Window::Expanding` and `Window::Observations`, each window aggregates finite values
+///   (`v.is_finite()`, skipping both `NaN` and `±Inf`, matching pandas `rolling().std()`).
+/// - For `Window::Days`, each half-open calendar window `(date - size, date]` aggregates non-`NaN`
+///   values (`!v.is_nan()`, matching NumPy `np.std(section[section == section], ddof=1)`): if any
+///   `±Inf` is present in the window, emits `NaN`.
+/// - When the aggregated count is `< 2`, emits `f64::NAN`. When all aggregated finite values are
+///   equal (including `4.2`, `0.1`, or `-0.0`), emits `+0.0`. Otherwise computes two-pass unbiased
+///   sample standard deviation `sqrt(sum((v - mean)^2) / (count - 1))`.
+pub fn std(x: &Series, window: Window) -> Result<Series, Error> {
+    if x.dates.is_empty() {
+        return Series::try_new(vec![], vec![]);
+    }
+    let n = x.dates.len();
+    match window {
+        Window::Observations { size: 0, .. } | Window::Days { size: 0, .. } => {
+            return Err(Error::Window)
+        }
+        Window::Observations { ramp, .. } if ramp > n => return Err(Error::Ramp),
+        Window::Observations { size, .. } if size > n => return Series::try_new(vec![], vec![]),
+        Window::Observations { ramp, .. } if ramp >= n => return Series::try_new(vec![], vec![]),
+        _ => {}
+    }
+
+    let mut dates = Vec::new();
+    let mut values = Vec::new();
+    let mut day_start = 0usize;
+
+    for i in 0..n {
+        let include = match window {
+            Window::Expanding => true,
+            Window::Observations { ramp, .. } => i >= ramp,
+            Window::Days { ramp, .. } => {
+                x.dates[i].ordinal() - x.dates[0].ordinal() >= i64::from(ramp)
+            }
+        };
+        if !include {
+            continue;
+        }
+        let start = match window {
+            Window::Expanding => 0,
+            Window::Observations { size, .. } => (i + 1).saturating_sub(size),
+            Window::Days { size, .. } => {
+                while day_start < i
+                    && x.dates[i].ordinal() - x.dates[day_start].ordinal() >= i64::from(size)
+                {
+                    day_start += 1;
+                }
+                day_start
+            }
+        };
+
+        let slice = &x.values[start..=i];
+        let val = match window {
+            Window::Expanding | Window::Observations { .. } => {
+                let mut sum = 0.0;
+                let mut count = 0usize;
+                let mut first = 0.0;
+                let mut all_equal = true;
+                for &v in slice {
+                    if v.is_finite() {
+                        if count == 0 {
+                            first = v;
+                        } else if v != first {
+                            all_equal = false;
+                        }
+                        sum += v;
+                        count += 1;
+                    }
+                }
+                if count < 2 {
+                    f64::NAN
+                } else if all_equal {
+                    0.0
+                } else {
+                    let mean = sum / count as f64;
+                    let mut sum_sq = 0.0;
+                    for &v in slice {
+                        if v.is_finite() {
+                            let d = v - mean;
+                            sum_sq += d * d;
+                        }
+                    }
+                    (sum_sq / (count - 1) as f64).sqrt()
+                }
+            }
+            Window::Days { .. } => {
+                let mut sum = 0.0;
+                let mut count = 0usize;
+                let mut first = 0.0;
+                let mut all_equal = true;
+                let mut has_inf = false;
+                for &v in slice {
+                    if !v.is_nan() {
+                        if !v.is_finite() {
+                            has_inf = true;
+                        } else if count == 0 {
+                            first = v;
+                        } else if v != first {
+                            all_equal = false;
+                        }
+                        sum += v;
+                        count += 1;
+                    }
+                }
+                if count < 2 || has_inf {
+                    f64::NAN
+                } else if all_equal {
+                    0.0
+                } else {
+                    let mean = sum / count as f64;
+                    let mut sum_sq = 0.0;
+                    for &v in slice {
+                        if !v.is_nan() {
+                            let d = v - mean;
+                            sum_sq += d * d;
+                        }
+                    }
+                    (sum_sq / (count - 1) as f64).sqrt()
+                }
+            }
+        };
+
+        dates.push(x.dates[i]);
+        values.push(val);
+    }
+
+    Series::try_new(dates, values)
 }
