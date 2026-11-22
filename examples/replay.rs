@@ -1,7 +1,7 @@
 use quantus_math::{
     beta, bollinger_bands, correlation, cov, exponential_moving_average, macd, max_drawdown,
     moving_average, prices, relative_strength_index, returns, smoothed_moving_average,
-    std as series_std, volatility, Date, ReturnKind, Series, Window,
+    std as series_std, volatility, Date, ReturnKind, RollingLinearRegression, Series, Window,
 };
 use std::io::{self, Read};
 
@@ -51,6 +51,65 @@ fn main() {
     io::stdin().read_to_string(&mut input).unwrap();
     let mut lines = input.lines();
     let args: Vec<_> = lines.next().unwrap().split_whitespace().collect();
+    if args[0] == "rolling_ols" {
+        let window: usize = args[1].parse().unwrap();
+        let fit_intercept = match args[2] {
+            "false" => false,
+            "true" => true,
+            _ => panic!("unknown fit_intercept flag"),
+        };
+        let n_predictors: usize = args[3].parse().unwrap();
+        let pred_lens: Vec<usize> = args[4..4 + n_predictors]
+            .iter()
+            .map(|s| s.parse().unwrap())
+            .collect();
+        let remaining: Vec<_> = lines.collect();
+        let mut offset = 0usize;
+        let mut predictors = Vec::with_capacity(n_predictors);
+        for len in pred_lens {
+            predictors.push(parse_rows(remaining[offset..offset + len].iter().copied()));
+            offset += len;
+        }
+        let y = parse_rows(remaining[offset..].iter().copied());
+        match RollingLinearRegression::fit(&predictors, &y, window, fit_intercept) {
+            Ok(reg) => {
+                let cols: Vec<String> =
+                    reg.column_indices().iter().map(|c| c.to_string()).collect();
+                println!("COLS {}", cols.join(" "));
+                for &col in reg.column_indices() {
+                    let s = reg.coefficient(col).unwrap();
+                    println!("COEF {col}");
+                    for (date, value) in s.dates().iter().zip(s.values()) {
+                        println!("{date} {value:?}");
+                    }
+                }
+                println!("R_SQUARED");
+                for (date, value) in reg.r_squared().dates().iter().zip(reg.r_squared().values()) {
+                    println!("{date} {value:?}");
+                }
+                println!("FITTED");
+                for (date, value) in reg
+                    .fitted_values()
+                    .dates()
+                    .iter()
+                    .zip(reg.fitted_values().values())
+                {
+                    println!("{date} {value:?}");
+                }
+                println!("STD_ERR");
+                for (date, value) in reg
+                    .standard_deviation_of_errors()
+                    .dates()
+                    .iter()
+                    .zip(reg.standard_deviation_of_errors().values())
+                {
+                    println!("{date} {value:?}");
+                }
+            }
+            Err(err) => println!("ERROR {err:?}"),
+        }
+        return;
+    }
     if args[0] == "bollinger_bands" {
         let window = parse_window(args[1], args[2], args[3]);
         let k = match args[4] {

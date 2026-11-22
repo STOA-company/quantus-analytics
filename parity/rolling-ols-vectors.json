@@ -1,0 +1,6526 @@
+{
+  "schema": "gsquant-rolling-ols-parity-v1",
+  "upstream_sha": "70220e300524d54bd273be0f4c485d53b3780482",
+  "python": "3.10.12",
+  "pandas": "2.3.3",
+  "numpy": "2.2.6",
+  "statsmodels": "0.15.0",
+  "python_lock_sha256": "f16d9e19f10fada34ba4ccb2a2238707a143ef98b6aa4b507510a6dfc04d75e1",
+  "source": [
+    "gs_quant/timeseries/statistics.py:RollingLinearRegression"
+  ],
+  "cases": [
+    {
+      "id": "upstream-test-rolling-linear-regression",
+      "source_ref": "test_statistics.py::test_rolling_linear_regression",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2019-01-01",
+            "2019-01-02",
+            "2019-01-03",
+            "2019-01-04",
+            "2019-01-05",
+            "2019-01-06",
+            "2019-01-07"
+          ],
+          "values": [
+            0.0,
+            1.0,
+            4.0,
+            9.0,
+            16.0,
+            25.0,
+            {
+              "special": "NaN"
+            }
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2019-01-01",
+            "2019-01-02",
+            "2019-01-03",
+            "2019-01-04",
+            "2019-01-05",
+            "2019-01-06",
+            "2019-01-07",
+            "2019-01-08"
+          ],
+          "values": [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07"
+        ],
+        "values": [
+          10.0,
+          14.0,
+          20.0,
+          28.0,
+          28.0,
+          40.0,
+          60.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            10.000000000000142,
+            2.5000000000004565,
+            19.000000000000355
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.999999999999984,
+            -1.4999999999999845,
+            0.9999999999999369
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            3.000000000000031,
+            12.499999999999773,
+            -0.9999999999998366
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          0.9640287769784173,
+          0.9019607843137254
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          28.000000000000092,
+          28.499999999999794,
+          38.999999999999595
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.7084636475004115e-13,
+          2.236067977499789,
+          4.4721359549995805
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "upstream-test-no-intercept",
+      "source_ref": "test_statistics.py::test_rolling_linear_regression",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2019-01-01",
+            "2019-01-02",
+            "2019-01-03",
+            "2019-01-04",
+            "2019-01-05",
+            "2019-01-06",
+            "2019-01-07"
+          ],
+          "values": [
+            0.0,
+            1.0,
+            4.0,
+            9.0,
+            16.0,
+            25.0,
+            {
+              "special": "NaN"
+            }
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2019-01-01",
+            "2019-01-02",
+            "2019-01-03",
+            "2019-01-04",
+            "2019-01-05",
+            "2019-01-06",
+            "2019-01-07",
+            "2019-01-08"
+          ],
+          "values": [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06",
+          "2019-01-07"
+        ],
+        "values": [
+          10.0,
+          14.0,
+          20.0,
+          28.0,
+          28.0,
+          40.0,
+          60.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2019-01-01",
+          "2019-01-02",
+          "2019-01-03",
+          "2019-01-04",
+          "2019-01-05",
+          "2019-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -1.6315789473684128,
+            -1.9032258064516159,
+            -0.5857359635811784
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            14.052631578947352,
+            14.677419354838703,
+            10.503793626707125
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9288762446657184,
+          0.9973167968517083,
+          0.991323992732568
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          27.473684210526336,
+          28.258064516128957,
+          37.87556904400616
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          7.254762501100117,
+          1.7038855027411959,
+          3.9342085563806393
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred1-intercept-w3",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          3.0,
+          5.0,
+          7.0,
+          11.0,
+          11.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.9999999999999956,
+            -1.333333333333358,
+            1.6666666666666323,
+            6.66666666666665
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.0,
+            3.000000000000005,
+            2.0,
+            0.9999999999999925
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          0.9642857142857143,
+          0.75,
+          0.7499999999999996
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          6.999999999999996,
+          10.66666666666666,
+          11.666666666666632,
+          12.666666666666604
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          7.691850745534256e-15,
+          0.816496580927726,
+          1.632993161855452,
+          0.8164965809277268
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred1-intercept-w4",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            10.166666666666673,
+            10.108695652173907,
+            10.96913580246914
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.023809523809524,
+            2.0652173913043472,
+            1.950617283950618
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9914916975435707,
+          0.9959170161112337,
+          0.9974030125054937
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          24.333333333333343,
+          32.82608695652173,
+          42.17901234567903
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.6074928962939561,
+          0.6341718324267303,
+          0.6334307917217433
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred1-no-intercept-w2",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        2,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          3.0,
+          5.0,
+          7.0,
+          11.0,
+          11.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            2.6,
+            2.3846153846153846,
+            2.6,
+            2.4146341463414633,
+            2.180327868852459
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          0.9941176470588236,
+          0.998960498960499,
+          0.9941176470588236,
+          0.9878048780487805,
+          0.999943470887507
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          5.2,
+          7.153846153846153,
+          10.4,
+          12.073170731707316,
+          13.081967213114755
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          0.4472135954999579,
+          0.2773500981126143,
+          1.0000000000000002,
+          1.7179113807746664,
+          0.1280368799328969
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred1-no-intercept-w4",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          -3.0,
+          -5.0,
+          -9.0,
+          -16.0,
+          -24.0,
+          -35.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -2.3,
+            -2.221052631578947,
+            -2.1990950226244346
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9981132075471698,
+          0.9992368982156885,
+          0.9997756604260759
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -16.099999999999998,
+          -24.43157894736842,
+          -35.18552036199095
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.4830458915396479,
+          0.4884633980433643,
+          0.39984914198973137
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred2-intercept-w4",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            9.470588235294104,
+            9.69574468085108,
+            9.569135802469209
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.9786096256684478,
+            1.936170212765958,
+            1.9506172839506144
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.37967914438502864,
+            0.39574468085105574,
+            0.3999999999999961
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9988904128588821,
+          0.9999783993951831,
+          0.9999920092692477
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          24.080213903743296,
+          32.9723404255319,
+          41.979012345679024
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.3102526139970113,
+          0.06523280730534572,
+          0.04969039949999771
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred2-intercept-w5",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        5,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            9.520750426378639,
+            9.685990338164217
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.969869243888575,
+            1.9468599033816427
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.3678226264923222,
+            0.3797101449275402
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.99964916952846,
+          0.999984578075421
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          33.02842524161458,
+          41.97487922705312
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.22367034949142145,
+          0.06216698721601932
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred2-no-intercept-w3",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            3.8048780487804894,
+            3.0494117647058814,
+            2.4017467248908346,
+            2.421368547418968
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.8048780487804894,
+            1.9247058823529406,
+            1.8855895196506491,
+            1.4657863145257992
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9231411572318291,
+          0.966504335185089,
+          0.9885467093720498,
+          0.9944030105480512
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          22.439024390243915,
+          25.19529411764705,
+          35.84716157205243,
+          43.13925570228089
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          7.340166808764485,
+          6.160404875922858,
+          4.817091115209165,
+          4.380876262887631
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred3-intercept-w5",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        5,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0,
+            6.0,
+            1.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            5.0,
+            3.0,
+            7.0,
+            2.0,
+            8.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          9.0,
+          11.0,
+          18.0,
+          22.0,
+          29.0,
+          27.0,
+          34.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            6.999999999998636,
+            -3.39999999999975,
+            -2.7916107382559403
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            8.999999999999545,
+            2.5999999999999375,
+            2.9218120805369203
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -2.9999999999995453,
+            1.7999999999998977,
+            1.45469798657723
+          ],
+          "3": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -1.9999999999995453,
+            1.9999999999999432,
+            1.8473154362416437
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          1.0,
+          0.999039048200122
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          29.00000000000091,
+          26.999999999999147,
+          33.89429530201288
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.203148399811012e-12,
+          1.4419641608999225e-12,
+          0.38469023535983965
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred3-intercept-w6",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        6,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0,
+            6.0,
+            1.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            5.0,
+            3.0,
+            7.0,
+            2.0,
+            8.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          9.0,
+          11.0,
+          18.0,
+          22.0,
+          29.0,
+          27.0,
+          34.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.1529411764702786,
+            -2.31744186046501
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            3.447058823529545,
+            2.9174418604650754
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.341176470588195,
+            1.4011627906976827
+          ],
+          "3": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.1764705882352757,
+            1.7965116279069946
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9916298535224366,
+          0.9994994722326263
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          27.23529411764727,
+          33.87790697674416
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1881770515720091,
+          0.29234417435459487
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "pred3-no-intercept-w4",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0,
+            6.0,
+            1.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            5.0,
+            3.0,
+            7.0,
+            2.0,
+            8.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          9.0,
+          11.0,
+          18.0,
+          22.0,
+          29.0,
+          27.0,
+          34.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2,
+          3
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.250896057347628,
+            4.692307692307729,
+            2.8777129521586438,
+            2.7947400533059183
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.3405017921147127,
+            0.23076923076920797,
+            1.1334889148191785,
+            1.1582479689155816
+          ],
+          "3": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.8888888888888826,
+            0.6923076923076921,
+            1.5437572928821595,
+            1.656690536591632
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9956527910855602,
+          1.0,
+          0.9997447429912274,
+          0.9999977491584103
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          21.372759856630722,
+          29.000000000000114,
+          27.15472578763125,
+          33.974952634790064
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.095395190312375,
+          1.357141275442619e-13,
+          0.7791027960809429,
+          0.08500118530257025
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "exact-window-eq-len",
+      "source_ref": "synthetic-multifactor",
+      "operation": "rolling_ols",
+      "args": [
+        7,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0,
+            6.0,
+            1.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            5.0,
+            3.0,
+            7.0,
+            2.0,
+            8.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "values": [
+          9.0,
+          11.0,
+          18.0,
+          22.0,
+          29.0,
+          27.0,
+          34.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06",
+          "2020-01-07"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.563448498546677
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            3.008718114304223
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.7578301582176437
+          ],
+          "3": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.3621246367452429
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9934983719184131
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          34.279302550855824
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0633268940084641
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-skip-pred1-const5",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.3571428571428594,
+            1.9736842105263184,
+            2.0135135135135163,
+            1.9918032786885185
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.8999999999999995,
+            2.0894736842105246,
+            2.113513513513513,
+            2.0852459016393414
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9972527472527473,
+          0.986842105263158,
+          0.993422230177197,
+          0.9959016393442623
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          18.928571428571434,
+          24.26315789473685,
+          32.71621621621624,
+          42.295081967213
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.2672612419124244,
+          0.8111071056538115,
+          0.8137334712067379,
+          0.8148217143826655
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-skip-pred0-const-neg2",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            -2.0,
+            -2.0,
+            -2.0,
+            -2.0,
+            -2.0,
+            -2.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -5.083333333333337,
+            -5.054347826086953,
+            -5.48456790123457
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.023809523809524,
+            2.0652173913043472,
+            1.950617283950618
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9914916975435707,
+          0.9959170161112337,
+          0.9974030125054937
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          24.333333333333343,
+          32.82608695652173,
+          42.17901234567903
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.6074928962939561,
+          0.6341718324267303,
+          0.6334307917217433
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-no-skip-zero-pred",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-no-skip-nan-in-const",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            {
+              "special": "NaN"
+            },
+            5.0,
+            5.0,
+            5.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "const-no-skip-diff-outside-y",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            9.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "statsmodels_singular_normal_eq_leak",
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            16.0,
+            {
+              "special": "NaN"
+            }
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.065217391304348,
+            {
+              "special": "NaN"
+            }
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.921875,
+            {
+              "special": "NaN"
+            }
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -1.2429513446169147,
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          43.32676630434783,
+          {
+            "special": "NaN"
+          }
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          21.020499872494284,
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "no-intercept-const-pred-centered-r2",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.023809523809523,
+            2.065217391304346,
+            1.9506172839506184
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.0333333333333337,
+            2.021739130434783,
+            2.193827160493824
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9914916975435707,
+          0.9959170161112337,
+          0.9974030125054937
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          24.33333333333333,
+          32.82608695652172,
+          42.17901234567901
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.607492896293956,
+          0.6341718324267323,
+          0.6334307917217423
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "no-intercept-const-on-aligned-only",
+      "source_ref": "synthetic-constant-handling",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06",
+            "2020-01-07"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            9.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.023809523809523,
+            2.065217391304346,
+            1.9506172839506184
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.0333333333333337,
+            2.021739130434783,
+            2.193827160493824
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9914916975435707,
+          0.9959170161112337,
+          0.9974030125054937
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          24.33333333333333,
+          32.82608695652172,
+          42.17901234567901
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.607492896293956,
+          0.6341718324267323,
+          0.6334307917217423
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "rank-def-local-const-mid",
+      "source_ref": "synthetic-rank-deficiency",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            5.0,
+            9.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            9.666666666666673,
+            16.136363636363644
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            4.666666666666662,
+            2.9696969696969693
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.7461928934010152,
+          0.9418456408747671
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          32.99999999999998,
+          42.86363636363637
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          5.0,
+          2.997473683762458
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "rank-def-collinear-all",
+      "source_ref": "synthetic-rank-deficiency",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            5.0,
+            7.0,
+            11.0,
+            17.0,
+            25.0,
+            35.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "statsmodels_singular_normal_eq_leak",
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.75,
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -9.953125,
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            4.7578125,
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            }
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -0.8256962581051874,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          12.9609375,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          12.584877845677525,
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "rank-def-collinear-partial",
+      "source_ref": "synthetic-rank-deficiency",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            4.0,
+            8.0,
+            14.0,
+            30.0,
+            50.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            10.447368421053023,
+            11.841530054645476
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.7631578947367563,
+            1.5874316939887745
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.10526315789474161,
+            0.10109289617483977
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9966604328079082,
+          0.9978513448989336
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          32.99999999999959,
+          42.29508196720786
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.8111071056538103,
+          0.8148217143826687
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "rank-def-zero-pred-no-intercept",
+      "source_ref": "synthetic-rank-deficiency",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            2.0,
+            4.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.5,
+            2.3000000000000003
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.5,
+          0.8672131147540983
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          5.0,
+          9.200000000000001
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          3.5355339059327378,
+          2.8460498941515415
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "filter-nan-and-inf-x-and-y",
+      "source_ref": "synthetic-filtering-alignment",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-05-01",
+            "2020-05-02",
+            "2020-05-03",
+            "2020-05-04",
+            "2020-05-05",
+            "2020-05-06",
+            "2020-05-07",
+            "2020-05-08"
+          ],
+          "values": [
+            1.0,
+            {
+              "special": "NaN"
+            },
+            2.0,
+            3.0,
+            {
+              "special": "+Inf"
+            },
+            5.0,
+            7.0,
+            9.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-05-01",
+            "2020-05-02",
+            "2020-05-03",
+            "2020-05-04",
+            "2020-05-05",
+            "2020-05-06",
+            "2020-05-07",
+            "2020-05-08"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            5.0,
+            {
+              "special": "-Inf"
+            },
+            4.0,
+            3.0,
+            8.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-05-01",
+          "2020-05-02",
+          "2020-05-03",
+          "2020-05-04",
+          "2020-05-05",
+          "2020-05-06",
+          "2020-05-07",
+          "2020-05-08"
+        ],
+        "values": [
+          5.0,
+          6.0,
+          10.0,
+          11.0,
+          12.0,
+          {
+            "special": "+Inf"
+          },
+          25.0,
+          27.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-05-01",
+          "2020-05-03",
+          "2020-05-07",
+          "2020-05-08"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.41860465116281653
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.2558139534883748
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.0697674418604644
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9994784961131663
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          27.139534883720977
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.43133109281375365
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "misaligned-outer-x-inner-y",
+      "source_ref": "synthetic-filtering-alignment",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-06-01",
+            "2020-06-02",
+            "2020-06-03",
+            "2020-06-04",
+            "2020-06-05",
+            "2020-06-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-06-01",
+            "2020-06-03",
+            "2020-06-04",
+            "2020-06-05",
+            "2020-06-06",
+            "2020-06-07"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            9.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-06-01",
+          "2020-06-02",
+          "2020-06-03",
+          "2020-06-04",
+          "2020-06-05",
+          "2020-06-07"
+        ],
+        "values": [
+          4.0,
+          99.0,
+          8.0,
+          13.0,
+          14.0,
+          88.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-06-01",
+          "2020-06-03",
+          "2020-06-04",
+          "2020-06-05"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -0.19480519480517167
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.4935064935064952
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.8181818181818183
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9995988567417139
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          13.90909090909094
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.1611645928050771
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leap-day-2020-02-29-intercept",
+      "source_ref": "synthetic-leap",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-02-26",
+            "2020-02-28",
+            "2020-02-29",
+            "2020-03-02",
+            "2020-03-05",
+            "2020-03-09"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            5.0,
+            8.0,
+            10.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-26",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05",
+          "2020-03-09"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          8.0,
+          11.0,
+          15.0,
+          21.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-26",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05",
+          "2020-03-09"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.1999999999999993,
+            1.7066666666666737,
+            0.17582417582417076
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.1000000000000014,
+            1.693333333333333,
+            2.0109890109890096
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.98,
+          0.981978691019787,
+          0.9710052480501029
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          10.700000000000006,
+          15.253333333333337,
+          20.285714285714267
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.6708203932499369,
+          0.702376916856849,
+          1.1720180773462388
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "leap-day-2020-02-29-no-intercept",
+      "source_ref": "synthetic-leap",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-02-26",
+            "2020-02-28",
+            "2020-02-29",
+            "2020-03-02",
+            "2020-03-05",
+            "2020-03-09"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            5.0,
+            8.0,
+            10.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-26",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05",
+          "2020-03-09"
+        ],
+        "values": [
+          2.0,
+          5.0,
+          8.0,
+          11.0,
+          15.0,
+          21.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-26",
+          "2020-02-28",
+          "2020-02-29",
+          "2020-03-02",
+          "2020-03-05",
+          "2020-03-09"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.095238095238095,
+            2.1555555555555554,
+            1.9714285714285715,
+            2.0370370370370368
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9912954429083461,
+          0.9956613756613757,
+          0.9953310104529617,
+          0.9965174831756789
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          8.38095238095238,
+          10.777777777777777,
+          15.771428571428572,
+          20.370370370370367
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.6362090102803518,
+          0.674948557710553,
+          0.9783367810436532,
+          1.1706281947614159
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "negative-values-and-mixed-signs",
+      "source_ref": "synthetic-filtering-alignment",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            -5.0,
+            -2.0,
+            1.0,
+            -3.0,
+            4.0,
+            -1.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            3.0,
+            -4.0,
+            2.0,
+            5.0,
+            -1.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          -8.0,
+          3.0,
+          -1.0,
+          -10.0,
+          9.0,
+          -7.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.1603243917654403,
+            0.9095744680851064,
+            -0.3162055335968401
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.9968808484092326,
+            1.5709219858156025,
+            1.9881422924901193
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -1.278228321896444,
+            -1.319148936170213,
+            -0.8102766798418974
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9883854137129247,
+          0.9941905319613694,
+          0.9926481275699904
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          -9.221459762944479,
+          8.51241134751773,
+          -7.166007905138344
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.1303116789533278,
+          1.0526899013331483,
+          1.2447518285282841
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "perfect-fit-no-intercept",
+      "source_ref": "synthetic-perfect-zero",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          -0.5,
+          3.5,
+          4.0,
+          14.5,
+          20.0,
+          35.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.499999999999999,
+            2.499999999999998,
+            2.500000000000002
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -1.4999999999999996,
+            -1.499999999999998,
+            -1.500000000000004
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          1.0,
+          1.0
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          14.499999999999993,
+          19.999999999999986,
+          35.50000000000002
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          5.263909126864562e-15,
+          1.2716779685529958e-14,
+          1.7404671430534633e-14
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "zero-y-no-intercept",
+      "source_ref": "synthetic-perfect-zero",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "coefficients": {
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "zero-y-with-intercept",
+      "source_ref": "synthetic-perfect-zero",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.0,
+            0.0,
+            0.0
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "perfect-fit-with-intercept",
+      "source_ref": "synthetic-perfect-zero",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          4.0,
+          6.5,
+          9.0,
+          16.0,
+          22.5,
+          33.5
+        ],
+        "dtype": "float64"
+      },
+      "output": {
+        "column_indices": [
+          0,
+          1,
+          2
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            3.0000000000000004,
+            3.0000000000000138,
+            3.0000000000000577
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            1.999999999999999,
+            1.9999999999999993,
+            1.9999999999999987
+          ],
+          "2": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -0.5000000000000032,
+            -0.5000000000000084,
+            -0.5000000000000069
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          1.0,
+          1.0,
+          1.0
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          15.999999999999986,
+          22.499999999999964,
+          33.500000000000014
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          2.3160859559832578e-14,
+          4.383680149279125e-14,
+          4.618527782440651e-14
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "err-window-zero",
+      "source_ref": "synthetic-errors",
+      "operation": "rolling_ols",
+      "args": [
+        0,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window length must be larger than the number of explanatory variables"
+      }
+    },
+    {
+      "id": "err-window-eq-k-intercept",
+      "source_ref": "synthetic-errors",
+      "operation": "rolling_ols",
+      "args": [
+        3,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window length must be larger than the number of explanatory variables"
+      }
+    },
+    {
+      "id": "err-window-eq-k-no-intercept",
+      "source_ref": "synthetic-errors",
+      "operation": "rolling_ols",
+      "args": [
+        2,
+        "false"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            2.0,
+            1.0,
+            4.0,
+            2.0,
+            5.0,
+            3.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window length must be larger than the number of explanatory variables"
+      }
+    },
+    {
+      "id": "err-window-eq-k-const-skip",
+      "source_ref": "synthetic-errors",
+      "operation": "rolling_ols",
+      "args": [
+        2,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0,
+            7.0,
+            11.0,
+            16.0
+          ],
+          "dtype": "float64"
+        },
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0,
+            5.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "error": {
+        "rust": "Window",
+        "upstream_type": "MqValueError",
+        "upstream_message": "Window length must be larger than the number of explanatory variables"
+      }
+    },
+    {
+      "id": "doc-const-y-with-intercept",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            0.1,
+            0.3,
+            0.7,
+            1.3,
+            2.1,
+            3.1
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          5.3,
+          5.3,
+          5.3,
+          5.3,
+          5.3,
+          5.3
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "statsmodels_const_y_residual_noise",
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            5.300000000000003,
+            5.300000000000001,
+            5.3
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -3.2672277581826034e-15,
+            -3.745795943952702e-16,
+            -6.266592183439778e-16
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          },
+          {
+            "special": "-Inf"
+          }
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          5.299999999999999,
+          5.3,
+          5.299999999999998
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          3.263375893225244e-15,
+          8.881784197001252e-16,
+          1.538370149106851e-15
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "doc-ill-conditioned-1e7",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            10000001.0,
+            10000002.0,
+            10000003.0,
+            10000004.0,
+            10000005.0,
+            10000006.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          3.0,
+          5.0,
+          7.0,
+          9.0,
+          11.0,
+          13.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "statsmodels_normal_eq_ill_conditioned",
+      "output": {
+        "column_indices": [
+          0,
+          1
+        ],
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "coefficients": {
+          "0": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            -20032490.59375,
+            -20032488.75,
+            -20032486.78125
+          ],
+          "1": [
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            {
+              "special": "NaN"
+            },
+            2.003249166533351,
+            2.00324896723032,
+            2.0032487753778696
+          ]
+        },
+        "r_squared": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.9987267378683412,
+          0.9991175489199678,
+          0.9999643275374271
+        ],
+        "fitted_values": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          9.084580175578594,
+          10.938548035919666,
+          12.992021348327398
+        ],
+        "standard_deviation_of_errors": [
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          {
+            "special": "NaN"
+          },
+          0.11283891756210801,
+          0.09393886735703133,
+          0.018887155045930918
+        ],
+        "dtype": "float64"
+      }
+    },
+    {
+      "id": "doc-short-aligned-lt-window",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            4.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03"
+        ],
+        "values": [
+          3.0,
+          5.0,
+          9.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_short_aligned_error",
+      "rust_error": "Window",
+      "upstream_error": {
+        "upstream_type": "IndexError",
+        "upstream_message": "index 3 is out of bounds for axis 0 with size 3"
+      }
+    },
+    {
+      "id": "doc-short-after-nan-filter",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04",
+            "2020-01-05",
+            "2020-01-06"
+          ],
+          "values": [
+            1.0,
+            {
+              "special": "NaN"
+            },
+            3.0,
+            {
+              "special": "+Inf"
+            },
+            5.0,
+            6.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          2.0,
+          4.0,
+          {
+            "special": "-Inf"
+          },
+          8.0,
+          10.0,
+          12.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_short_aligned_error",
+      "rust_error": "Window",
+      "upstream_error": {
+        "upstream_type": "IndexError",
+        "upstream_message": "index 3 is out of bounds for axis 0 with size 3"
+      }
+    },
+    {
+      "id": "doc-disjoint-dates-empty-aligned",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "Index[date]",
+          "timezone": null,
+          "dates": [
+            "2020-01-01",
+            "2020-01-02",
+            "2020-01-03",
+            "2020-01-04"
+          ],
+          "values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-02-01",
+          "2020-02-02",
+          "2020-02-03",
+          "2020-02-04"
+        ],
+        "values": [
+          5.0,
+          6.0,
+          7.0,
+          8.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_short_aligned_error",
+      "rust_error": "Window",
+      "upstream_error": {
+        "upstream_type": "ValueError",
+        "upstream_message": "zero-size array to reduction operation maximum which has no identity"
+      }
+    },
+    {
+      "id": "doc-empty-series-aligned",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [
+        {
+          "index_kind": "RangeIndex",
+          "timezone": null,
+          "dates": [],
+          "values": [],
+          "dtype": "float64"
+        }
+      ],
+      "input_y": {
+        "index_kind": "RangeIndex",
+        "timezone": null,
+        "dates": [],
+        "values": [],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_short_aligned_error",
+      "rust_error": "Window",
+      "upstream_error": {
+        "upstream_type": "ValueError",
+        "upstream_message": "zero-size array to reduction operation maximum which has no identity"
+      }
+    },
+    {
+      "id": "doc-empty-predictors",
+      "source_ref": "documented-parity-boundaries",
+      "operation": "rolling_ols",
+      "args": [
+        4,
+        "true"
+      ],
+      "inputs_x": [],
+      "input_y": {
+        "index_kind": "Index[date]",
+        "timezone": null,
+        "dates": [
+          "2020-01-01",
+          "2020-01-02",
+          "2020-01-03",
+          "2020-01-04",
+          "2020-01-05",
+          "2020-01-06"
+        ],
+        "values": [
+          12.0,
+          14.0,
+          19.0,
+          24.0,
+          33.0,
+          42.0
+        ],
+        "dtype": "float64"
+      },
+      "upstream_note": "upstream_empty_predictors_value_error",
+      "rust_error": "Length",
+      "upstream_error": {
+        "upstream_type": "ValueError",
+        "upstream_message": "No objects to concatenate"
+      }
+    }
+  ]
+}
